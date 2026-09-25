@@ -775,6 +775,23 @@ div.apl-t{cursor:default}
 .apl-t span{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:3px}
 .tg{font-size:10.5px;font-weight:700;border-radius:20px;padding:1px 7px;background:var(--bg2);color:var(--tinta2);white-space:nowrap}
 .tg.camp{background:#fce7f3;color:#be185d}.tg.apo{background:#dcfce7;color:#15803d}.tg.amo{background:#e0f2fe;color:#0369a1}.tg.urg{background:#fee2e2;color:#b91c1c}.tg.ag{background:#f3ecff;color:var(--uva)}
+.mp-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.mp-bt{padding:7px 12px;font-size:12.5px}
+.mp-lin{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.mp-lin label{flex:1;min-width:130px}
+.mp-num{width:100%}
+.mp-res{margin-top:12px;font-size:13.5px;color:var(--tinta2)}
+.mp-res b{color:var(--tinta)}
+.mp-falta{margin-top:8px;padding:9px 11px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:12.5px}
+.mp-lista{margin-top:10px;border-top:1px solid var(--linha)}
+.mp-it{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--linha)}
+.mp-it .mp-n{min-width:0;flex:1}
+.mp-it .mp-n b{display:block;font-size:13px;overflow-wrap:anywhere}
+.mp-it .mp-n span{font-size:11.5px;color:var(--tinta3)}
+.mp-q{flex-shrink:0;font-weight:800;font-size:15px;color:var(--uva);text-align:right}
+.mp-q small{display:block;font-size:10.5px;font-weight:600;color:var(--tinta3)}
+.mp-tg{display:inline-block;padding:1px 7px;border-radius:8px;font-size:11px;font-weight:700;margin-right:4px;background:#f3ecff;color:var(--uva)}
+.mp-tg.perfeito{background:#dcfce7;color:#15803d}.mp-tg.baixa{background:#fee2e2;color:#b91c1c}.mp-tg.amo{background:#e0f2fe;color:#0369a1}.mp-tg.apo{background:#ecfdf5;color:#047857}.mp-tg.est{background:#fff7ed;color:#b45309}
 .mv-jatem{font-size:12.5px;color:#b45309;margin:6px 0 2px;min-height:4px}
 #avisoRapido{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#1f1535;color:#fff;font-size:13.5px;font-weight:700;padding:11px 18px;border-radius:12px;box-shadow:0 10px 30px rgba(26,16,48,.35);z-index:200;transition:opacity .2s,transform .2s;width:max-content;max-width:min(440px,calc(100% - 32px));text-align:center;line-height:1.4}
 #avisoRapido.on{opacity:1;transform:translate(-50%,0)}
@@ -2417,7 +2434,11 @@ var VIDEOS_PADRAO={forte:'5 a 6', medio:'3', fraco:'1 a 2'};
 var RP_LIMIAR=10;             // % pra considerar "pra cima" ou "pra baixo"
 var EST_DENSO=10, EST_ZERO=3; // estoque: 10 de 14 dias vendendo, 3 dias zerado
 
-function videosSug(){ var c=S.metas&&S.metas._config; return Object.assign({}, VIDEOS_PADRAO, (c&&c.videosRitmo)||{}); }
+function videosSug(){
+  var c=S.metas&&S.metas._config, base=Object.assign({}, VIDEOS_PADRAO);
+  if(c && c.producao && c.producao.dias){ var q=qtdProducao(c.producao.dias); base={forte:String(q.perfeito), medio:String(q.medio), fraco:String(q.baixa)}; }
+  return Object.assign(base, (c&&c.videosRitmo)||{});
+}
 
 /* campeões do mês de referência (80% da comissão do mês até hoje) */
 function campeoesDoMes(M){
@@ -4230,7 +4251,7 @@ function renderAPlanejar(){
     if(rot.length>4) h+='<button class="apl-mais" onclick="_apVer.rot=!_apVer.rot;renderPlanejar()">'+(_apVer.rot?'mostrar menos':'ver todos os '+rot.length)+'</button>';
     h+='</div>';
   }
-  h+='<div class="apl-bloco"><div class="apl-top"><b>O que gravar</b> <span class="cont">'+prods.length+'</span></div>'+
+  h+='<div class="apl-bloco"><div class="apl-top mp-top"><span><b>O que gravar</b> <span class="cont">'+prods.length+'</span></span><button type="button" class="btn mini mp-bt" onclick="abrirProducao()">Montar produção</button></div>'+
      '<p class="apl-sub">Sua lista Para gravar e o que o sistema sugere, com o mais urgente em cima.</p>';
   if(!prods.length) h+='<p class="apl-vazio">Nada pendente. Marque produtos com <b>+ pra gravar</b> em Produtos ou Campeões.</p>';
   (_apVer.prod?prods:prods.slice(0,10)).forEach(function(it,i){
@@ -4414,6 +4435,111 @@ async function confirmarAgendar(semData){
   if(nd){ _planSemana=segundaDe(nd); _planDia=nd; if(planVista()!=='dia') _planVista='dia'; }
   var nm=String(lista[0].dados.produtos[0].nome||''), nome= nm.length>30 ? nm.slice(0,30).trim()+'…' : nm;
   if(await salvarVariosPlano(lista)) aviso('✓ '+q+' '+plural(q,'roteiro agendado','roteiros agendados')+(nd? ' pra '+(nd===hojeISO()?'hoje':dmIso(nd)) : ' em "Esperando data"')+' · '+nome);
+}
+
+/* ---------- A3.2a Montar produção: meta de vídeos por dia × dias → roteiros por produto ----------
+   Regra (aprovada pelo Thiago, 25/09): momento perfeito = o dobro · normal = 1 por dia · em baixa = metade, nunca zero.
+   Fila: campeões do mês (comissão) → amostras abertas (vence antes primeiro) → apostas da lista → resto do "O que gravar".
+   Faltou produto → avisa e NÃO inventa. Tudo vai pro dia da gravação. Não duplica o que já está agendado no dia. */
+var _mp=null, _mpSalvando=false;
+function qtdProducao(dias){ dias=Math.max(1,dias|0); return {perfeito:2*dias, medio:dias, espera:dias, baixa:Math.max(1,Math.round(dias/2))}; }
+function cfgProducao(){ var c=(S.metas&&S.metas._config&&S.metas._config.producao)||{}; return {porDia:c.porDia||15, dias:c.dias||3}; }
+function mesDaPlanilha(){ var p=S.periodo; S.periodo=null; try{ return mesRef(); } finally{ S.periodo=p; } }
+function filaProducao(porDia, dias, dia){
+  var q=qtdProducao(dias), total=porDia*dias, fila=[], usados={}, amoUsadas={};
+  // 1) campeões do mês da planilha
+  if(S.dataMax){
+    var M=mesDaPlanilha(), C=campeoesDoMes(M);
+    C.lista.filter(function(p){ return p.campeao; }).forEach(function(p){
+      var s=sinaisProduto(p.chave, M), q0=S.idxProd.lista[p.chave];
+      fila.push({prod:{nome:p.nome, loja:p.loja||'', idProduto:(q0&&q0.id)||''}, ch:p.chave, origem:'campeao', rank:p.rank, momento:s.momento,
+                 estoque:!!(s.estoque && s.estoque.tipo==='sumiu'), n:q[s.momento]||dias});
+      usados[p.chave]=1;
+    });
+  }
+  // 2) o resto vem da lista única "O que gravar"
+  var lst=listaOQueGravar().filter(function(it){ return !(it.ch && usados[it.ch]); });
+  var amo=lst.filter(function(it){ return it.tipo==='amostra'; }).sort(function(a,b){ var x=a.nPrazo==null?999:a.nPrazo, y=b.nPrazo==null?999:b.nPrazo; return x-y; });
+  var apo=lst.filter(function(it){ return it.tipo!=='amostra' && it.sug && it.sug.tipoSug==='aposta'; });
+  var resto=lst.filter(function(it){ return amo.indexOf(it)<0 && apo.indexOf(it)<0; });
+  function add(it, origem){
+    if(it.ch && usados[it.ch]) return; if(it.tipo==='amostra' && amoUsadas[it.id]) return;
+    var prod={nome:it.nome, loja:it.loja||'', idProduto:it.idProduto || (it.ch && S.idxProd.lista[it.ch] && S.idxProd.lista[it.ch].id) || ''};
+    if(it.tipo==='amostra'){ prod.amostraId=it.id; amoUsadas[it.id]=1; }
+    fila.push({prod:prod, ch:it.ch, origem:origem, nPrazo:it.nPrazo, prazo:it.prazo, momento:'medio', n:dias}); if(it.ch) usados[it.ch]=1;
+  }
+  amo.forEach(function(it){ add(it,'amostra'); }); apo.forEach(function(it){ add(it,'aposta'); }); resto.forEach(function(it){ add(it,'lista'); });
+  // 3) corta na meta
+  var soma=0, sai=[];
+  fila.forEach(function(f){
+    if(soma>=total) return;
+    f.alvo=Math.min(f.n, total-soma); soma+=f.alvo;
+    f.ja= dia ? vagasDoProdNoDia(f.prod, dia) : 0; f.criar=Math.max(0, f.alvo-f.ja); sai.push(f);
+  });
+  return {itens:sai, soma:soma, total:total, falta:Math.max(0,total-soma), criar:sai.reduce(function(s,f){ return s+f.criar; },0)};
+}
+function abrirProducao(){
+  var c=cfgProducao(), am=isoMais(hojeISO(),1);
+  _mp={porDia:c.porDia, dias:c.dias, dia:am};
+  var h=cabPainel('Montar produção','Diga quantos vídeos quer postar por dia e pra quantos dias vai gravar. O sistema divide entre os produtos.');
+  h+='<div class="mp-lin"><label>Vídeos por dia<input type="number" inputmode="numeric" min="1" max="60" id="mpPorDia" class="mp-num" value="'+c.porDia+'" oninput="mpMudou()"></label>'+
+     '<label>Dia da gravação<input type="date" id="mpDia" value="'+am+'" min="'+hojeISO()+'" oninput="mpMudou()" onchange="mpMudou()"></label></div>'+
+     '<div class="mv-chips"><button type="button" onclick="mpDia(\''+hojeISO()+'\')">Hoje</button><button type="button" onclick="mpDia(\''+am+'\')">Amanhã</button></div>'+
+     '<label>Gravando pra quantos dias de postagem?</label><div class="f-seg" id="mpDias">'+[1,2,3,4,5].map(function(n){ return '<button type="button" data-d="'+n+'" class="'+(n===c.dias?'on':'')+'" onclick="mpSelDias(this)">'+n+'</button>'; }).join('')+'</div>'+
+     '<div id="mpPrev"></div>'+
+     '<div class="nv-botoes"><button class="btn" id="mpSalvar" onclick="confirmarProducao()">Agendar</button><button class="btn ghost mini" onclick="fecharForm()">Cancelar</button></div></div></div>';
+  abrirPainel(h); mpMudou();
+}
+function mpDia(d){ var el=document.getElementById('mpDia'); if(el){ el.value=d; mpMudou(); } }
+function mpSelDias(bt){ document.querySelectorAll('#mpDias button').forEach(function(b){ b.classList.toggle('on', b===bt); }); mpMudou(); }
+function mpLer(){
+  var pd=parseInt((document.getElementById('mpPorDia')||{}).value,10), b=document.querySelector('#mpDias button.on');
+  return {porDia: isNaN(pd)?0:Math.max(0,Math.min(60,pd)), dias: b?(+b.getAttribute('data-d')||1):1, dia:(document.getElementById('mpDia')||{}).value||''};
+}
+function mpMudou(){
+  var el=document.getElementById('mpPrev'); if(!el) return;
+  var v=mpLer(); _mp=v;
+  var bt=document.getElementById('mpSalvar');
+  if(!v.porDia){ el.innerHTML='<div class="mp-falta">Coloque quantos vídeos por dia (de 1 a 60).</div>'; if(bt) bt.textContent='Agendar'; return; }
+  var F=filaProducao(v.porDia, v.dias, v.dia), q=qtdProducao(v.dias), h='';
+  h+='<div class="mp-res"><b>'+v.porDia+' por dia × '+v.dias+' '+plural(v.dias,'dia','dias')+' = '+F.total+' roteiros</b> · por produto: momento perfeito '+q.perfeito+', normal '+q.medio+', em baixa '+q.baixa+'.</div>';
+  if(F.falta) h+='<div class="mp-falta">⚠ Faltaram <b>'+F.falta+' '+plural(F.falta,'roteiro','roteiros')+'</b> pra completar a meta: não há mais produtos na lista. Marque mais com <b>+ pra gravar</b> em Produtos, Campeões ou Apostas, e monte de novo.</div>';
+  if(!F.itens.length) h+='<p class="apl-vazio">Nenhum produto pra montar. Marque produtos com <b>+ pra gravar</b>.</p>';
+  h+='<div class="mp-lista">';
+  F.itens.forEach(function(f){
+    var tg;
+    if(f.origem==='campeao') tg= f.momento==='perfeito' ? '<span class="mp-tg perfeito">Campeão #'+f.rank+' · momento perfeito</span>' : (f.momento==='baixa' ? '<span class="mp-tg baixa">Campeão #'+f.rank+' · em baixa</span>' : '<span class="mp-tg">Campeão #'+f.rank+(f.momento==='espera'?' · pouco dado no mês':'')+'</span>');
+    else if(f.origem==='amostra') tg='<span class="mp-tg amo">Amostra'+(f.nPrazo==null?'':(f.nPrazo<0?' · venceu':(f.nPrazo===0?' · vence hoje':(f.nPrazo===1?' · vence amanhã':' · vence '+dmIso(f.prazo)))))+'</span>';
+    else if(f.origem==='aposta') tg='<span class="mp-tg apo">Aposta</span>';
+    else tg='<span class="mp-tg">Para gravar</span>';
+    if(f.estoque) tg+='<span class="mp-tg est">⚠ confira o estoque</span>';
+    var sub= f.ja ? (f.criar ? 'já tem '+f.ja+' no dia · agenda mais '+f.criar : 'já está agendado no dia') : '';
+    h+='<div class="mp-it"><div class="mp-n"><b>'+escapar(nomeCurto(f.prod.nome))+'</b><span>'+tg+'</span></div><div class="mp-q">'+f.alvo+'<small>'+plural(f.alvo,'roteiro','roteiros')+(sub?'<br>'+sub:'')+'</small></div></div>';
+  });
+  el.innerHTML=h+'</div>';
+  if(bt){ bt.textContent= F.criar ? 'Agendar '+F.criar+' '+plural(F.criar,'roteiro','roteiros') : 'Agendar'; bt.disabled=false; }
+}
+async function confirmarProducao(){
+  if(_mpSalvando) return;
+  var v=mpLer();
+  if(!v.porDia){ aviso('⚠ Coloque quantos vídeos por dia.'); return; }
+  if(!v.dia){ aviso('⚠ Escolha o dia da gravação.'); return; }
+  if(v.dia<hojeISO()){ aviso('⚠ O dia da gravação não pode ser no passado.'); return; }
+  var F=filaProducao(v.porDia, v.dias, v.dia);
+  if(!F.itens.length){ aviso('⚠ Nenhum produto pra montar. Marque produtos com + pra gravar.'); return; }
+  var lista=[], seq=0;
+  F.itens.forEach(function(f){ for(var k=0;k<f.criar;k++) lista.push(novaVaga(f.prod, v.dia, seq++)); });
+  // guarda a meta (ela também passa a mandar na sugestão de vídeos do Ritmo por produto)
+  var cfg=Object.assign({}, S.metas._config||{}); cfg.producao={porDia:v.porDia, dias:v.dias}; delete cfg.videosRitmo; S.metas._config=cfg;
+  DB.salvar('metas',[{id:'_config', dados:cfg}]).catch(function(){});
+  fecharForm(); _mp=null;
+  _planSemana=segundaDe(v.dia); _planDia=v.dia; if(planVista()!=='dia') _planVista='dia';
+  if(!lista.length){ renderPlanejar(); aviso('✓ Nada novo: a produção de '+(v.dia===hojeISO()?'hoje':dmIso(v.dia))+' já estava montada.'); return; }
+  _mpSalvando=true;
+  try{
+    var np=F.itens.filter(function(f){ return f.criar>0; }).length;
+    if(await salvarVariosPlano(lista)) aviso('✓ '+lista.length+' '+plural(lista.length,'roteiro agendado','roteiros agendados')+' pra '+(v.dia===hojeISO()?'hoje':dmIso(v.dia))+' · '+np+' '+plural(np,'produto','produtos')+(F.falta?' · faltaram '+F.falta:''));
+  } finally { _mpSalvando=false; }
 }
 
 async function postarAmostrasDoPlano(d){
