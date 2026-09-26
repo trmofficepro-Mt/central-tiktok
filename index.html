@@ -644,6 +644,17 @@ body.sem-dados .lateral{display:none}
 .pi-atraso{font-size:10.5px;color:var(--vermelho);font-weight:700;margin-top:3px}
 .pi-btn{margin-top:6px;width:100%;border:none;border-radius:7px;padding:5px;font-family:inherit;font-size:11.5px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--rosa),var(--uva));cursor:pointer}
 .fp-prods{display:flex;flex-direction:column;gap:6px;margin:6px 0 8px}
+.fp-rot{margin-top:14px;padding:12px;border:1.5px solid var(--linha2);border-radius:12px;background:var(--panel2)}
+.fp-rot-tit{font-size:12px;font-weight:800;color:var(--uva);letter-spacing:.3px;text-transform:uppercase}
+.fp-gancho{font-size:16px!important;font-weight:700;line-height:1.35}
+.fp-dica{font-size:11.5px;color:var(--tinta3);margin:4px 0 0}
+.fp-det-bt{margin-top:10px;border:none;background:none;color:var(--uva);font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;padding:4px 0}
+.fp-cena{display:flex;gap:6px;align-items:flex-start;margin-top:6px}
+.fp-cena b{flex-shrink:0;font-size:11.5px;color:var(--tinta3);padding-top:9px;min-width:48px}
+.fp-cena textarea{flex:1;min-width:0}
+.fp-cena button{flex-shrink:0;border:none;background:none;color:var(--tinta3);font-size:14px;cursor:pointer;padding-top:8px}
+.fp-add{margin-top:6px;border:1px dashed var(--linha2);background:none;border-radius:8px;padding:6px 10px;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--uva);cursor:pointer}
+.fp-copiar{margin-top:6px}
 .fp-p{display:flex;align-items:center;gap:8px;background:var(--bg2);border-radius:9px;padding:7px 10px}
 .fp-p div{flex:1;min-width:0}
 .fp-p b{display:block;font-size:12.5px}
@@ -761,6 +772,18 @@ div.apl-t{cursor:default}
 .vg-ac.post{background:linear-gradient(135deg,#f59e0b,#d97706)}
 .vg-ac.volta{background:var(--panel);color:var(--uva);border:1.5px solid var(--linha2)}
 .vg-ok{font-size:12.5px;font-weight:800;color:#15803d;white-space:nowrap;padding:0 6px}
+/* A3.2c vídeo vinculado (faixa colada embaixo da vaga) */
+.vg.com-vid{border-radius:10px 10px 0 0}
+.vg-vid{margin-top:-6px;background:var(--bg2);border-radius:0 0 10px 10px;padding:3px 10px 7px 38px;font-size:11.5px;line-height:1.45;color:var(--tinta2);word-break:break-word}
+.vg-vid.st-postado{background:#f0fdf4}.vg-vid.st-gravado{background:#fffbeb}
+.vg-vid b{color:#15803d}.vg-vid .vv-al{color:#b45309;font-weight:700}.vg-vid .vv-out{color:var(--tinta3)}
+.vv-n{white-space:nowrap}
+.vv-bt{border:none;background:none;padding:0;font-family:inherit;font-size:11.5px;font-weight:800;color:var(--uva);cursor:pointer;text-decoration:underline}
+.vv-bt.grande{font-size:12.5px;text-decoration:none;border:1.5px dashed var(--linha2);border-radius:8px;padding:5px 10px;background:var(--panel)}
+.vinc-msg{display:none;margin:8px 0;padding:9px 11px;border-radius:9px;font-size:13px;line-height:1.45}
+.vinc-msg.on{display:block}.vinc-msg.erro{background:#fef2f2;color:#b91c1c}.vinc-msg.alerta{background:#fffbeb;color:#92400e}
+.vinc-atual{background:#f0fdf4;border-radius:9px;padding:9px 11px;font-size:13px;margin-bottom:10px;word-break:break-word}
+.vinc-dica{font-size:12px;color:var(--tinta3);line-height:1.5;margin-top:6px}
 .vg-mais{width:36px;height:36px;border-radius:9px;border:1.5px solid var(--linha2);background:var(--panel);color:var(--tinta2);font-size:18px;font-weight:800;cursor:pointer;flex-shrink:0;line-height:1}
 .op-lista{display:flex;flex-direction:column;gap:8px}
 .op-bt{text-align:left;border:1.5px solid var(--linha2);background:var(--panel);border-radius:11px;padding:13px 14px;font-family:inherit;font-size:14px;font-weight:700;color:var(--tinta);cursor:pointer}
@@ -4128,13 +4151,15 @@ function acaoVaga(x){
 function htmlVaga(x,i){
   var d=x.dados, extra=(d.produtos||[]).length>1 ? '+ '+((d.produtos||[]).length-1)+' outro produto' : '';
   var atr = d.status==='planejado' && d.data && d.data<hojeISO();
-  var sub=[d.status==='gravado'?'gravado, falta postar':'', d.hora?'às '+d.hora:'', extra, atr?'passou do dia':''].filter(Boolean).join(' · ');
-  return '<div class="vg st-'+d.status+(atr?' atrasado':'')+'" data-id="'+x.id+'">'+
+  var nc=(d.cenas||[]).length, det=[nc?nc+' '+plural(nc,'cena','cenas'):'', d.cta?'CTA':'', d.legenda?'legenda':''].filter(Boolean).join(', ');
+  var sub=[d.status==='gravado'?'gravado, falta postar':'', d.hora?'às '+d.hora:'', extra, det?'roteiro: '+det:'', atr?'passou do dia':''].filter(Boolean).join(' · ');
+  var vv=htmlVidVaga(x);
+  return '<div class="vg st-'+d.status+(atr?' atrasado':'')+(vv?' com-vid':'')+'" data-id="'+x.id+'">'+
     '<span class="vg-n">'+(i+1)+'</span>'+
     '<button type="button" class="vg-t" onclick="abrirFormPlano(\''+x.id+'\')">'+(d.ideia? escapar(d.ideia) : '<i>Sem gancho ainda (toque pra escrever)</i>')+(sub?'<small>'+sub+'</small>':'')+'</button>'+
     acaoVaga(x)+
     '<button type="button" class="vg-mais" title="Mais opções" aria-label="Mais opções" onclick="opcoesVaga(\''+x.id+'\')">⋯</button>'+
-  '</div>';
+  '</div>'+vv;
 }
 function opcoesVaga(id){
   var x=S.plano[id]; if(!x) return; var d=x.dados, inf=infoProd((d.produtos||[])[0]), st=d.status;
@@ -4143,11 +4168,134 @@ function opcoesVaga(id){
   h+='<div class="op-lista">'+
      b('Escrever ou editar o gancho','fecharForm();abrirFormPlano(\''+id+'\')')+
      b('Mover pra outra data','fecharForm();abrirMover(\''+id+'\')')+
+     (d.tipo!=='live' && (st==='postado'||d.video||d.videoLink)?b(d.video||d.videoLink?'Trocar ou tirar o vídeo vinculado':'Vincular o vídeo postado','fecharForm();abrirVincular(\''+id+'\')'):'')+
      (st==='planejado'?b('Deixar sem data (vai pra "Esperando data")','fecharForm();_mv={id:\''+id+'\'};confirmarMover(true)'):'')+
      (st!=='planejado'&&st!=='cancelado'?b('Voltar pra pendente (não gravei)','fecharForm();mudarStatusPlano(\''+id+'\',\'planejado\')'):'')+
      (st!=='cancelado'?b('Descartar este roteiro','fecharForm();mudarStatusPlano(\''+id+'\',\'cancelado\')','perigo'):'')+
   '</div></div></div>';
   abrirPainel(h);
+}
+
+/* =====================================================================
+   A3.2c — "Postado, vincule o vídeo": o ID de 19 dígitos do link casa com o "ID do conteúdo" da planilha
+   Campos no registro do Planejar (só gravados quando têm conteúdo): video = ID · videoLink = link curto pendente
+   ===================================================================== */
+var _porVideo={ref:null,n:-1,m:{}};
+function indiceVideos(){
+  var t=S.todas||[];
+  if(_porVideo.ref!==t || _porVideo.n!==t.length){
+    var m={}; t.forEach(function(x){ if(x.idCont){ (m[x.idCont]||(m[x.idCont]=[])).push(x); } });
+    _porVideo={ref:t,n:t.length,m:m};
+  }
+  return _porVideo.m;
+}
+/* vendas de um vídeo na planilha inteira (não segue o período do topo: vídeo vende por semanas) */
+function vendasDoVideo(vid){
+  var ls=(indiceVideos()[vid]||[]).filter(function(x){ return x.tipo!=='Live' && ehConteudo(x.tipo); });
+  if(!ls.length) return null;
+  var r={gmv:0,com:0,itens:0,ultima:null,prods:{}};
+  ls.forEach(function(x){
+    r.gmv+=x.gmv; r.com+=x.com; r.itens+=x.itens;
+    if(x.data && (!r.ultima || x.data>r.ultima)) r.ultima=x.data;
+    var p=r.prods[x.chave]||(r.prods[x.chave]={chave:x.chave,nome:x.produto,gmv:0,ids:{}}); p.gmv+=x.gmv; if(x.idProd) p.ids[x.idProd]=1;
+  });
+  r.lista=Object.values(r.prods).sort(function(a,b){ return b.gmv-a.gmv; });
+  return r;
+}
+/* o produto da vaga está entre os que o vídeo vendeu? (null = não dá pra saber: vaga sem produto) */
+function videoEhDoProduto(r, p){
+  if(!p) return null;
+  var ch=chaveDoProd(p);
+  return r.lista.some(function(q){ return (ch && q.chave===ch) || (p.idProduto && q.ids[p.idProduto]); });
+}
+/* lê o que a Mari colou: link completo (/video/ ou /photo/), só o número, ou link curto do app */
+function lerLinkVideo(txt){
+  var t=String(txt||'').trim();
+  if(!t) return {erro:'Cole o link do vídeo (ou o número dele) no campo acima.'};
+  if(/^\d+$/.test(t)) return t.length===19 ? {id:t} : {erro:'O número do vídeo tem 19 dígitos. Esse tem '+t.length+'. Confere se copiou inteiro.'};
+  var m=t.match(/\/(?:video|photo)\/(\d{19})(?!\d)/i); if(m) return {id:m[1]};
+  if(/\/\/(vt|vm)\.tiktok\.com\/\w+/i.test(t)) return {curto:t.replace(/\s.*$/,'')};
+  if(/\/live\b/i.test(t)) return {erro:'Esse link é de uma live. Por enquanto só vídeo se vincula aqui (as lives vêm numa etapa própria).'};
+  if(/tiktok\.com/i.test(t)) return {erro:'Esse link não é de um vídeo (pode ser de um perfil ou de um produto). O link do vídeo tem /video/ seguido de um número comprido.'};
+  return {erro:'Não achei o número do vídeo nisso que foi colado. O link do vídeo tem /video/ seguido de um número comprido.'};
+}
+function htmlVidVaga(x){
+  var d=x.dados, cl='vg-vid st-'+d.status, bt=function(t,cls){ return '<button type="button" class="vv-bt'+(cls?' '+cls:'')+'" onclick="abrirVincular(\''+x.id+'\')">'+t+'</button>'; };
+  if(d.tipo==='live') return '';
+  if(d.video){
+    var r=vendasDoVideo(d.video);
+    if(!r) return '<div class="'+cl+'">▶ Vídeo vinculado · ainda sem venda na planilha. Importe uma planilha nova daqui a uns dias. '+bt('trocar')+'</div>';
+    var nb=function(t){ return '<span class="vv-n">'+t+'</span>'; };
+    var h=nb('▶ <b>'+reais(r.gmv)+' em vendas</b>')+' · '+nb(inteiro(r.itens)+' '+plural(r.itens,'item','itens'))+' · '+nb(reais(r.com)+' de comissão')+' · '+nb('última venda '+dm(r.ultima))+' '+bt('trocar');
+    var eh=videoEhDoProduto(r,(d.produtos||[])[0]);
+    if(eh===false) h+='<br><span class="vv-al">⚠ Esse vídeo vendeu '+escapar(nomeCurto(r.lista[0].nome))+', não este produto. Confere o link.</span>';
+    else{
+      var ch=(d.produtos||[])[0] && chaveDoProd(d.produtos[0]), p0=(d.produtos||[])[0]||{};
+      var out=r.lista.filter(function(q){ return !(ch && q.chave===ch) && !(p0.idProduto && q.ids[p0.idProduto]); });
+      if(out.length) h+='<br><span class="vv-out">Também vendeu: '+out.slice(0,2).map(function(q){ return escapar(nomeCurto(q.nome))+' ('+reais(q.gmv)+')'; }).join(' · ')+(out.length>2?' · + '+(out.length-2)+' '+plural(out.length-2,'produto','produtos'):'')+'</span>';
+    }
+    return '<div class="'+cl+'">'+h+'</div>';
+  }
+  if(d.videoLink) return '<div class="'+cl+'">🔗 Link curto guardado · escolha o vídeo quando importar a próxima planilha. '+bt('ver')+'</div>';
+  if(d.status==='postado') return '<div class="'+cl+'">'+bt('🔗 Vincular vídeo','grande')+'</div>';
+  return '';
+}
+var _vinc=null;
+function abrirVincular(id){
+  var x=S.plano[id]; if(!x) return; var d=x.dados, inf=infoProd((d.produtos||[])[0]);
+  _vinc={id:id, forcar:null};
+  var h=cabPainel('Vincular vídeo', escapar(nomeCurto(inf.nome))+(d.data?' · '+(d.status==='postado'?'postado ':'')+dmIso(d.data):''));
+  if(d.video){
+    var r=vendasDoVideo(d.video);
+    h+='<div class="vinc-atual">Vinculado ao vídeo <b>'+d.video+'</b><br>'+(r? '<span class="vv-n">'+reais(r.gmv)+' em vendas</span> · <span class="vv-n">'+inteiro(r.itens)+' '+plural(r.itens,'item','itens')+'</span> · <span class="vv-n">'+reais(r.com)+' de comissão</span>' : 'Ainda sem venda na planilha.')+'</div>';
+  } else if(d.videoLink){
+    h+='<div class="vinc-atual">Link curto guardado: <b>'+escapar(d.videoLink)+'</b><br>Quando importar a próxima planilha, escolha o vídeo aqui. Se tiver o link completo, cole abaixo.</div>';
+  }
+  h+='<label for="vidLink">'+(d.video||d.videoLink?'Trocar: cole outro link (ou o número)':'Link do vídeo (ou o número dele)')+'</label>'+
+     '<input id="vidLink" inputmode="url" autocomplete="off" placeholder="tiktok.com/@…/video/7611…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarVincular()}" oninput="_vinc.forcar=null;document.getElementById(\'vidBt\').textContent=\'Vincular\';msgVincular()">'+
+     '<div class="vinc-dica"><b>No computador:</b> abra o vídeo no TikTok e copie o endereço lá de cima (tem /video/ e um número comprido).<br><b>No celular:</b> o "Copiar link" do app dá um link curto (vt.tiktok.com). Pode colar: ele fica guardado e você escolhe o vídeo depois, pela planilha.</div>'+
+     '<div id="vidMsg" class="vinc-msg" role="alert"></div>'+
+     '<div class="nv-botoes"><button type="button" class="btn" id="vidBt" onclick="confirmarVincular()">Vincular</button>'+
+     (d.video||d.videoLink?'<button type="button" class="btn ghost mini" style="margin-left:auto" onclick="tirarVinculo()">Tirar vínculo</button>':'')+'</div>'+
+     '</div></div></div>';
+  abrirPainel(h);
+}
+function msgVincular(txt, tipo){
+  var el=document.getElementById('vidMsg'); if(!el) return;
+  el.className='vinc-msg'+(txt?' on '+(tipo||'erro'):''); el.innerHTML=txt||'';
+}
+async function confirmarVincular(){
+  if(!_vinc) return; var x=S.plano[_vinc.id]; if(!x) return;
+  var r=lerLinkVideo((document.getElementById('vidLink')||{}).value);
+  if(r.erro){ msgVincular(r.erro); return; }
+  var novo=Object.assign({}, x.dados), id=_vinc.id;
+  if(r.curto){
+    novo.videoLink=r.curto; delete novo.video;
+    fecharForm(); _vinc=null;
+    if(await salvarPlano(id, novo)) aviso('🔗 Link curto guardado · escolha o vídeo quando importar a próxima planilha');
+    return;
+  }
+  var vid=r.id, ls=indiceVideos()[vid]||[];
+  if(S.idxProd && S.idxProd.porId[vid]){ msgVincular('Esse número é de um <b>produto</b>, não de um vídeo. O número do vídeo vem depois de /video/ no link.'); return; }
+  if(ls.length && ls.every(function(z){ return z.tipo==='Live'; })){ msgVincular('Esse número é de uma <b>live</b>, não de um vídeo. Por enquanto só vídeo se vincula aqui.'); return; }
+  if(ls.length && ls.every(function(z){ return !ehConteudo(z.tipo); })){ msgVincular('Esse número é da vitrine ou de um link compartilhado, não de um vídeo.'); return; }
+  var outro=Object.values(S.plano).filter(function(z){ return z.id!==id && z.dados.video===vid; })[0];
+  if(outro && _vinc.forcar!==vid){
+    var io=infoProd((outro.dados.produtos||[])[0]);
+    msgVincular('Esse vídeo já está ligado a outro roteiro: <b>'+escapar(nomeCurto(io.nome))+'</b>'+(outro.dados.data?' · '+dmIso(outro.dados.data):'')+'. Se for isso mesmo, toque de novo pra vincular aqui também.','alerta');
+    _vinc.forcar=vid; document.getElementById('vidBt').textContent='Vincular mesmo assim'; return;
+  }
+  novo.video=vid; delete novo.videoLink;
+  fecharForm(); _vinc=null;
+  if(!(await salvarPlano(id, novo))) return;
+  var v=vendasDoVideo(vid), eh=v && videoEhDoProduto(v,(novo.produtos||[])[0]);
+  aviso(!v ? '✓ Vídeo vinculado · ainda sem venda na planilha' : (eh===false ? '⚠ Vinculado, mas esse vídeo vendeu outro produto. Confere o link.' : '✓ Vídeo vinculado · '+reais(v.gmv)+' em vendas'));
+}
+async function tirarVinculo(){
+  if(!_vinc) return; var x=S.plano[_vinc.id]; if(!x) return;
+  var novo=Object.assign({}, x.dados), id=_vinc.id; delete novo.video; delete novo.videoLink;
+  fecharForm(); _vinc=null;
+  if(await salvarPlano(id, novo)) aviso('Vínculo do vídeo tirado');
 }
 function htmlGrupo(gr, prox){
   var inf=infoProd(gr.prod), i=S._pg.length; S._pg.push(gr.prod);
@@ -4315,6 +4463,7 @@ async function mudarStatusPlano(id, st){
   if(!ok) return;
   await efeitosAmostra(id, S.plano[id].dados, antes, st);
   var tem=(S.plano[id].dados.produtos||[]).some(function(p){return p.amostraId;});
+  if(st==='postado' && S.plano[id].dados.tipo!=='live' && !S.plano[id].dados.video){ aviso('✓ Postado'+(tem?' · amostra marcada como postada':''), 'Vincular vídeo', function(){ abrirVincular(id); }); return; }
   aviso(st==='gravado'?'✓ Gravado'+(tem?' · amostra passou pra "Gravando"':''):(st==='postado'?'✓ Postado'+(tem?' · amostra marcada como postada':''):(st==='cancelado'?'Roteiro descartado':'Voltou pra pendente')));
 }
 var _avT=null;
@@ -4502,7 +4651,7 @@ function mpMudou(){
   var bt=document.getElementById('mpSalvar');
   if(!v.porDia){ el.innerHTML='<div class="mp-falta">Coloque quantos vídeos por dia (de 1 a 60).</div>'; if(bt) bt.textContent='Agendar'; return; }
   var F=filaProducao(v.porDia, v.dias, v.dia), q=qtdProducao(v.dias), h='';
-  h+='<div class="mp-res"><b>'+v.porDia+' por dia × '+v.dias+' '+plural(v.dias,'dia','dias')+' = '+F.total+' roteiros</b> · por produto: momento perfeito '+q.perfeito+', normal '+q.medio+', em baixa '+q.baixa+'.</div>';
+  h+='<div class="mp-res"><b>'+v.porDia+' por dia × '+v.dias+' '+plural(v.dias,'dia','dias')+' = '+F.total+' '+plural(F.total,'roteiro','roteiros')+'</b> · por produto: momento perfeito '+q.perfeito+', normal '+q.medio+', em baixa '+q.baixa+'.</div>';
   if(F.falta) h+='<div class="mp-falta">⚠ Faltaram <b>'+F.falta+' '+plural(F.falta,'roteiro','roteiros')+'</b> pra completar a meta: não há mais produtos na lista. Marque mais com <b>+ pra gravar</b> em Produtos, Campeões ou Apostas, e monte de novo.</div>';
   if(!F.itens.length) h+='<p class="apl-vazio">Nenhum produto pra montar. Marque produtos com <b>+ pra gravar</b>.</p>';
   h+='<div class="mp-lista">';
@@ -4581,20 +4730,61 @@ function htmlFormPlano(){
   var d=_fp.d, abertas=Object.values(S.amostras||{}).filter(function(a){return a.dados.status==='chegou'||a.dados.status==='gravando';});
   var h='<div class="ficha-cab"><div class="barra"><button class="voltar" onclick="fecharForm()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Voltar</button></div>'+
         '<h2>'+(_fp.id?(d.tipo==='live'?'Editar live':'Editar roteiro'):'Planejar conteúdo')+'</h2><div class="loja">'+(d.tipo==='live'?'Numa live dá pra colocar vários produtos.':'Um roteiro = um vídeo de um produto.')+'</div></div><div class="ficha-corpo"><div class="nv-card frm">';
-  h+='<label>Tipo</label><div class="f-seg" id="fpTipo">'+[['video','▶ Vídeo'],['live','● Live']].map(function(t){ return '<button type="button" data-t="'+t[0]+'" class="'+(d.tipo===t[0]?'on':'')+'" onclick="_fp.d.tipo=\''+t[0]+'\';document.querySelectorAll(\'#fpTipo button\').forEach(function(b){b.classList.toggle(\'on\',b.getAttribute(\'data-t\')===\''+t[0]+'\')})">'+t[1]+'</button>'; }).join('')+'</div>';
+  h+='<label>Tipo</label><div class="f-seg" id="fpTipo">'+[['video','▶ Vídeo'],['live','● Live']].map(function(t){ return '<button type="button" data-t="'+t[0]+'" class="'+(d.tipo===t[0]?'on':'')+'" onclick="setTipoPlano(\''+t[0]+'\')">'+t[1]+'</button>'; }).join('')+'</div>';
+  var umSo=d.tipo!=='live', temP=(d.produtos||[]).length>0;
+  h+='<label>'+(umSo?'Produto':'Produtos')+'</label><div id="fpProds" class="fp-prods"></div>'+
+     '<input id="fpBusca" placeholder="'+(umSo&&temP?'Trocar produto: buscar outro ou digitar um novo':'Buscar produto que já vendeu ou digitar um novo')+'" autocomplete="off" oninput="sugerirPlano(this.value)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addProdLivre()}">'+
+     '<div id="fpSug" class="f-sug"></div>';
+  if(abertas.length) h+='<div class="fp-amo"><span>Amostras pra gravar:</span>'+abertas.map(function(a){ return '<button type="button" onclick="addProdAmostra(\''+a.id+'\')">'+escapar(nomeCurto(a.dados.nome))+'</button>'; }).join('')+'</div>';
+  if(d.tipo==='live') h+='<label>Ideia da live<textarea id="fpIdeia" rows="3" oninput="_fp.d.ideia=this.value" placeholder="Ex: sorteio no fim, mostrar os 3 relógios lado a lado">'+escapar(d.ideia||'')+'</textarea></label>';
+  else h+=htmlRoteiro(d);
   h+='<div class="f-2"><label>Dia<input type="date" id="fpData" value="'+(d.data||'')+'"'+(d.data?'':' disabled')+' onchange="_fp.d.data=this.value"></label>'+
      '<label>Horário (opcional)<input type="time" id="fpHora" value="'+(d.hora||'')+'" onchange="_fp.d.hora=this.value"></label></div>'+
      (d.tipo!=='live' && d.status==='planejado' ? '<label class="fp-semdata"><input type="checkbox" id="fpSemData"'+(d.data?'':' checked')+' onchange="semDataPlano(this.checked)"> Sem data (fica em "Esperando data")</label>' : '');
-  h+='<label>Produtos</label><div id="fpProds" class="fp-prods"></div>'+
-     '<input id="fpBusca" placeholder="Buscar produto que já vendeu ou digitar um novo" autocomplete="off" oninput="sugerirPlano(this.value)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addProdLivre()}">'+
-     '<div id="fpSug" class="f-sug"></div>';
-  if(abertas.length) h+='<div class="fp-amo"><span>Amostras pra gravar:</span>'+abertas.map(function(a){ return '<button type="button" onclick="addProdAmostra(\''+a.id+'\')">'+escapar(nomeCurto(a.dados.nome))+'</button>'; }).join('')+'</div>';
-  h+='<label>Gancho / ideia<textarea id="fpIdeia" rows="3" oninput="_fp.d.ideia=this.value" placeholder="Ex: mostrar a tela no sol, comparar com o relógio caro">'+escapar(d.ideia||'')+'</textarea></label>';
   h+='<label>Status</label><div class="f-seg" id="fpStatus">'+Object.keys(ST_PLAN).map(function(k){ return '<button type="button" data-s="'+k+'" class="'+(d.status===k?'on':'')+'" onclick="_fp.d.status=\''+k+'\';document.querySelectorAll(\'#fpStatus button\').forEach(function(b){b.classList.toggle(\'on\',b.getAttribute(\'data-s\')===\''+k+'\')})">'+ST_PLAN[k].rot+'</button>'; }).join('')+'</div>';
   h+='<div class="nv-botoes"><button class="btn" onclick="salvarFormPlano()">Salvar</button>'+(_fp.id?'<button class="btn ghost mini" onclick="duplicarPlano()">Repetir em outro dia</button><button class="btn ghost mini" style="margin-left:auto" onclick="excluirPlano()">Excluir</button>':'')+'</div>';
   h+='</div></div>';
   setTimeout(renderProdsPlano,0);
   return h;
+}
+/* A3.2b editor do roteiro: gancho em destaque (é o que a Owra escreve); cenas, CTA e legenda opcionais e recolhidos */
+function htmlRoteiro(d){
+  var cenas=(d.cenas||[]).slice(), temDet= cenas.length || d.cta || d.legenda;
+  _fp.cenas = cenas.length ? cenas : [''];
+  var h='<div class="fp-rot"><div class="fp-rot-tit">Roteiro</div>'+
+    '<label>Gancho<textarea id="fpIdeia" class="fp-gancho" rows="3" oninput="_fp.d.ideia=this.value" placeholder="A primeira frase do vídeo. Ex: Esse relógio de R$ 150 faz tudo que o de R$ 2 mil faz">'+escapar(d.ideia||'')+'</textarea></label>'+
+    '<p class="fp-dica">Só o gancho já basta: o resto dá pra improvisar na hora de gravar.</p>';
+  h+='<button type="button" class="fp-det-bt" id="fpDetBt" onclick="abrirDetRoteiro()"'+(temDet?' style="display:none"':'')+'>+ Cenas, CTA e legenda (opcional)</button>';
+  h+='<div id="fpDet"'+(temDet?'':' style="display:none"')+'>'+
+     '<label>Cenas</label><div id="fpCenas"></div><button type="button" class="fp-add" onclick="addCena()">+ Adicionar cena</button>'+
+     '<label>CTA (chamada pra comprar)<input id="fpCta" value="'+escapar(d.cta||'')+'" oninput="_fp.d.cta=this.value" placeholder="Ex: Corre no carrinho laranja que o estoque tá acabando"></label>'+
+     '<label>Legenda do post<textarea id="fpLegenda" rows="3" oninput="_fp.d.legenda=this.value" placeholder="Texto que vai junto do vídeo, com as hashtags">'+escapar(d.legenda||'')+'</textarea></label>'+
+     '<button type="button" class="btn ghost mini fp-copiar" onclick="copiarLegenda()">Copiar legenda</button>'+
+  '</div></div>';
+  setTimeout(renderCenas,0);
+  return h;
+}
+function abrirDetRoteiro(){ var a=document.getElementById('fpDet'), b=document.getElementById('fpDetBt'); if(a) a.style.display=''; if(b) b.style.display='none'; renderCenas(); }
+function renderCenas(){
+  var el=document.getElementById('fpCenas'); if(!el || !_fp) return;
+  el.innerHTML=_fp.cenas.map(function(c,i){
+    return '<div class="fp-cena"><b>Cena '+(i+1)+'</b><textarea rows="2" data-i="'+i+'" oninput="_fp.cenas['+i+']=this.value" placeholder="O que aparece / o que falar">'+escapar(c)+'</textarea>'+
+      (_fp.cenas.length>1?'<button type="button" aria-label="Tirar cena" onclick="tirarCena('+i+')">✕</button>':'')+'</div>';
+  }).join('');
+}
+function addCena(){ if(!_fp) return; _fp.cenas.push(''); renderCenas(); var t=document.querySelectorAll('#fpCenas textarea'); if(t.length) t[t.length-1].focus(); }
+function tirarCena(i){ if(!_fp) return; _fp.cenas.splice(i,1); if(!_fp.cenas.length) _fp.cenas=['']; renderCenas(); }
+function copiarLegenda(){
+  var el=document.getElementById('fpLegenda'), t=(el&&el.value||'').trim();
+  if(!t){ aviso('⚠ A legenda está vazia.'); return; }
+  function velho(){ try{ el.select(); document.execCommand('copy'); aviso('✓ Legenda copiada'); }catch(e){ aviso('⚠ Não deu pra copiar. Segure o dedo no texto e copie.'); } }
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ aviso('✓ Legenda copiada'); }, velho); else velho();
+}
+function limparRoteiro(d){   // só grava os campos novos quando têm conteúdo (registro de quem não usa fica igual ao de antes)
+  if(d.tipo==='live'){ delete d.cenas; delete d.cta; delete d.legenda; delete d.video; delete d.videoLink; return; }
+  var cenas=(_fp && _fp.cenas || d.cenas || []).map(function(c){ return String(c||'').trim(); }).filter(Boolean);
+  if(cenas.length) d.cenas=cenas; else delete d.cenas;
+  ['cta','legenda'].forEach(function(k){ var v=String(d[k]||'').trim(); if(v) d[k]=v; else delete d[k]; });
 }
 function renderProdsPlano(){
   var el=document.getElementById('fpProds'); if(!el) return;
@@ -4613,19 +4803,25 @@ function sugerirPlano(txt){
 function jaTem(fn){ return (_fp.d.produtos||[]).some(fn); }
 function addProdChave(ch){
   var p=S.idxProd.lista[ch]; if(!p) return;
-  if(!jaTem(function(x){ return chaveDoProd(x)===ch; })) _fp.d.produtos.push({nome:p.nome, loja:p.loja, idProduto:p.id||''});
+  if(!jaTem(function(x){ return chaveDoProd(x)===ch; })){ trocaSeVideo(); _fp.d.produtos.push({nome:p.nome, loja:p.loja, idProduto:p.id||''}); }
   limparBuscaPlano();
 }
 function addProdAmostra(aid){
   var a=S.amostras[aid]; if(!a) return;
-  if(!jaTem(function(x){ return x.amostraId===aid; })) _fp.d.produtos.push({nome:a.dados.nome, loja:a.dados.loja||'', idProduto:a.dados.idProduto||'', amostraId:aid});
+  if(!jaTem(function(x){ return x.amostraId===aid; })) trocaSeVideo(), _fp.d.produtos.push({nome:a.dados.nome, loja:a.dados.loja||'', idProduto:a.dados.idProduto||'', amostraId:aid});
   limparBuscaPlano();
 }
 function addProdLivre(){
   var v=(document.getElementById('fpBusca').value||'').trim(); if(v.length<2) return;
-  _fp.d.produtos.push({nome:v, loja:'', idProduto:''}); limparBuscaPlano();
+  trocaSeVideo(); _fp.d.produtos.push({nome:v, loja:'', idProduto:''}); limparBuscaPlano();
 }
-function limparBuscaPlano(){ document.getElementById('fpBusca').value=''; document.getElementById('fpSug').innerHTML=''; renderProdsPlano(); }
+function setTipoPlano(t){   // redesenha o formulário: vídeo = roteiro com gancho; live = ideia
+  if(!_fp || _fp.d.tipo===t) return;
+  if(_fp.cenas) _fp.d.cenas=_fp.cenas.slice();
+  _fp.d.tipo=t; var el=document.getElementById('formConteudo'); if(el) el.innerHTML=htmlFormPlano();
+}
+function trocaSeVideo(){ if(_fp && _fp.d.tipo!=='live' && (_fp.d.produtos||[]).length) _fp.d.produtos=[]; }
+function limparBuscaPlano(){ var bb=document.getElementById('fpBusca'); if(bb && _fp && _fp.d.tipo!=='live' && (_fp.d.produtos||[]).length) bb.placeholder='Trocar produto: buscar outro ou digitar um novo'; document.getElementById('fpBusca').value=''; document.getElementById('fpSug').innerHTML=''; renderProdsPlano(); }
 async function salvarFormPlano(){
   var d=_fp.d;
   var pend=(document.getElementById('fpBusca').value||'').trim(); if(pend.length>=2 && !(d.produtos||[]).length) addProdLivre();
@@ -4634,6 +4830,7 @@ async function salvarFormPlano(){
   if(semData) d.data=''; else if(!d.data){ aviso('⚠ Escolha o dia.'); return; }
   if((d.status==='gravado'||d.status==='postado') && (!d.data || d.data>hojeISO())) d.data=hojeISO();
   if(!d.criadoEm) d.criadoEm=new Date().toISOString();
+  limparRoteiro(d);
   var id=_fp.id||novoId(), eraPostado=_fp.id && S.plano[_fp.id] && S.plano[_fp.id].dados.status==='postado';
   var _fpAntes=_fp.id && S.plano[_fp.id] ? S.plano[_fp.id].dados.status : null;
   fecharForm(); _fp=null;
@@ -4653,7 +4850,7 @@ function semDataPlano(on){
   if(on){ _fp._dataAntes=_fp.d.data; } else { _fp.d.data=_fp._dataAntes||el.value||hojeISO(); el.value=_fp.d.data; }
 }
 function duplicarPlano(){
-  var d=JSON.parse(JSON.stringify(_fp.d)); delete d.criadoEm; d.status='planejado'; d.data= d.data ? isoMais(d.data,1) : hojeISO();
+  var d=JSON.parse(JSON.stringify(_fp.d)); delete d.criadoEm; delete d.video; delete d.videoLink; d.status='planejado'; d.data= d.data ? isoMais(d.data,1) : hojeISO();
   fecharForm(); abrirFormPlano(null,d);
 }
 </script>
