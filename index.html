@@ -783,6 +783,11 @@ div.apl-t{cursor:default}
 .vinc-msg{display:none;margin:8px 0;padding:9px 11px;border-radius:9px;font-size:13px;line-height:1.45}
 .vinc-msg.on{display:block}.vinc-msg.erro{background:#fef2f2;color:#b91c1c}.vinc-msg.alerta{background:#fffbeb;color:#92400e}
 .vinc-atual{background:#f0fdf4;border-radius:9px;padding:9px 11px;font-size:13px;margin-bottom:10px;word-break:break-word}
+.vinc-lista{border:1px solid var(--linha);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.vinc-lista>b{display:block;font-size:13px;margin-bottom:6px}
+.vinc-it{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--linha);font-size:13px;line-height:1.45}
+.vinc-it:first-of-type{border-top:none}.vinc-it>span{flex:1;min-width:0}.vinc-it small{color:var(--tinta3);font-size:11.5px}
+.vinc-nada{font-size:12.5px;color:var(--tinta3);background:var(--bg2);border-radius:9px;padding:9px 11px;margin-bottom:12px;line-height:1.45}
 .vinc-dica{font-size:12px;color:var(--tinta3);line-height:1.5;margin-top:6px}
 .vg-mais{width:36px;height:36px;border-radius:9px;border:1.5px solid var(--linha2);background:var(--panel);color:var(--tinta2);font-size:18px;font-weight:800;cursor:pointer;flex-shrink:0;line-height:1}
 .op-lista{display:flex;flex-direction:column;gap:8px}
@@ -4219,6 +4224,32 @@ function lerLinkVideo(txt){
   if(/tiktok\.com/i.test(t)) return {erro:'Esse link não é de um vídeo (pode ser de um perfil ou de um produto). O link do vídeo tem /video/ seguido de um número comprido.'};
   return {erro:'Não achei o número do vídeo nisso que foi colado. O link do vídeo tem /video/ seguido de um número comprido.'};
 }
+/* A3.2c-2 — resumo de cada VÍDEO da planilha: 1ª venda (de qualquer produto), totais e produtos que vendeu */
+var _resVid={ref:null,n:-1,l:[]};
+function resumoVideos(){
+  var t=S.todas||[];
+  if(_resVid.ref!==t || _resVid.n!==t.length){
+    var m=indiceVideos(), l=[];
+    Object.keys(m).forEach(function(vid){
+      var ls=m[vid].filter(function(x){ return x.tipo==='Vídeo'; }); if(!ls.length) return;
+      var r={id:vid, primeira:null, gmv:0, itens:0, chaves:{}, ids:{}};
+      ls.forEach(function(x){ r.gmv+=x.gmv; r.itens+=x.itens; r.chaves[x.chave]=1; if(x.idProd) r.ids[x.idProd]=1; if(x.data && (!r.primeira || x.data<r.primeira)) r.primeira=x.data; });
+      l.push(r);
+    });
+    _resVid={ref:t,n:t.length,l:l};
+  }
+  return _resVid.l;
+}
+/* vídeos que podem ser o desta vaga: venderam o produto dela, 1ª venda no dia do Postei ou depois, ainda não vinculados */
+function candidatosVideo(id){
+  var x=S.plano[id]; if(!x) return [];
+  var d=x.dados, p=(d.produtos||[])[0]; if(!p || d.tipo==='live' || !d.data) return [];
+  var ch=chaveDoProd(p), desde=deIso(d.data), usados={};
+  Object.values(S.plano).forEach(function(z){ if(z.dados.video) usados[z.dados.video]=1; });
+  return resumoVideos().filter(function(v){
+    return ((ch && v.chaves[ch]) || (p.idProduto && v.ids[p.idProduto])) && v.primeira && v.primeira>=desde && !usados[v.id];
+  }).sort(function(a,b){ return (a.primeira-b.primeira) || (b.gmv-a.gmv); });
+}
 function htmlVidVaga(x){
   var d=x.dados, cl='vg-vid st-'+d.status, bt=function(t,cls){ return '<button type="button" class="vv-bt'+(cls?' '+cls:'')+'" onclick="abrirVincular(\''+x.id+'\')">'+t+'</button>'; };
   if(d.tipo==='live') return '';
@@ -4236,8 +4267,9 @@ function htmlVidVaga(x){
     }
     return '<div class="'+cl+'">'+h+'</div>';
   }
-  if(d.videoLink) return '<div class="'+cl+'">🔗 Link curto guardado · escolha o vídeo quando importar a próxima planilha. '+bt('ver')+'</div>';
-  if(d.status==='postado') return '<div class="'+cl+'">'+bt('🔗 Vincular vídeo','grande')+'</div>';
+  var nc=(d.videoLink||d.status==='postado') ? candidatosVideo(x.id).length : 0, qt=nc+' '+plural(nc,'vídeo da planilha pode ser este','vídeos da planilha podem ser este');
+  if(d.videoLink) return '<div class="'+cl+'">'+(nc? '🔗 Link curto guardado · <b>'+qt+'</b> '+bt('escolher') : '🔗 Link curto guardado · escolha o vídeo quando importar a próxima planilha. '+bt('ver'))+'</div>';
+  if(d.status==='postado') return '<div class="'+cl+'">'+bt('🔗 Vincular vídeo','grande')+(nc?' <span class="vv-n">· '+qt+'</span>':'')+'</div>';
   return '';
 }
 var _vinc=null;
@@ -4251,7 +4283,20 @@ function abrirVincular(id){
   } else if(d.videoLink){
     h+='<div class="vinc-atual">Link curto guardado: <b>'+escapar(d.videoLink)+'</b><br>Quando importar a próxima planilha, escolha o vídeo aqui. Se tiver o link completo, cole abaixo.</div>';
   }
-  h+='<label for="vidLink">'+(d.video||d.videoLink?'Trocar: cole outro link (ou o número)':'Link do vídeo (ou o número dele)')+'</label>'+
+  if(d.tipo!=='live' && (d.produtos||[]).length && d.data){
+    var cs=candidatosVideo(id), MX=5;
+    if(cs.length){
+      h+='<div class="vinc-lista"><b>'+(cs.length===1?'Este vídeo da planilha vendeu':'Estes vídeos da planilha venderam')+' este produto a partir de '+dmIso(d.data)+'. É algum deles?</b>'+
+         cs.slice(0,MX).map(function(v){
+           return '<div class="vinc-it"><span>1ª venda '+dm(v.primeira)+' · <span class="vv-n"><b>'+reais(v.gmv)+'</b> em vendas</span> · <span class="vv-n">'+inteiro(v.itens)+' '+plural(v.itens,'item','itens')+'</span><br><small>vídeo '+v.id+' · <a href="https://www.tiktok.com/@/video/'+v.id+'" target="_blank" rel="noopener">abrir vídeo</a></small></span>'+
+                  '<button type="button" class="btn mini" data-vid="'+v.id+'" onclick="escolherVideo(\''+v.id+'\')">É este</button></div>';
+         }).join('')+
+         (cs.length>MX?'<div class="vinc-dica">E mais '+(cs.length-MX)+'. Se o seu não estiver aqui, cole o link abaixo.</div>':'')+'</div>';
+    } else if(!d.video){
+      h+='<div class="vinc-nada">Ainda não tem na planilha vídeo desse produto vendendo a partir de '+dmIso(d.data)+(S.dataMax?' (a planilha vai até '+dm(S.dataMax)+')':'')+'. Quando importar uma planilha mais nova, os vídeos aparecem aqui pra você escolher com um toque.</div>';
+    }
+  }
+  h+='<label for="vidLink">'+(d.video||d.videoLink?'Trocar: cole outro link (ou o número)':'Ou cole o link do vídeo (ou o número dele)')+'</label>'+
      '<input id="vidLink" inputmode="url" autocomplete="off" placeholder="tiktok.com/@…/video/7611…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();confirmarVincular()}" oninput="_vinc.forcar=null;document.getElementById(\'vidBt\').textContent=\'Vincular\';msgVincular()">'+
      '<div class="vinc-dica"><b>No computador:</b> abra o vídeo no TikTok e copie o endereço lá de cima (tem /video/ e um número comprido).<br><b>No celular:</b> o "Copiar link" do app dá um link curto (vt.tiktok.com). Pode colar: ele fica guardado e você escolhe o vídeo depois, pela planilha.</div>'+
      '<div id="vidMsg" class="vinc-msg" role="alert"></div>'+
@@ -4290,6 +4335,13 @@ async function confirmarVincular(){
   if(!(await salvarPlano(id, novo))) return;
   var v=vendasDoVideo(vid), eh=v && videoEhDoProduto(v,(novo.produtos||[])[0]);
   aviso(!v ? '✓ Vídeo vinculado · ainda sem venda na planilha' : (eh===false ? '⚠ Vinculado, mas esse vídeo vendeu outro produto. Confere o link.' : '✓ Vídeo vinculado · '+reais(v.gmv)+' em vendas'));
+}
+async function escolherVideo(vid){
+  if(!_vinc) return; var x=S.plano[_vinc.id]; if(!x) return;
+  var novo=Object.assign({}, x.dados), id=_vinc.id; novo.video=vid; delete novo.videoLink;
+  fecharForm(); _vinc=null;
+  if(!(await salvarPlano(id, novo))) return;
+  var v=vendasDoVideo(vid); aviso('✓ Vídeo vinculado'+(v?' · '+reais(v.gmv)+' em vendas':''));
 }
 async function tirarVinculo(){
   if(!_vinc) return; var x=S.plano[_vinc.id]; if(!x) return;
