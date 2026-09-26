@@ -4785,7 +4785,7 @@ function htmlFormPlano(){
   h+='<label>Tipo</label><div class="f-seg" id="fpTipo">'+[['video','▶ Vídeo'],['live','● Live']].map(function(t){ return '<button type="button" data-t="'+t[0]+'" class="'+(d.tipo===t[0]?'on':'')+'" onclick="setTipoPlano(\''+t[0]+'\')">'+t[1]+'</button>'; }).join('')+'</div>';
   var umSo=d.tipo!=='live', temP=(d.produtos||[]).length>0;
   h+='<label>'+(umSo?'Produto':'Produtos')+'</label><div id="fpProds" class="fp-prods"></div>'+
-     '<input id="fpBusca" placeholder="'+(umSo&&temP?'Trocar produto: buscar outro ou digitar um novo':'Buscar produto que já vendeu ou digitar um novo')+'" autocomplete="off" oninput="sugerirPlano(this.value)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addProdLivre()}">'+
+     '<input id="fpBusca" placeholder="'+(umSo&&temP?'Trocar produto: buscar outro ou digitar um novo':'Buscar produto que já vendeu ou digitar um novo')+'" autocomplete="off" oninput="sugerirPlano(this.value)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addProdDigitado()}">'+
      '<div id="fpSug" class="f-sug"></div>';
   if(abertas.length) h+='<div class="fp-amo"><span>Amostras pra gravar:</span>'+abertas.map(function(a){ return '<button type="button" onclick="addProdAmostra(\''+a.id+'\')">'+escapar(nomeCurto(a.dados.nome))+'</button>'; }).join('')+'</div>';
   if(d.tipo==='live') h+='<label>Ideia da live<textarea id="fpIdeia" rows="3" oninput="_fp.d.ideia=this.value" placeholder="Ex: sorteio no fim, mostrar os 3 relógios lado a lado">'+escapar(d.ideia||'')+'</textarea></label>';
@@ -4846,8 +4846,10 @@ function renderProdsPlano(){
     return '<div class="fp-p"><div><b>'+escapar(nomeCurto(p.nome))+'</b><span>'+(p.amostraId?'amostra · ':'')+(ch?'já vende na sua conta':'produto novo')+'</span></div><button type="button" onclick="_fp.d.produtos.splice('+i+',1);renderProdsPlano()">✕</button></div>';
   }).join('') : '<div class="fp-nenhum">Nenhum produto ainda'+(_fp.d.tipo==='live'?' — numa live dá pra colocar vários':'')+'.</div>';
 }
+/* busca do Planejar ignora pontuação digitada ("GPS." acha "GPS, 1.43…") */
+function produtosParecidos(txt, lim){ return buscarProdutos(String(txt||'').replace(/[.,;:!?()"'“”]+/g,' '), lim||5); }
 function sugerirPlano(txt){
-  var box=document.getElementById('fpSug'), r=buscarProdutos(txt,5);
+  var box=document.getElementById('fpSug'), r=produtosParecidos(txt,5);
   var h=r.map(function(p){ return '<button type="button" onclick="addProdChave(\''+p.chave+'\')"><b>'+escapar(nomeCurto(p.nome))+'</b><span>'+escapar(p.loja)+' · '+reais(p.com)+' de comissão</span></button>'; }).join('');
   if(txt.trim().length>=2) h+='<button type="button" onclick="addProdLivre()"><b>+ Usar "'+escapar(txt.trim())+'"</b><span>produto que ainda não vendeu</span></button>';
   box.innerHTML=h;
@@ -4863,6 +4865,15 @@ function addProdAmostra(aid){
   if(!jaTem(function(x){ return x.amostraId===aid; })) trocaSeVideo(), _fp.d.produtos.push({nome:a.dados.nome, loja:a.dados.loja||'', idProduto:a.dados.idProduto||'', amostraId:aid});
   limparBuscaPlano();
 }
+function avisoJaExiste(v){
+  sugerirPlano(v);
+  aviso('⚠ Esse produto já existe na planilha. Toque nele na lista pra ligar às vendas (ou em "+ Usar", se for outro).');
+}
+function addProdDigitado(){   // Enter: produto que já existe → pede pra tocar na lista; senão cria como produto novo
+  var v=(document.getElementById('fpBusca').value||'').trim(); if(v.length<2) return;
+  if(produtosParecidos(v,1).length){ avisoJaExiste(v); return; }
+  addProdLivre();
+}
 function addProdLivre(){
   var v=(document.getElementById('fpBusca').value||'').trim(); if(v.length<2) return;
   trocaSeVideo(); _fp.d.produtos.push({nome:v, loja:'', idProduto:''}); limparBuscaPlano();
@@ -4876,7 +4887,8 @@ function trocaSeVideo(){ if(_fp && _fp.d.tipo!=='live' && (_fp.d.produtos||[]).l
 function limparBuscaPlano(){ var bb=document.getElementById('fpBusca'); if(bb && _fp && _fp.d.tipo!=='live' && (_fp.d.produtos||[]).length) bb.placeholder='Trocar produto: buscar outro ou digitar um novo'; document.getElementById('fpBusca').value=''; document.getElementById('fpSug').innerHTML=''; renderProdsPlano(); }
 async function salvarFormPlano(){
   var d=_fp.d;
-  var pend=(document.getElementById('fpBusca').value||'').trim(); if(pend.length>=2 && !(d.produtos||[]).length) addProdLivre();
+  var pend=(document.getElementById('fpBusca').value||'').trim();
+  if(pend.length>=2 && !(d.produtos||[]).length){ if(produtosParecidos(pend,1).length){ avisoJaExiste(pend); return; } addProdLivre(); }
   if(!(d.produtos||[]).length && !(d.ideia||'').trim()){ aviso('⚠ Coloque pelo menos um produto ou a ideia do conteúdo.'); return; }
   var semData=!!(document.getElementById('fpSemData')||{}).checked && d.tipo!=='live' && d.status==='planejado';
   if(semData) d.data=''; else if(!d.data){ aviso('⚠ Escolha o dia.'); return; }
