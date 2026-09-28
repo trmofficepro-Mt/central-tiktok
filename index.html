@@ -2031,7 +2031,7 @@ var FN_CAMPOS=[
   {k:'com',  rot:'Comissões estimadas',       ex:'aba Comissões', obr:false},
   {k:'views',rot:'Visualizações',             ex:'Desempenho do conteúdo › Vídeo', obr:false}
 ];
-var _fn={tipo:'dia', edit:null, conf:null};
+var _fn={tipo:(function(){ var t=lsLer('ct_funil_rasc',{}); return t&&t._ult==='per'&&t.per?'per':'dia'; })(), edit:null, conf:null};
 /* "19.8K" → 19800 · "R$ 6,9K" → 6900 · "594,4" → 594.4 · "" → null · lixo → NaN */
 function numApp(t){
   var s=String(t==null?'':t).trim().toLowerCase().replace(/r\$/g,'').replace(/\s+/g,'');
@@ -2069,6 +2069,17 @@ function fnRegistros(tipo){
   return out;
 }
 function fnOntem(){ return isoMais(hojeISO(),-1); }
+/* rascunho: o que está digitado sobrevive ao redesenho (voltar de outro app sincroniza e redesenha) e ao recarregar a página (conv. 13) */
+function fnRascTodos(){ var r=lsLer('ct_funil_rasc',{}); return (r && typeof r==='object') ? r : {}; }
+function fnGuardarRasc(){
+  if(!document.getElementById('fnForm')) return;
+  var r={edit:_fn.edit||null, txt:{}}, algum=false;
+  if(_fn.tipo==='dia') r.de=(document.getElementById('fnDia')||{}).value||'';
+  else { r.de=(document.getElementById('fnDe')||{}).value||''; r.ate=(document.getElementById('fnAte')||{}).value||''; if(r.de||r.ate) algum=true; }
+  FN_CAMPOS.forEach(function(c){ var v=(document.getElementById('fn_'+c.k)||{}).value||''; r.txt[c.k]=v; if(v.trim()) algum=true; });
+  var t=fnRascTodos(); if(algum){ t[_fn.tipo]=r; t._ult=_fn.tipo; } else { delete t[_fn.tipo]; if(t._ult===_fn.tipo) delete t._ult; } lsGravar('ct_funil_rasc', t);
+}
+function fnApagarRasc(tipo){ var t=fnRascTodos(); delete t[tipo]; if(t._ult===tipo) delete t._ult; lsGravar('ct_funil_rasc', t); }
 function setFnTipo(t){ _fn.tipo=t; _fn.edit=null; _fn.conf=null; renderFunil(); }
 function fnLerForm(){
   var d={tipo:_fn.tipo, txt:{}, aprox:{}}, erros=[];
@@ -2095,6 +2106,7 @@ function fnLerForm(){
 }
 function fnPrevia(){
   var r=fnLerForm(), el=document.getElementById('fnPrev'); if(!el) return;
+  fnGuardarRasc();
   var d=r.d;
   var ruim=(d.imp!=null&&d.cli!=null&&d.cli>d.imp)||(d.cli!=null&&d.itens!=null&&d.itens>d.cli);
   el.innerHTML = ruim ? 'Tem número que não fecha — confira antes de salvar.'
@@ -2123,7 +2135,7 @@ async function salvarFunil(substituir){
     fnErro('Sem conexão com a nuvem: não salvei. Os números continuam aqui — tente de novo quando tiver internet.');
     return false;
   }
-  _fn.edit=null; _fn.conf=null;
+  _fn.edit=null; _fn.conf=null; fnApagarRasc(d.tipo);
   var quando = d.tipo==='dia' ? 'Dia '+dm(deIso(d.de)) : 'Foto de '+dm(deIso(d.de))+' a '+dm(deIso(d.ate));
   renderFunil();
   aviso('✓ '+quando+' salvo · '+fnTxtTaxas(d).replace(/<\/?b>/g,''));
@@ -2131,7 +2143,7 @@ async function salvarFunil(substituir){
 }
 function editarFunil(id){
   var d=S.metas[id]; if(!d) return;
-  _fn.tipo=d.tipo==='per'?'per':'dia'; _fn.edit=id; _fn.conf=null; renderFunil(d);
+  _fn.tipo=d.tipo==='per'?'per':'dia'; _fn.edit=id; _fn.conf=null; fnApagarRasc(_fn.tipo); renderFunil(d);
   var f=document.getElementById('fnForm'); if(f && f.scrollIntoView) f.scrollIntoView({block:'start'});
 }
 async function excluirFunil(id){
@@ -2147,7 +2159,7 @@ async function excluirFunil(id){
     renderFunil();
   });
 }
-function cancelarEdicaoFunil(){ _fn.edit=null; _fn.conf=null; renderFunil(); }
+function cancelarEdicaoFunil(){ fnApagarRasc(_fn.tipo); _fn.edit=null; _fn.conf=null; renderFunil(); }
 function renderFunilAtalho(){
   var el=document.getElementById('funilAtalho'); if(!el) return;
   var o=fnOntem(), d=S.metas && S.metas['funil_dia_'+o];
@@ -2159,6 +2171,7 @@ function renderFunil(pre){
   renderFunilAtalho();
   var el=document.getElementById('funilConteudo'); if(!el) return;
   var dia=_fn.tipo==='dia', v=pre||{}, h='';
+  if(!pre){ var ra=fnRascTodos()[_fn.tipo]; if(ra && (ra.edit||null)===(_fn.edit||null)){ v={de:ra.de||'', ate:ra.ate||'', txt:ra.txt||{}}; if(_fn.edit && S.metas[_fn.edit]) v.tipo=_fn.tipo; } }
   h+='<div class="janelas" id="fnTipo"><button class="'+(dia?'on':'')+'" onclick="setFnTipo(\'dia\')">Registro do dia</button><button class="'+(!dia?'on':'')+'" onclick="setFnTipo(\'per\')">Foto de período</button></div>';
   h+='<div class="nv-card frm fn-form" id="fnForm">';
   h+= dia ? '<p style="margin-top:0">No app: <b>Dados › Ontem › Visão geral</b>. Digite os números como aparecem lá (19.8K, 1.0K…).'+(_fn.edit?' <b>Editando '+dm(deIso(v.de))+'.</b>':'')+'</p>'
