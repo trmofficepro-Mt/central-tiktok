@@ -213,6 +213,29 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .card .rot{font-size:12px;color:var(--tinta2);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
 .card .val{font-size:27px;font-weight:800;margin:6px 0 2px;letter-spacing:-.5px}
 .card .sub{font-size:12px;color:var(--tinta3)}
+/* ===== lives (B1a) ===== */
+.lojas-atalho{display:none}
+@media(max-width:899px){   /* celular: 8 botões não cabem em 320 px → Lojas fica dentro de Produtos (decisão do Thiago, 27/09) */
+  .lateral .abas button[data-mod="lojas"]{display:none}
+  .lojas-atalho{display:inline-flex;margin:0 0 10px}
+}
+.lv-cards{margin:0 0 12px}
+@media(max-width:480px){.lv-cards{gap:10px}.lv-cards .card{padding:14px}.lv-cards .card .val{font-size:clamp(17px,5.4vw,22px);white-space:nowrap}}
+.lv-nota{margin:4px 0 10px}
+.lv-item{cursor:pointer} .lv-item:hover{background:var(--bg2)}
+.lv-melhor{display:inline-block;font-size:10.5px;font-weight:800;color:var(--uva);background:var(--bg2);border-radius:20px;padding:2px 8px;margin-left:4px;vertical-align:1px}
+.lv-dep{color:#c2410c;font-weight:700}
+.lv-h4{margin:0 0 10px;font-size:14px}
+.lv-graf{display:flex;align-items:flex-end;gap:2px;height:150px;padding-bottom:18px}
+.lv-col{flex:1 1 0;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;position:relative}
+.lv-bar{background:linear-gradient(180deg,#f472b6,#ec4899);border-radius:3px 3px 0 0}
+.lv-bar.ouro{background:linear-gradient(180deg,#fbbf24,#f59e0b)}
+.lv-col span{position:absolute;bottom:-17px;left:0;font-size:9.5px;color:var(--tinta3);white-space:nowrap}
+.lv-leg{font-size:11px;color:var(--tinta3);margin-top:6px} .lv-leg i{display:inline-block;width:10px;height:10px;border-radius:2px;background:#f59e0b;vertical-align:-1px}
+.lv-ouro{background:#fff8e6;border:1px solid #f5d38b;border-left:4px solid #f59e0b;border-radius:11px;padding:12px 14px;font-size:13px;line-height:1.45;margin-bottom:12px}
+.lv-prods{display:flex;flex-direction:column;gap:6px}
+.lv-prod{display:flex;align-items:center;gap:10px;justify-content:space-between;text-align:left;border:1px solid var(--linha);background:var(--panel2);border-radius:10px;padding:9px 12px;cursor:pointer;font-family:inherit;color:var(--tinta)}
+.lv-prod span{min-width:0} .lv-prod b{display:block;font-size:12.5px} .lv-prod small{font-size:11.5px;color:var(--tinta3)} .lv-prod em{font-style:normal;font-weight:800;font-size:13px;white-space:nowrap}
 .card.destaque{background:linear-gradient(135deg,#f3ecff,#fdf0f8);border-color:var(--linha2)}
 .card.destaque .val{background:linear-gradient(135deg,var(--rosa),var(--uva));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 
@@ -871,6 +894,10 @@ div.apl-t{cursor:default}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg>
         Painel
       </button>
+      <button data-mod="lives" onclick="irPara('lives')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.5"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5"/></svg>
+        Lives
+      </button>
       <button data-mod="campeoes" onclick="irPara('campeoes')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
         Campeões
@@ -973,6 +1000,15 @@ div.apl-t{cursor:default}
     </div>
     </div>
 
+    <!-- MÓDULO: LIVES (B1a) -->
+    <div class="modulo" id="mod-lives">
+      <div class="sec" style="margin-top:22px">
+        <h3>Lives</h3>
+        <p class="desc">Onde está o dinheiro: quanto cada live vendeu, a hora que mais vendeu e o que ainda vendeu depois de acabar. Toque numa live pra ver o detalhe.</p>
+        <div id="livesConteudo"></div>
+      </div>
+    </div>
+
     <!-- MÓDULO: PRODUTOS CAMPEÕES -->
     <div class="modulo" id="mod-campeoes">
       <div class="sec" style="margin-top:22px">
@@ -989,6 +1025,7 @@ div.apl-t{cursor:default}
     <div class="modulo" id="mod-produtos">
       <div class="sec" style="margin-top:22px">
         <h3>Produtos</h3>
+        <button class="btn ghost mini lojas-atalho" onclick="irPara('lojas')">Negociação de Lojas ›</button>
         <div class="janelas" id="prodVista">
           <button class="on" data-v="todos" onclick="setProdVista('todos')">Todos</button>
           <button data-v="gravar" onclick="setProdVista('gravar')">Para gravar</button>
@@ -1057,6 +1094,7 @@ div.apl-t{cursor:default}
     <!-- MÓDULO: NEGOCIAÇÃO DE LOJAS -->
     <div class="modulo" id="mod-lojas">
       <div class="sec" style="margin-top:22px">
+        <button class="btn ghost mini lojas-atalho" onclick="irPara('produtos')">‹ Voltar pra Produtos</button>
         <h3>Negociação de Lojas</h3>
         <p class="desc">Quanto você já gerou pra cada loja. Chegue na negociação com o número na mão — e veja quais lojas estão te pagando pouco no anúncio.</p>
         <div id="lojasAlertas"></div>
@@ -1654,6 +1692,108 @@ function renderLojas(){
   document.getElementById('lojasRanking').innerHTML=htmlR;
 }
 
+/* ---------- B1a LIVES (pela planilha) ----------
+   Live = "ID do conteúdo" das vendas com Tipo de conteúdo "Live". Comissão real; GMV total.
+   NO AR = do 1º pedido até um buraco de MAIS de 60 min sem pedido. DEPOIS DA LIVE = o que entrou depois (replay / carrinho fechado depois).
+   Janela de ouro = 30 min [t, t+30) que mais venderam (GMV) na live no ar, t = hora de um pedido; empate = a mais cedo.
+   Período: a live entra pelo dia do 1º pedido; os números dela são da vida inteira. Cartões = vendas de live dentro do período.
+   Melhor live = maior comissão (decisão do Thiago, 27/09). Cálculo-fonte: testes/fonte_lives.py */
+var LV_GAP=60, LV_JAN=30, _lvCache=null, _liveAberta=null;
+function lvMin(dh){ var m=String(dh||'').match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/); return m? new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]).getTime()/60000 : null; }
+function lvHora(min){ var d=new Date(min*60000); return String(d.getHours()).padStart(2,'0')+'h'+String(d.getMinutes()).padStart(2,'0'); }
+function calcLives(){
+  if(_lvCache && _lvCache.base===S.todas) return _lvCache.m;
+  var m={};
+  S.todas.forEach(function(x){
+    if(x.tipo!=='Live' || !x.idCont) return;
+    var t=lvMin(x.dataHora); if(t==null) return;
+    (m[x.idCont]||(m[x.idCont]={id:x.idCont, v:[]})).v.push({t:t, gmv:x.gmv, com:x.com, itens:x.itens, chave:x.chave, nome:x.produto});
+  });
+  Object.keys(m).forEach(function(id){
+    var L=m[id], v=L.v.sort(function(a,b){ return a.t-b.t; }), fim=0, i;
+    for(i=1;i<v.length;i++){ if(v[i].t-v[i-1].t>LV_GAP) break; fim=i; }
+    var s=v.slice(0,fim+1);
+    L.ini=s[0].t; L.fim=s[s.length-1].t; L.dia=soDia(new Date(L.ini*60000));
+    L.gmv=0; L.com=0; L.itens=0; L.noar=0; var pr={};
+    v.forEach(function(x,k){ L.gmv+=x.gmv; L.com+=x.com; L.itens+=x.itens; if(k<=fim) L.noar+=x.gmv;
+      var p=pr[x.chave]||(pr[x.chave]={chave:x.chave, gmv:0, itens:0}); p.gmv+=x.gmv; p.itens+=x.itens; });
+    L.depois=L.gmv-L.noar; if(Math.abs(L.depois)<0.005) L.depois=0;
+    L.prods=Object.keys(pr).map(function(k){ return pr[k]; }).sort(function(a,b){ return b.gmv-a.gmv; });
+    L.nprod=L.prods.length;
+    var best=-1, bt=null;
+    s.forEach(function(a){ var soma=0; s.forEach(function(b){ if(b.t>=a.t && b.t<a.t+LV_JAN) soma+=b.gmv; }); if(soma>best+1e-9){ best=soma; bt=a.t; } });
+    var pu={}; s.forEach(function(b){ if(b.t>=bt && b.t<bt+LV_JAN) pu[b.chave]=(pu[b.chave]||0)+b.gmv; });
+    var pk=Object.keys(pu).sort(function(a,b){ return pu[b]-pu[a]; })[0];
+    L.jIni=bt; L.jGmv=best; L.jPuxa=pk;
+    L.p30=0; s.forEach(function(b){ if(b.t<L.ini+LV_JAN) L.p30+=b.gmv; });
+    L.s=s;
+  });
+  _lvCache={base:S.todas, m:m}; return m;
+}
+function nomeProdLive(ch){ var p=S.idxProd && S.idxProd.lista[ch]; return p? p.nome : '—'; }
+function livesDoPeriodo(){
+  var m=calcLives(), per=S.periodo||{};
+  return Object.keys(m).map(function(k){ return m[k]; }).filter(function(L){ return !per.ini || (L.dia>=per.ini && L.dia<=per.fim); })
+    .sort(function(a,b){ return b.ini-a.ini; });
+}
+function lvPct(a,b){ return b>0? Math.round(a/b*100)+'%' : '0%'; }
+function renderLives(){
+  var box=document.getElementById('livesConteudo'); if(!box) return;
+  var ls=livesDoPeriodo(), gT=0, gL=0, cL=0;
+  S.vendas.forEach(function(x){ gT+=x.gmv; if(x.tipo==='Live'){ gL+=x.gmv; cL+=x.com; } });
+  var melhor=null; ls.forEach(function(L){ if(!melhor || L.com>melhor.com+1e-9 || (Math.abs(L.com-melhor.com)<=1e-9 && L.ini<melhor.ini)) melhor=L; });
+  var somaC=ls.reduce(function(s,L){ return s+L.com; },0), nDep=ls.filter(function(L){ return L.depois>0; }).length;
+  var h='<div class="cards lv-cards">'+
+    '<div class="card"><div class="rot">GMV em lives</div><div class="val">'+reais(gL)+'</div><div class="sub">'+lvPct(gL,gT)+' do seu GMV '+escapar(rotPeriodoAtual())+'</div></div>'+
+    '<div class="card"><div class="rot">Comissão em lives</div><div class="val">'+reais(cL)+'</div><div class="sub">vendas de live dentro do período (inclui vendas atrasadas de lives antigas)</div></div>'+
+    '<div class="card"><div class="rot">Lives no período</div><div class="val">'+ls.length+'</div><div class="sub">'+(ls.length? 'média de '+reais(somaC/ls.length)+' de comissão por live' : 'nenhuma live começou nesse período')+'</div></div>'+
+  '</div>';
+  if(!ls.length){ box.innerHTML=h+'<div class="apostas-vazio" style="padding:26px 16px">Nenhuma live começou nesse período. Escolha outro período lá em cima.</div>'; return; }
+  h+='<p class="desc lv-nota">A hora é a do <b>1º pedido</b> da live (a planilha não traz a hora em que ela começou). "Vendendo das… às…" vai até a última venda antes de passar 1 hora sem pedido. '+
+     (nDep? '<b>'+nDep+' de '+ls.length+'</b> '+plural(ls.length,'live','lives')+' ainda '+plural(nDep,'vendeu','venderam')+' depois de acabar.' : '')+'</p>';
+  h+='<div class="lojalista">';
+  ls.forEach(function(L){
+    var d=new Date(L.ini*60000), dias=['dom','seg','ter','qua','qui','sex','sáb'];
+    h+='<div class="lojaitem lv-item" role="button" tabindex="0" data-live="'+L.id+'" onclick="abrirLive(\''+L.id+'\')" onkeydown="if(event.key===\'Enter\')abrirLive(\''+L.id+'\')">'+
+      '<div class="info"><div class="nome">'+dias[d.getDay()]+', '+dm(d)+' · '+lvHora(L.ini)+(L===melhor?' <span class="lv-melhor">Sua melhor live do período</span>':'')+'</div>'+
+      '<div class="meta">vendendo das '+lvHora(L.ini)+' às '+lvHora(L.fim)+' · '+inteiro(L.itens)+' '+plural(L.itens,'item','itens')+' · '+L.nprod+' '+plural(L.nprod,'produto','produtos')+
+        (L.depois>0?' · <b class="lv-dep">+'+reais(L.depois)+' depois da live</b>':'')+'</div></div>'+
+      '<div class="num"><div class="c">'+reais(L.gmv)+'</div><div class="p">'+reais(L.com)+' comissão</div></div>'+
+    '</div>';
+  });
+  box.innerHTML=h+'</div>';
+}
+function abrirLive(id){
+  var L=calcLives()[id]; if(!L) return;
+  _liveAberta=id;
+  var d=new Date(L.ini*60000), fimD=new Date(L.fim*60000), outroDia=soDia(fimD).getTime()!==L.dia.getTime();
+  var voltar='<button class="voltar" onclick="fecharLive()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Voltar</button>';
+  var h='<div class="ficha-cab"><div class="barra">'+voltar+'</div><h2>Live de '+dm(d)+' · '+lvHora(L.ini)+'</h2>'+
+        '<div class="loja">vendendo das '+lvHora(L.ini)+' às '+lvHora(L.fim)+(outroDia?' (dia '+dm(fimD)+')':'')+' · hora do 1º pedido</div></div><div class="ficha-corpo">';
+  h+='<div class="cards lv-cards"><div class="card"><div class="rot">Em vendas</div><div class="val">'+reais(L.gmv)+'</div><div class="sub">'+reais(L.com)+' de comissão</div></div>'+
+     '<div class="card"><div class="rot">Itens vendidos</div><div class="val">'+inteiro(L.itens)+'</div><div class="sub">'+L.nprod+' '+plural(L.nprod,'produto diferente','produtos diferentes')+'</div></div></div>';
+  // como vendeu: barras de 10 min na live no ar
+  var b0=Math.floor(L.ini/10)*10, nb=Math.floor((L.fim-b0)/10)+1, bar=[], i, mx=0;
+  for(i=0;i<nb;i++) bar.push(0);
+  L.s.forEach(function(x){ bar[Math.floor((x.t-b0)/10)]+=x.gmv; });
+  mx=Math.max.apply(null,bar)||1;
+  var passo=nb>18?Math.ceil(nb/9):(nb>9?2:1);
+  h+='<div class="nv-card"><h4 class="lv-h4">Como a live vendeu</h4><div class="lv-graf" style="--n:'+nb+'">';
+  bar.forEach(function(g,k){ var t=b0+k*10, naJan=t+10>L.jIni && t<L.jIni+LV_JAN;
+    h+='<div class="lv-col" title="'+lvHora(t)+': '+reais(g)+'"><div class="lv-bar'+(naJan?' ouro':'')+'" style="height:'+(g>0?Math.max(3,g/mx*100):0)+'%"></div><span>'+(k%passo===0?lvHora(t):'')+'</span></div>'; });
+  h+='</div><div class="lv-leg"><i></i> janela de ouro · cada barra = 10 minutos</div></div>';
+  var puxa=nomeProdLive(L.jPuxa);
+  h+='<div class="lv-ouro">💡 <b>Janela de ouro: '+lvHora(L.jIni)+' às '+lvHora(L.jIni+LV_JAN)+'</b> — '+reais(L.jGmv)+', '+lvPct(L.jGmv,L.noar)+' do GMV da live no ar, puxada por <b>'+escapar(nomeCurto(puxa))+'</b>. Reveja esse trecho no replay (TikTok Studio › LIVE) e veja o que você falou.</div>';
+  h+='<div class="cards lv-cards"><div class="card"><div class="rot">Primeiros 30 minutos</div><div class="val">'+reais(L.p30)+'</div><div class="sub">'+lvPct(L.p30,L.noar)+' do GMV da live no ar ('+reais(L.noar)+')</div></div>'+
+     '<div class="card"><div class="rot">Vendeu depois da live</div><div class="val">'+reais(L.depois)+'</div><div class="sub">'+(L.depois>0? lvPct(L.depois,L.gmv)+' do total da live. Gente que deixou no carrinho e fechou depois: quanto maior, mais firme precisa ser o chamado pra comprar na hora.' : 'tudo foi vendido com a live no ar')+'</div></div></div>';
+  h+='<div class="nv-card"><h4 class="lv-h4">Produtos desta live</h4><div class="lv-prods">'+L.prods.map(function(p){
+      return '<button type="button" class="lv-prod" onclick="fecharLive();abrirFichaGeral(\''+p.chave+'\')"><span><b>'+escapar(nomeCurto(nomeProdLive(p.chave)))+'</b><small>'+inteiro(p.itens)+' '+plural(p.itens,'item vendido','itens vendidos')+'</small></span><em>'+reais(p.gmv)+'</em></button>'; }).join('')+
+     '</div></div></div>';
+  document.getElementById('formConteudo').innerHTML=h;
+  var f=document.getElementById('formFundo'); f.classList.add('on'); f.scrollTop=0; document.body.classList.add('travado');
+}
+function fecharLive(){ _liveAberta=null; fecharForm(); }
+
 function cardAlertaLoja(l){
   var desde=l.hist.desde? ' desde '+fmtD(l.hist.desde) : '';
   return '<div class="loja-alerta">'+
@@ -1718,6 +1858,7 @@ function render(){
   renderProdutos();
   renderApostas();
   renderLojas();
+  renderLives();
   renderAmostras();
   renderPlanejar();
   renderParaGravar();
@@ -1909,7 +2050,7 @@ function atualizarFichaAberta(){
 }
 window.addEventListener('popstate',function(){ fecharFicha(true); });
 var _tRes; window.addEventListener('resize',function(){ clearTimeout(_tRes); _tRes=setTimeout(function(){ if(_fichaAtual) desenharEvolucao(); },150); });
-document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(typeof _form!=='undefined' && _form) fecharForm(); else fecharFicha(); } });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(_liveAberta) fecharLive(); else if(typeof _form!=='undefined' && _form) fecharForm(); else fecharFicha(); } });
 
 /* ---------- conteúdo da ficha ---------- */
 function vendasDo(chave){ return S.vendas.filter(function(x){ return x.chave===chave; }); }
