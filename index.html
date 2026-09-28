@@ -223,14 +223,43 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .mc-linha{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 14px;font-size:12.5px;color:var(--tinta2)}
 .mc-linha b{color:var(--tinta)}
 .mc-ok{color:var(--verde);font-weight:800}
+.st-barra{display:flex;height:8px;border-radius:5px;overflow:hidden;background:var(--bg2);margin:10px 0 6px}
+.st-barra i,.st-leg i{display:block}
+.st-leg{display:flex;flex-direction:column;gap:2px;font-size:11.5px;color:var(--tinta2)}
+.st-leg span{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.st-leg i{width:8px;height:8px;border-radius:50%;flex:none}
+.st-barra .liq,.st-leg .liq{background:var(--verde)} .st-barra .pen,.st-leg .pen{background:var(--amarelo)} .st-barra .ine,.st-leg .ine{background:#b8b0cc}
+.st-item{color:var(--tinta)} .st-item-l{margin-top:8px;padding-top:6px;border-top:1px dashed var(--linha)}
 .pn-canal-box{margin-top:16px} .pn-canal{margin-bottom:6px} .pn-canal-nota{margin:0}
 /* ===== lives (B1a) ===== */
 .lojas-atalho{display:none}
 @media(max-width:899px){   /* celular: 8 botões não cabem em 320 px → Lojas fica dentro de Produtos (decisão do Thiago, 27/09) */
   .lateral .abas button[data-mod="lojas"]{display:none}
+  .lateral .abas button[data-mod="videos"]{display:none}   /* Vídeos: primeiro no computador (Thiago, 28/09); celular depois */
   .lojas-atalho{display:inline-flex;margin:0 0 10px}
 }
 .lv-cards{margin:0 0 12px}
+/* ===== vídeos (V1) ===== */
+.vd-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:6px} .vd-per{margin:0;flex:1 1 320px}
+.vd-h4{font-size:15px;margin:22px 0 10px} .vd-h4 small{font-weight:500;color:var(--tinta3);font-size:12px;margin-left:6px}
+.vd-cards{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-top:0} .vd-cards .card .val{font-size:22px}
+.vd-diag{background:var(--panel);border:1px solid var(--linha);border-left:4px solid var(--uva);border-radius:var(--raio);padding:14px 18px;margin-top:12px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.5}
+.vd-tab-w{background:var(--panel);border:1px solid var(--linha);border-radius:var(--raio);overflow-x:auto}
+.vd-tab{width:100%;border-collapse:collapse;font-size:13px}
+.vd-tab th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--tinta2);padding:10px 12px;border-bottom:1px solid var(--linha);white-space:nowrap}
+.vd-tab td{padding:10px 12px;border-bottom:1px solid var(--linha);vertical-align:top;white-space:nowrap}
+.vd-tab td small{display:block;color:var(--tinta3);font-size:11.5px}
+.vd-tab td.vd-nome{white-space:normal;min-width:200px;font-weight:700}
+.vd-tab tr:last-child td{border-bottom:none}
+.vd-lin{cursor:pointer} .vd-lin:hover{background:var(--bg2)} .vd-lin:focus{outline:none} .vd-lin:focus-visible{outline:2px solid var(--uva);outline-offset:-2px}
+.vd-rk{display:inline-flex;width:26px;height:26px;border-radius:8px;background:var(--bg2);color:var(--uva);font-weight:800;font-size:12px;align-items:center;justify-content:center}
+.vd-rk.top{background:linear-gradient(135deg,var(--rosa),var(--uva));color:#fff}
+.vd-id a{color:var(--uva);font-weight:700;text-decoration:none}
+.vd-selo{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:1px 6px;vertical-align:1px}
+.vd-selo.molde{background:#dcfce7;color:#15803d} .vd-selo.novo{background:#fef3c7;color:#b45309}
+.vd-mais{margin-top:10px}
+.vd-graf .lv-col span{white-space:nowrap}
+.ficha-cab .loja a{color:#f5d0fe;font-weight:700}
 .lv-item:focus{outline:none} .lv-item:focus-visible{outline:2px solid var(--uva);outline-offset:-2px}
 .lv-abas{margin:4px 0 12px}
 .lv-leitura div+div{margin-top:8px}
@@ -915,6 +944,10 @@ div.apl-t{cursor:default}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.5"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5"/></svg>
         Lives
       </button>
+      <button data-mod="videos" onclick="irPara('videos')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 10l5-3v10l-5-3z"/></svg>
+        Vídeos
+      </button>
       <button data-mod="campeoes" onclick="irPara('campeoes')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
         Campeões
@@ -1029,6 +1062,14 @@ div.apl-t{cursor:default}
         <h3>Lives</h3>
         <p class="desc">Onde está o dinheiro: quanto cada live vendeu, a hora que mais vendeu e o que ainda vendeu depois de acabar. Toque numa live pra ver o detalhe.</p>
         <div id="livesConteudo"></div>
+      </div>
+    </div>
+
+    <div class="modulo" id="mod-videos">
+      <div class="sec" style="margin-top:22px">
+        <h3>Vídeos</h3>
+        <p class="desc">O que mais vendeu nos últimos dias — produtos e vídeos — pra saber o que replicar e escalar. Toque num vídeo pra ver o detalhe.</p>
+        <div id="videosConteudo"></div>
       </div>
     </div>
 
@@ -1857,6 +1898,185 @@ function abrirLive(id){
   var f=document.getElementById('formFundo'); f.classList.add('on'); f.scrollTop=0; document.body.classList.add('travado');
 }
 function fecharLive(){ _liveAberta=null; fecharForm(); }
+/* ---------- V1 VÍDEOS (conversa 12) — o que vendeu nos últimos 7/15/30 dias, pra replicar e escalar ----------
+   Base = TODAS as vendas (não segue o período do topo). "hoje" = último dia da planilha. Janela N = hoje-(N-1)..hoje; anterior = N dias antes.
+   Vídeo = "ID do conteúdo" com Tipo Vídeo. Comissão real; GMV total. Produto principal = maior GMV na vida do vídeo.
+   Molde = entre os 5 primeiros (comissão na janela) e vendeu em >= 40% dos dias. Novo = 1ª venda dentro da janela.
+   Campeões (pra "vídeo novo foi pra campeão") = Pareto 80% da comissão dos últimos 30 dias. Cálculo-fonte: testes/fonte_videos.py */
+var _vdN=15, _vdTodosP=false, _vdTodosV=false, _vdCache=null, _videoAberto=null;
+function vdLink(id){ return 'https://www.tiktok.com/@/video/'+id; }
+function vdCurto(id){ return '…'+String(id).slice(-6); }
+function vdDelta(a,b){
+  if(!(b>0)) return a>0? '<span class="delta up">novo</span>' : '';
+  var d=(a-b)/b*100, c=Math.abs(d)<1?'eq':(d>0?'up':'down');
+  return '<span class="delta '+c+'">'+(c==='up'?'▲ ':c==='down'?'▼ ':'')+Math.abs(d).toFixed(0)+'%</span>';
+}
+function vdVida(){
+  if(_vdCache && _vdCache.base===S.todas) return _vdCache.v;
+  var v={};
+  S.todas.forEach(function(x){
+    if(x.tipo!=='Vídeo' || !x.idCont || !x.data) return;
+    var d=soDia(x.data), o=v[x.idCont]||(v[x.idCont]={id:x.idCont, pri:d, gmv:0, com:0, itens:0, pg:{}, pr:{}, dias:{}});
+    if(d<o.pri) o.pri=d;
+    o.gmv+=x.gmv; o.com+=x.com; o.itens+=x.itens;
+    o.pg[x.chave]=(o.pg[x.chave]||0)+x.gmv;
+    var p=o.pr[x.chave]||(o.pr[x.chave]={chave:x.chave, gmv:0, itens:0, desde:d}); p.gmv+=x.gmv; p.itens+=x.itens; if(d<p.desde) p.desde=d;
+    var k=d.getTime(); o.dias[k]=(o.dias[k]||0)+x.gmv;
+  });
+  Object.keys(v).forEach(function(id){ var o=v[id], ks=Object.keys(o.pg);
+    ks.sort(function(a,b){ return (o.pg[b]-o.pg[a]) || (a<b?-1:a>b?1:0); });
+    o.prod=ks[0]; o.nprod=ks.length; });
+  _vdCache={base:S.todas, v:v}; return v;
+}
+function vdCampeoes30(hoje){
+  var ini=maisDias(hoje,-29), m={};
+  S.todas.forEach(function(x){ if(!x.data) return; var d=soDia(x.data); if(d<ini||d>hoje) return; m[x.chave]=(m[x.chave]||0)+x.com; });
+  var l=Object.keys(m).sort(function(a,b){ return m[b]-m[a]; }), tot=l.reduce(function(s,k){ return s+m[k]; },0), ac=0, c={};
+  l.forEach(function(k){ if(tot>0 && ac/tot<0.8) c[k]=1; ac+=m[k]; });
+  return {set:c, n:Object.keys(c).length};
+}
+function vdAnalise(N){
+  var hoje=soDia(S.dataMax), ini=maisDias(hoje,-(N-1)), aIni=maisDias(ini,-N), aFim=maisDias(ini,-1);
+  var r={N:N, hoje:hoje, ini:ini, aIni:aIni, aFim:aFim, gmv:0, com:0, gmvA:0, comA:0, vid:0, vidA:0, live:0, liveA:0, lv:{}, lvA:{}}, P={}, V={}, lvAg={};
+  S.todas.forEach(function(x){
+    if(!x.data) return; var d=soDia(x.data), dent=d>=ini&&d<=hoje, ant=d>=aIni&&d<=aFim;
+    if(ant){ r.gmvA+=x.gmv; r.comA+=x.com; if(x.tipo==='Vídeo') r.vidA+=x.gmv; if(x.tipo==='Live'){ r.liveA+=x.gmv; if(x.idCont){ r.lvA[x.idCont]=1; lvAg[x.idCont]=(lvAg[x.idCont]||0)+x.gmv; } } 
+      var pa=P[x.chave]||(P[x.chave]={chave:x.chave, com:0, gmv:0, itens:0, dias:{}, gv:0, gl:0, nv:{}, comA:0}); pa.comA+=x.com; }
+    if(!dent) return;
+    r.gmv+=x.gmv; r.com+=x.com;
+    if(x.tipo==='Vídeo') r.vid+=x.gmv;
+    if(x.tipo==='Live'){ r.live+=x.gmv; if(x.idCont) r.lv[x.idCont]=1; }
+    var p=P[x.chave]||(P[x.chave]={chave:x.chave, com:0, gmv:0, itens:0, dias:{}, gv:0, gl:0, nv:{}, comA:0});
+    p.com+=x.com; p.gmv+=x.gmv; p.itens+=x.itens; p.dias[d.getTime()]=1;
+    if(x.tipo==='Vídeo'){ p.gv+=x.gmv; if(x.idCont) p.nv[x.idCont]=1; }
+    if(x.tipo==='Live') p.gl+=x.gmv;
+    if(x.tipo==='Vídeo' && x.idCont){ var o=V[x.idCont]||(V[x.idCont]={id:x.idCont, com:0, gmv:0, itens:0, dias:{}}); o.com+=x.com; o.gmv+=x.gmv; o.itens+=x.itens; o.dias[d.getTime()]=1; }
+  });
+  r.nLive=Object.keys(r.lv).length; r.nLiveA=Object.keys(r.lvA).length; r.outros=r.gmv-r.vid-r.live;
+  // maior live da janela anterior (GMV dentro da janela anterior; data = 1º pedido da live)
+  var lk=Object.keys(lvAg).sort(function(a,b){ return lvAg[b]-lvAg[a]; })[0];
+  if(lk){ var L=calcLives()[lk]; r.maiorLiveA={id:lk, gmv:lvAg[lk], dia:L?L.dia:null}; }
+  var nome=function(ch){ return nomeProdLive(ch); };
+  r.produtos=Object.keys(P).map(function(k){ var p=P[k]; p.nome=nome(k); p.ndias=Object.keys(p.dias).length; p.nvid=Object.keys(p.nv).length; return p; })
+    .filter(function(p){ return p.ndias>0; })
+    .sort(function(a,b){ return (b.com-a.com)||(b.gmv-a.gmv)||(a.nome<b.nome?-1:a.nome>b.nome?1:0); });
+  var tp=r.produtos.reduce(function(s,p){ return s+p.com; },0); r.produtos.forEach(function(p){ p.pct= tp>0? p.com/tp*100 : 0; });
+  var vida=vdVida(), minD=Math.ceil(N*0.4);
+  r.videos=Object.keys(V).map(function(k){ var o=V[k], w=vida[k]; o.ndias=Object.keys(o.dias).length; o.vida=w; o.novo= w.pri>=ini; return o; })
+    .sort(function(a,b){ return (b.com-a.com)||(b.gmv-a.gmv)||(a.id<b.id?-1:a.id>b.id?1:0); });
+  r.videos.forEach(function(o,i){ o.molde= i<5 && o.ndias>=minD; });
+  var tv=r.videos.reduce(function(s,o){ return s+o.com; },0);
+  r.top1= r.videos.length&&tv>0? r.videos[0].com/tv*100 : 0;
+  r.top3= r.videos.length&&tv>0? r.videos.slice(0,3).reduce(function(s,o){ return s+o.com; },0)/tv*100 : 0;
+  var nv=r.videos.filter(function(o){ return o.novo; });
+  r.nNovos=nv.length; r.gmvNovos=nv.reduce(function(s,o){ return s+o.gmv; },0); r.melhorNovo=nv[0]||null;
+  var C=vdCampeoes30(hoje); r.nCamp=C.n; r.novosCamp=nv.filter(function(o){ return C.set[o.vida.prod]; }).length;
+  return r;
+}
+function setVdN(n){ _vdN=n; _vdTodosP=false; _vdTodosV=false; renderVideos(); }
+function vdVerTodos(q){ if(q==='p') _vdTodosP=true; else _vdTodosV=true; renderVideos(); }
+function vdMudou(a,b,oque){   // "caiu 76% (R$ A → R$ B)"
+  if(!(b>0)) return a>0? oque+' começou a vender ('+reais(a)+')' : '';
+  var d=(a-b)/b*100; return oque+' '+(Math.abs(d)<1?'ficou igual':(d<0?'caiu ':'subiu ')+Math.abs(d).toFixed(0)+'%')+' ('+reais(b)+' → '+reais(a)+')';
+}
+function renderVideos(){
+  var box=document.getElementById('videosConteudo'); if(!box) return;
+  if(!S.todas || !S.todas.length || !S.dataMax){ box.innerHTML='<div class="apostas-vazio">Importe a planilha pra ver a análise dos vídeos.</div>'; return; }
+  var r=vdAnalise(_vdN), N=_vdN;
+  var h='<div class="vd-top"><div class="janelas" id="vdJanela" style="margin:0">'+[7,15,30].map(function(n){ return '<button type="button" data-n="'+n+'" class="'+(n===N?'on':'')+'" onclick="setVdN('+n+')">'+n+' dias</button>'; }).join('')+'</div>'+
+    '<p class="desc vd-per"><b>'+dm(r.ini)+' a '+dm(r.hoje)+'</b> (até o último dia da planilha) · comparado com <b>'+dm(r.aIni)+' a '+dm(r.aFim)+'</b>. Esta tela usa sempre os últimos dias da planilha, não o período lá de cima.</p></div>';
+  // ---- 1. diagnóstico
+  h+='<h4 class="vd-h4">1. Diagnóstico</h4><div class="cards vd-cards">'+
+    '<div class="card"><div class="rot">GMV</div><div class="val">'+reais(r.gmv)+'</div><div class="sub">antes: '+reais(r.gmvA)+'</div>'+vdDelta(r.gmv,r.gmvA)+'</div>'+
+    '<div class="card"><div class="rot">Comissão</div><div class="val">'+reais(r.com)+'</div><div class="sub">antes: '+reais(r.comA)+'</div>'+vdDelta(r.com,r.comA)+'</div>'+
+    '<div class="card"><div class="rot">GMV em vídeos</div><div class="val">'+reais(r.vid)+'</div><div class="sub">antes: '+reais(r.vidA)+'</div>'+vdDelta(r.vid,r.vidA)+'</div>'+
+    '<div class="card"><div class="rot">GMV em lives</div><div class="val">'+reais(r.live)+'</div><div class="sub">'+r.nLive+' '+plural(r.nLive,'live','lives')+' · antes: '+reais(r.liveA)+' em '+r.nLiveA+'</div>'+vdDelta(r.live,r.liveA)+'</div>'+
+  '</div>';
+  var L=[];
+  var dv=r.vid-r.vidA, dl=r.live-r.liveA, dt=r.gmv-r.gmvA;
+  if(r.gmvA>0){
+    var t='<b>'+vdMudou(r.gmv,r.gmvA,'O GMV')+'.</b> ';
+    if(Math.abs(dt)>=1){
+      var partes=[['live',dl],['vídeo',dv]].sort(function(a,b){ return Math.abs(b[1])-Math.abs(a[1]); });
+      t+='A maior parte da '+(dt<0?'queda':'subida')+' veio de <b>'+partes[0][0]+'</b> ('+(partes[0][1]<0?'−':'+')+reais(Math.abs(partes[0][1]))+'); '+partes[1][0]+': '+(partes[1][1]<0?'−':'+')+reais(Math.abs(partes[1][1]))+'.';
+    }
+    L.push(t);
+  }
+  if(r.liveA>0 && r.live<r.liveA*0.5){
+    var ml=r.maiorLiveA;
+    L.push('<b>As lives '+(r.live>0?'quase sumiram':'pararam')+'</b>: '+reais(r.liveA)+' em '+r.nLiveA+' '+plural(r.nLiveA,'live','lives')+' antes, '+reais(r.live)+' em '+r.nLive+' agora.'+(ml&&ml.dia?' A maior da janela anterior foi a de <b>'+dm(ml.dia)+'</b> ('+reais(ml.gmv)+' nesses dias).':'')+' Live é onde a conta mais vende: voltar com elas é o caminho mais rápido.');
+  }
+  if(r.videos.length){
+    var t2= r.nNovos? '<b>'+r.nNovos+' '+plural(r.nNovos,'vídeo começou','vídeos começaram')+' a vender</b> nesses '+N+' dias e '+plural(r.nNovos,'somou','somaram')+' '+reais(r.gmvNovos)+' ('+(r.vid>0?Math.round(r.gmvNovos/r.vid*100):0)+'% do GMV de vídeo). O melhor: '+reais(r.melhorNovo.gmv)+' ('+escapar(nomeCurto(nomeProdLive(r.melhorNovo.vida.prod)))+'). ' : '<b>Nenhum vídeo novo começou a vender</b> nesses '+N+' dias. ';
+    t2+='Os outros '+reais(r.vid-r.gmvNovos)+' vieram de vídeos mais antigos.';
+    L.push(t2);
+    if(r.nNovos) L.push('<b>'+r.novosCamp+' de '+r.nNovos+'</b> '+plural(r.nNovos,'vídeo novo','vídeos novos')+' '+(r.novosCamp===1?'foi':'foram')+' pra um campeão (os '+r.nCamp+' produtos que fazem 80% da comissão nos últimos 30 dias).'+(r.novosCamp<r.nNovos/2?' Os campeões estão ficando sem vídeo novo.':''));
+    L.push('O vídeo nº 1 fez <b>'+pct0(r.top1)+'</b> da comissão dos vídeos; os 3 primeiros, <b>'+pct0(r.top3)+'</b>.'+(r.top1>=20?' Depender de poucos vídeos é risco: quando eles cansarem, a venda cai junto. Replicar o que eles têm é a saída.':''));
+  }
+  h+='<div class="vd-diag">'+L.map(function(t){ return '<div>'+t+'</div>'; }).join('')+'</div>';
+  // ---- 2. produtos
+  var ps=r.produtos, psV=_vdTodosP? ps : ps.slice(0,10);
+  h+='<h4 class="vd-h4">2. Produtos que mais venderam <small>por comissão · toque abre a ficha</small></h4>';
+  if(!ps.length) h+='<div class="apostas-vazio">Nenhuma venda nesses dias.</div>';
+  else {
+    h+='<div class="vd-tab-w"><table class="vd-tab"><thead><tr><th>#</th><th>Produto</th><th>Comissão</th><th>GMV</th><th>Itens</th><th>Dias com venda</th><th>De onde veio</th><th>vs antes</th></tr></thead><tbody>';
+    psV.forEach(function(p,i){
+      h+='<tr class="vd-lin" data-ch="'+attr(p.chave)+'" tabindex="0" onclick="abrirFichaGeral(this.getAttribute(\'data-ch\'))" onkeydown="if(event.key===\'Enter\')this.click()">'+
+        '<td><span class="vd-rk'+(i<3?' top':'')+'">'+(i+1)+'</span></td><td class="vd-nome">'+escapar(nomeCurto(p.nome))+'</td>'+
+        '<td><b>'+reais(p.com)+'</b><small>'+pct1(p.pct)+'</small></td><td>'+reais(p.gmv)+'</td><td>'+inteiro(p.itens)+'</td><td>'+p.ndias+' de '+N+'</td>'+
+        '<td><small>vídeo '+reais(p.gv)+(p.nvid?' ('+p.nvid+' '+plural(p.nvid,'vídeo','vídeos')+')':'')+'<br>live '+reais(p.gl)+'</small></td><td>'+vdDelta(p.com,p.comA)+'</td></tr>';
+    });
+    h+='</tbody></table></div>'+(!_vdTodosP && ps.length>10?'<button class="btn ghost mini vd-mais" onclick="vdVerTodos(\'p\')">Ver todos os '+ps.length+' produtos</button>':'');
+  }
+  // ---- 3. vídeos
+  var vs=r.videos, vsV=_vdTodosV? vs : vs.slice(0,15);
+  h+='<h4 class="vd-h4">3. Vídeos que mais venderam <small>por comissão · toque abre o detalhe</small></h4>'+
+     '<p class="desc">A planilha só mostra vídeo que <b>vendeu</b> (não traz views nem texto). A data é a da <b>1ª venda</b> do vídeo (a planilha não traz a data de postagem). <span class="vd-selo molde">Molde</span> = entre os 5 que mais venderam e vendeu em pelo menos '+Math.ceil(N*0.4)+' dos '+N+' dias: é o vídeo pra replicar. <span class="vd-selo novo">Novo</span> = começou a vender nesses dias.</p>';
+  if(!vs.length) h+='<div class="apostas-vazio">Nenhum vídeo vendeu nesses dias.</div>';
+  else {
+    h+='<div class="vd-tab-w"><table class="vd-tab"><thead><tr><th>#</th><th>Vídeo</th><th>Produto</th><th>Comissão</th><th>GMV · itens</th><th>Dias com venda</th><th>Desde o começo</th><th>1ª venda</th></tr></thead><tbody>';
+    vsV.forEach(function(o,i){
+      var w=o.vida, idade=Math.round((r.hoje-w.pri)/86400000);
+      h+='<tr class="vd-lin" data-vid="'+o.id+'" tabindex="0" onclick="abrirVideo(\''+o.id+'\')" onkeydown="if(event.key===\'Enter\')this.click()">'+
+        '<td><span class="vd-rk'+(i<3?' top':'')+'">'+(i+1)+'</span></td>'+
+        '<td class="vd-id"><a href="'+vdLink(o.id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+vdCurto(o.id)+' ↗</a>'+(o.molde?' <span class="vd-selo molde">Molde</span>':'')+(o.novo?' <span class="vd-selo novo">Novo</span>':'')+'</td>'+
+        '<td class="vd-nome">'+escapar(nomeCurto(nomeProdLive(w.prod)))+(w.nprod>1?' <small>+'+(w.nprod-1)+' '+plural(w.nprod-1,'outro','outros')+'</small>':'')+'</td>'+
+        '<td><b>'+reais(o.com)+'</b></td><td>'+reais(o.gmv)+'<small>'+inteiro(o.itens)+' '+plural(o.itens,'item','itens')+'</small></td><td>'+o.ndias+' de '+N+'</td>'+
+        '<td>'+reais(w.gmv)+'<small>'+reais(w.com)+' comissão</small></td><td>'+dm(w.pri)+'<small>há '+idade+' '+plural(idade,'dia','dias')+'</small></td></tr>';
+    });
+    h+='</tbody></table></div>'+(!_vdTodosV && vs.length>15?'<button class="btn ghost mini vd-mais" onclick="vdVerTodos(\'v\')">Ver todos os '+vs.length+' vídeos</button>':'');
+  }
+  box.innerHTML=h;
+}
+function abrirVideo(id){
+  var w=vdVida()[id]; if(!w) return;
+  _videoAberto=id;
+  var hoje=soDia(S.dataMax), g48=0, g7=0, dts=Object.keys(w.dias).map(Number).sort(function(a,b){ return a-b; });
+  var p48=maisDias(w.pri,1).getTime(), p7=maisDias(w.pri,6).getTime();
+  dts.forEach(function(k){ if(k<=p48) g48+=w.dias[k]; if(k<=p7) g7+=w.dias[k]; });
+  var ini=maisDias(hoje,-(_vdN-1));
+  var voltar='<button class="voltar" onclick="fecharVideo()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Voltar</button>';
+  var h='<div class="ficha-cab"><div class="barra">'+voltar+'</div><h2>Vídeo '+vdCurto(id)+' · '+escapar(nomeCurto(nomeProdLive(w.prod)))+'</h2>'+
+    '<div class="loja">1ª venda em '+dm(w.pri)+' · <a href="'+vdLink(id)+'" target="_blank" rel="noopener">abrir no TikTok ↗</a> · nº '+id+'</div></div><div class="ficha-corpo">';
+  h+='<div class="cards lv-cards vd-cards">'+
+    '<div class="card"><div class="rot">Desde o começo</div><div class="val">'+reais(w.gmv)+'</div><div class="sub">'+reais(w.com)+' de comissão · '+inteiro(w.itens)+' '+plural(w.itens,'item','itens')+'</div></div>'+
+    '<div class="card"><div class="rot">Primeiras 48h</div><div class="val">'+reais(g48)+'</div><div class="sub">'+(w.gmv>0?Math.round(g48/w.gmv*100):0)+'% de tudo que ele vendeu (dia da 1ª venda + o seguinte)</div></div>'+
+    '<div class="card"><div class="rot">Primeiros 7 dias</div><div class="val">'+reais(g7)+'</div><div class="sub">'+(w.gmv>0?Math.round(g7/w.gmv*100):0)+'% do total'+(w.gmv>0 && g7/w.gmv<0.5?' — vende mais DEPOIS da 1ª semana: vídeo de longa duração':'')+'</div></div>'+
+  '</div>';
+  // barras por dia, da 1ª venda até hoje
+  var nb=Math.round((hoje-w.pri)/86400000)+1, mx=0, arr=[];
+  for(var i=0;i<nb;i++){ var k=maisDias(w.pri,i).getTime(), g=w.dias[k]||0; arr.push({d:maisDias(w.pri,i), g:g}); if(g>mx) mx=g; }
+  var passo=nb>60?10:(nb>30?5:(nb>14?2:1));
+  h+='<div class="nv-card"><h4 class="lv-h4">Vendas por dia (GMV)</h4><div class="lv-graf vd-graf" style="--n:'+nb+'">';
+  arr.forEach(function(a,k){ h+='<div class="lv-col" title="'+dm(a.d)+': '+reais(a.g)+'"><div class="lv-bar'+(a.d>=ini?' ouro':'')+'" style="height:'+(a.g>0?Math.max(3,a.g/(mx||1)*100):0)+'%"></div><span>'+(k%passo===0?dm(a.d):'')+'</span></div>'; });
+  h+='</div><div class="lv-leg"><i></i> últimos '+_vdN+' dias · cada barra = 1 dia</div></div>';
+  var prs=Object.keys(w.pr).map(function(k){ return w.pr[k]; }).sort(function(a,b){ return b.gmv-a.gmv; });
+  h+='<div class="nv-card"><h4 class="lv-h4">Produtos deste vídeo</h4><p class="desc" style="margin:0 0 8px">Quem entrou por este vídeo comprou também estes. Produto que vende aqui sem você ter gravado dele é pista de garimpo.</p><div class="lv-prods">'+prs.map(function(p){
+    return '<button type="button" class="lv-prod" onclick="fecharVideo();abrirFichaGeral(\''+p.chave+'\')"><span><b>'+escapar(nomeCurto(nomeProdLive(p.chave)))+'</b><small>'+inteiro(p.itens)+' '+plural(p.itens,'item vendido','itens vendidos')+' · desde '+dm(p.desde)+'</small></span><em>'+reais(p.gmv)+'</em></button>'; }).join('')+'</div></div></div>';
+  document.getElementById('formConteudo').innerHTML=h;
+  var f=document.getElementById('formFundo'); f.classList.add('on'); f.scrollTop=0; document.body.classList.add('travado');
+}
+function fecharVideo(){ _videoAberto=null; fecharForm(); }
 
 function cardAlertaLoja(l){
   var desde=l.hist.desde? ' desde '+fmtD(l.hist.desde) : '';
@@ -1887,12 +2107,13 @@ function renderCardsTopo(){
     'Mostrando <b>só '+(t==='Live'?'lives':'vídeos')+'</b> nos cartões abaixo (as setas comparam '+(t==='Live'?'live com live':'vídeo com vídeo')+'). A Meta e o Ritmo por produto continuam com tudo.';
   var nome= !t ? 'GMV total' : (t==='Live'?'GMV em lives':'GMV em vídeos');
   function dl(k){ return A? delta(R[k],A[k]) : ''; }
+  var nd= S.periodo? nDias(S.periodo.ini,S.periodo.fim) : 0;
   document.getElementById('cardsTopo').innerHTML =
-    card('destaque',nome, reais(R.gmv), 'faturamento no período'+dl('gmv')) +
+    card('destaque',nome, reais(R.gmv), (nd? reais(R.gmv/nd)+' por dia · '+nd+' '+plural(nd,'dia','dias') : 'faturamento no período')+dl('gmv')+barraStatus(R)) +
     card('destaque',!t?'Comissão':(t==='Live'?'Comissão em lives':'Comissão em vídeos'), reais(R.com), pct1(R.gmvVal? R.com/R.gmvVal*100 : 0)+' do GMV válido'+dl('com')) +
     card('','Pedidos', inteiro(R.pedidos), inteiro(R.itens)+' itens'+dl('pedidos')) +
     card('','Ticket médio', reais(R.ticket), 'por pedido'+dl('ticket')) +
-    card('','Comissão média', reais(R.comMedia), 'por pedido válido'+dl('comMedia')) +
+    card('','Comissão média', reais(R.comMedia), 'por pedido válido'+dl('comMedia')+'<div class="st-item-l"><b class="st-item">'+reais(R.comItem)+'</b> por item vendido</div>') +
     card(R.perdida>0?'perda':'','Comissão perdida', reais(R.perdida), inteiro(R.pedInel)+' '+plural(R.pedInel,'pedido inelegível','pedidos inelegíveis')+' ('+pct0(R.pedidos? R.pedInel/R.pedidos*100:0)+')');
 }
 
@@ -1937,6 +2158,7 @@ function render(){
   renderApostas();
   renderLojas();
   renderLives();
+  renderVideos();
   renderAmostras();
   renderPlanejar();
   renderParaGravar();
@@ -1950,15 +2172,18 @@ function render(){
 
 /* totais de um conjunto de vendas (pedido = ID do pedido, não linha) */
 function resumo(v){
-  var r={gmv:0,gmvVal:0,com:0,perdida:0,itens:0,pedidos:0,pedInel:0,pedVal:0}, ped={}, pedV={}, pedI={}, prod={}, loja={};
+  var r={gmv:0,gmvVal:0,com:0,perdida:0,itens:0,pedidos:0,pedInel:0,pedVal:0,gmvLiq:0,gmvPend:0,gmvInel:0,itensVal:0}, ped={}, pedV={}, pedI={}, prod={}, loja={};
   v.forEach(function(x){
     r.gmv+=x.gmv; r.gmvVal+=x.gmvVal; r.com+=x.com; r.perdida+=x.comPerdida; r.itens+=x.itens;
+    // status (padrão Owra): inelegível | liquidado | pendente (inclui aguardando pagamento)
+    if(x.inelegivel) r.gmvInel+=x.gmv; else { r.itensVal+=x.itens; if(/^liquidad/i.test(x.status||'')) r.gmvLiq+=x.gmv; else r.gmvPend+=x.gmv; }
     ped[x.idPed]=1; if(x.inelegivel) pedI[x.idPed]=1; else pedV[x.idPed]=1;
     prod[x.chave]=1; loja[x.loja]=1;
   });
   r.pedidos=Object.keys(ped).length; r.pedInel=Object.keys(pedI).length; r.pedVal=Object.keys(pedV).length;
   r.ticket=r.pedidos? r.gmv/r.pedidos : 0;
   r.comMedia=r.pedVal? r.com/r.pedVal : 0;
+  r.comItem=r.itensVal? r.com/r.itensVal : 0;
   r.produtos=Object.keys(prod).length; r.lojas=Object.keys(loja).length;
   return r;
 }
@@ -1969,6 +2194,13 @@ function delta(atual,ant){
   var d=(atual-ant)/ant*100, cls= Math.abs(d)<1?'eq':(d>0?'up':'down');
   var seta= cls==='up'?'▲ ':(cls==='down'?'▼ ':'');
   return '<br><span class="delta '+cls+'" title="comparado com o período anterior">'+seta+Math.abs(d).toFixed(0)+'%</span>';
+}
+/* barra Liquidado / Pendente / Inelegível dentro do cartão de GMV (soma = GMV do cartão) */
+function barraStatus(R){
+  if(!(R.gmv>0)) return '';
+  var p=function(v){ return v/R.gmv*100; }, it=[['liq','Liquidado',R.gmvLiq],['pen','Pendente',R.gmvPend],['ine','Inelegível',R.gmvInel]];
+  return '<div class="st-barra" title="Liquidado · Pendente · Inelegível">'+it.map(function(i){ return '<i class="'+i[0]+'" style="width:'+p(i[2]).toFixed(2)+'%"></i>'; }).join('')+'</div>'+
+    '<div class="st-leg">'+it.map(function(i){ return '<span><i class="'+i[0]+'"></i>'+i[1]+' <b>'+reais(i[2])+'</b> ('+pct0(p(i[2]))+')</span>'; }).join('')+'</div>';
 }
 function card(cls,rot,val,sub){
   return '<div class="card '+cls+'"><div class="rot">'+rot+'</div><div class="val">'+val+'</div><div class="sub">'+sub+'</div></div>';
@@ -2130,7 +2362,7 @@ window.addEventListener('popstate',function(){ fecharFicha(true); });
 var _tRes; window.addEventListener('resize',function(){ clearTimeout(_tRes); _tRes=setTimeout(function(){ if(_fichaAtual) desenharEvolucao(); },150); });
 // Grupos de botões (.janelas): clique de mouse/dedo solta o foco -> sem borda preta se depois apertar alguma tecla; pelo teclado (Enter/Espaço, detail 0) o contorno continua
 document.addEventListener('click',function(e){ var b=e.target && e.target.closest ? e.target.closest('.janelas button') : null; if(b && e.detail>0 && document.activeElement===b) b.blur(); });
-document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(_liveAberta) fecharLive(); else if(typeof _form!=='undefined' && _form) fecharForm(); else fecharFicha(); } });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(_liveAberta) fecharLive(); else if(_videoAberto) fecharVideo(); else if(typeof _form!=='undefined' && _form) fecharForm(); else fecharFicha(); } });
 
 /* ---------- conteúdo da ficha ---------- */
 function vendasDo(chave){ return S.vendas.filter(function(x){ return x.chave===chave; }); }
