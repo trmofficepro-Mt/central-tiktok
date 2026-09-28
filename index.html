@@ -220,6 +220,12 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
   .lojas-atalho{display:inline-flex;margin:0 0 10px}
 }
 .lv-cards{margin:0 0 12px}
+.lv-item:focus{outline:none} .lv-item:focus-visible{outline:2px solid var(--uva);outline-offset:-2px}
+.lv-abas{margin:4px 0 12px}
+.lv-leitura div+div{margin-top:8px}
+.lv-pct{display:inline-block;font-weight:800;color:#be185d;background:#fdf0f8;border-radius:20px;padding:1px 7px}
+.ficha-cab .posicao.lv-selo{background:#ec4899;margin-left:6px}
+.ficha-cab .barra{flex-wrap:wrap;row-gap:6px} .ficha-cab .barra .posicao{margin-left:auto} .ficha-cab .barra .posicao.lv-selo{margin-left:6px}
 @media(max-width:480px){.lv-cards{gap:10px}.lv-cards .card{padding:14px}.lv-cards .card .val{font-size:clamp(17px,5.4vw,22px);white-space:nowrap}}
 .lv-nota{margin:4px 0 10px}
 .lv-item{cursor:pointer} .lv-item:hover{background:var(--bg2)}
@@ -1748,6 +1754,8 @@ function renderLives(){
     '<div class="card"><div class="rot">Comissão em lives</div><div class="val">'+reais(cL)+'</div><div class="sub">vendas de live dentro do período (inclui vendas atrasadas de lives antigas)</div></div>'+
     '<div class="card"><div class="rot">Lives no período</div><div class="val">'+ls.length+'</div><div class="sub">'+(ls.length? 'média de '+reais(somaC/ls.length)+' de comissão por live' : 'nenhuma live começou nesse período')+'</div></div>'+
   '</div>';
+  h+='<div class="janelas lv-abas">'+[['lives','Minhas lives'],['produtos','Produtos em live']].map(function(t){ return '<button type="button" data-v="'+t[0]+'" class="'+(_lvVista===t[0]?'on':'')+'" onclick="setLvVista(\''+t[0]+'\')">'+t[1]+'</button>'; }).join('')+'</div>';
+  if(_lvVista==='produtos'){ box.innerHTML=h+htmlProdutosEmLive(); return; }
   if(!ls.length){ box.innerHTML=h+'<div class="apostas-vazio" style="padding:26px 16px">Nenhuma live começou nesse período. Escolha outro período lá em cima.</div>'; return; }
   h+='<p class="desc lv-nota">A hora é a do <b>1º pedido</b> da live (a planilha não traz a hora em que ela começou). "Vendendo das… às…" vai até a última venda antes de passar 1 hora sem pedido. '+
      (nDep? '<b>'+nDep+' de '+ls.length+'</b> '+plural(ls.length,'live','lives')+' ainda '+plural(nDep,'vendeu','venderam')+' depois de acabar.' : '')+'</p>';
@@ -1756,12 +1764,51 @@ function renderLives(){
     var d=new Date(L.ini*60000), dias=['dom','seg','ter','qua','qui','sex','sáb'];
     h+='<div class="lojaitem lv-item" role="button" tabindex="0" data-live="'+L.id+'" onclick="abrirLive(\''+L.id+'\')" onkeydown="if(event.key===\'Enter\')abrirLive(\''+L.id+'\')">'+
       '<div class="info"><div class="nome">'+dias[d.getDay()]+', '+dm(d)+' · '+lvHora(L.ini)+(L===melhor?' <span class="lv-melhor">Sua melhor live do período</span>':'')+'</div>'+
-      '<div class="meta">vendendo das '+lvHora(L.ini)+' às '+lvHora(L.fim)+' · '+inteiro(L.itens)+' '+plural(L.itens,'item','itens')+' · '+L.nprod+' '+plural(L.nprod,'produto','produtos')+
+      '<div class="meta">'+(L.fim===L.ini && L.s.length===1?'1 venda às '+lvHora(L.ini):'vendendo das '+lvHora(L.ini)+' às '+lvHora(L.fim))+' · '+inteiro(L.itens)+' '+plural(L.itens,'item','itens')+' · '+L.nprod+' '+plural(L.nprod,'produto','produtos')+
         (L.depois>0?' · <b class="lv-dep">+'+reais(L.depois)+' depois da live</b>':'')+'</div></div>'+
       '<div class="num"><div class="c">'+reais(L.gmv)+'</div><div class="p">'+reais(L.com)+' comissão</div></div>'+
     '</div>';
   });
   box.innerHTML=h+'</div>';
+}
+/* B1b — Produtos em live (segue o período do topo). % em live = GMV em live ÷ GMV do produto no período (todos os canais).
+   Ordem = GMV em live (igual à Owra). Leitura: domina a live (% ≥ 80) · vende em vídeo e pouco em live (% ≤ 20). Fonte: fonte_lives.py produtos() */
+var _lvVista='lives';
+function setLvVista(v){ _lvVista=v; renderLives(); }
+function produtosEmLive(){
+  var m={};
+  S.vendas.forEach(function(x){
+    var p=m[x.chave]||(m[x.chave]={chave:x.chave, tot:0, gmvLive:0, itens:0, com:0, gmvVid:0});
+    p.tot+=x.gmv;
+    if(x.tipo==='Live'){ p.gmvLive+=x.gmv; p.itens+=x.itens; p.com+=x.com; }
+    else if(x.tipo==='Vídeo') p.gmvVid+=x.gmv;
+  });
+  var nome=function(ch){ return nomeProdLive(ch); };
+  var out=Object.keys(m).map(function(k){ var p=m[k]; p.nome=nome(k); p.pct=p.tot>0? p.gmvLive/p.tot*100 : 0; return p; })
+    .filter(function(p){ return p.gmvLive>0 || p.itens>0; })
+    .sort(function(a,b){ return (b.gmvLive-a.gmvLive) || (a.nome<b.nome?-1:a.nome>b.nome?1:0); });
+  var dom=out.filter(function(p){ return p.pct>=80; })[0]||null;
+  var vid=out.filter(function(p){ return p.pct<=20 && p.gmvVid>0; }).sort(function(a,b){ return b.gmvVid-a.gmvVid; })[0]||null;
+  return {lista:out, dom:dom, vid:vid};
+}
+function htmlProdutosEmLive(){
+  var r=produtosEmLive(), ls=r.lista;
+  if(!ls.length) return '<div class="apostas-vazio" style="padding:26px 16px">Nenhum produto vendeu em live nesse período. Escolha outro período lá em cima.</div>';
+  var h='<p class="desc lv-nota">Estes são os produtos que vendem quando você está ao vivo. <b>Leve os primeiros para as próximas lives.</b> "% em live" = quanto do faturamento do produto no período veio de live.</p>';
+  var lei=[];
+  if(r.dom) lei.push('<b>'+escapar(nomeCurto(r.dom.nome))+'</b> quase não vende em vídeo ('+reais(r.dom.gmvVid)+'), mas domina suas lives ('+reais(r.dom.gmvLive)+', '+pct0(r.dom.pct)+' do que ele vendeu). Ele é produto de live: deixe na próxima.');
+  if(r.vid) lei.push('<b>'+escapar(nomeCurto(r.vid.nome))+'</b> é o contrário: vende em vídeo ('+reais(r.vid.gmvVid)+') e pouco em live (só '+pct0(r.vid.pct)+'). Vale testar ele com mais destaque na live.');
+  if(lei.length) h+='<div class="lv-ouro lv-leitura">'+lei.map(function(t){ return '<div>💡 '+t+'</div>'; }).join('')+'</div>';
+  h+='<div class="lojalista">';
+  ls.forEach(function(p,i){
+    h+='<div class="lojaitem lv-item lv-pl" role="button" tabindex="0" data-ch="'+attr(p.chave)+'" onclick="abrirFicha(this.getAttribute(\'data-ch\'))" onkeydown="if(event.key===\'Enter\')this.click()">'+
+      '<div class="rank'+(i<3?' top':'')+'">'+(i+1)+'</div>'+
+      '<div class="info"><div class="nome">'+escapar(nomeCurto(p.nome))+'</div>'+
+      '<div class="meta"><span class="lv-pct">'+pct0(p.pct)+' em live</span> · '+inteiro(p.itens)+' '+plural(p.itens,'item','itens')+' em live · em vídeo '+reais(p.gmvVid)+'</div></div>'+
+      '<div class="num"><div class="c">'+reais(p.gmvLive)+'</div><div class="p">em live · '+reais(p.com)+' comissão</div></div>'+
+    '</div>';
+  });
+  return h+'</div>';
 }
 function abrirLive(id){
   var L=calcLives()[id]; if(!L) return;
@@ -1769,7 +1816,7 @@ function abrirLive(id){
   var d=new Date(L.ini*60000), fimD=new Date(L.fim*60000), outroDia=soDia(fimD).getTime()!==L.dia.getTime();
   var voltar='<button class="voltar" onclick="fecharLive()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Voltar</button>';
   var h='<div class="ficha-cab"><div class="barra">'+voltar+'</div><h2>Live de '+dm(d)+' · '+lvHora(L.ini)+'</h2>'+
-        '<div class="loja">vendendo das '+lvHora(L.ini)+' às '+lvHora(L.fim)+(outroDia?' (dia '+dm(fimD)+')':'')+' · hora do 1º pedido</div></div><div class="ficha-corpo">';
+        '<div class="loja">'+(L.s.length===1?'1 venda às '+lvHora(L.ini):'vendendo das '+lvHora(L.ini)+' às '+lvHora(L.fim))+(outroDia?' (dia '+dm(fimD)+')':'')+' · hora do 1º pedido</div></div><div class="ficha-corpo">';
   h+='<div class="cards lv-cards"><div class="card"><div class="rot">Em vendas</div><div class="val">'+reais(L.gmv)+'</div><div class="sub">'+reais(L.com)+' de comissão</div></div>'+
      '<div class="card"><div class="rot">Itens vendidos</div><div class="val">'+inteiro(L.itens)+'</div><div class="sub">'+L.nprod+' '+plural(L.nprod,'produto diferente','produtos diferentes')+'</div></div></div>';
   // como vendeu: barras de 10 min na live no ar
@@ -2088,6 +2135,7 @@ function montarFicha(p){
     '<div class="barra">'+
       '<button class="voltar" onclick="fecharFicha()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Voltar</button>'+
       '<span class="posicao'+(p.campeao?'':' cauda')+'">'+(p.com<=0?'sem comissão no período':(p.campeao?'Campeão · #'+p.rank:'#'+p.rank+' em comissão'))+'</span>'+
+      (canais.Live && p.gmv>0 && canais.Live.gmv>0 ? '<span class="posicao lv-selo">● '+pct0(canais.Live.gmv/p.gmv*100)+' em live</span>' : '')+
     '</div>'+
     '<h2>'+escapar(p.nome)+'</h2>'+
     '<div class="loja">'+escapar(p.loja)+(p.primeiraGeral?' · vendendo desde '+dm(p.primeiraGeral):'')+' · período: '+dm(S.dmin)+' a '+dm(S.dmax)+'</div>'+
