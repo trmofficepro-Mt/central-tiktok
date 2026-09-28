@@ -213,6 +213,7 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .card .rot{font-size:12px;color:var(--tinta2);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
 .card .val{font-size:27px;font-weight:800;margin:6px 0 2px;letter-spacing:-.5px}
 .card .sub{font-size:12px;color:var(--tinta3)}
+.pn-canal-box{margin-top:16px} .pn-canal{margin-bottom:6px} .pn-canal-nota{margin:0}
 /* ===== lives (B1a) ===== */
 .lojas-atalho{display:none}
 @media(max-width:899px){   /* celular: 8 botões não cabem em 320 px → Lojas fica dentro de Produtos (decisão do Thiago, 27/09) */
@@ -985,6 +986,11 @@ div.apl-t{cursor:default}
       <span class="badge" id="badgePedidos">—</span>
     </div>
 
+    <div class="pn-canal-box"><div class="janelas pn-canal" id="pnCanal">
+      <button type="button" data-c="tudo" class="on" onclick="setCanalPainel('tudo')">Tudo</button>
+      <button type="button" data-c="video" onclick="setCanalPainel('video')">▶ Vídeos</button>
+      <button type="button" data-c="live" onclick="setCanalPainel('live')">● Lives</button>
+    </div><p class="desc pn-canal-nota" id="pnCanalNota"></p></div>
     <div class="cards" id="cardsTopo"></div>
 
     <div class="sec">
@@ -1857,6 +1863,28 @@ function cardAlertaLoja(l){
   '</div>';
 }
 
+/* ---------- C1: chave Vídeos / Lives / Tudo (só os cartões do topo do Painel; Meta e Ritmo seguem em Tudo). Abre sempre em Tudo. ---------- */
+var _canalPainel='tudo', CANAL_PAINEL={tudo:null, video:'Vídeo', live:'Live'};
+function setCanalPainel(c){ _canalPainel=c; renderCardsTopo(); }
+function renderCardsTopo(){
+  var t=CANAL_PAINEL[_canalPainel], f=function(x){ return !t || x.tipo===t; };
+  var R=resumo(S.vendas.filter(f)), A=S.vendasAnt? resumo(S.vendasAnt.filter(f)) : null;
+  var sel=document.getElementById('pnCanal');
+  if(sel){ [].forEach.call(sel.querySelectorAll('button'),function(b){ b.classList.toggle('on', b.getAttribute('data-c')===_canalPainel); }); }
+  var nota=document.getElementById('pnCanalNota');
+  if(nota) nota.innerHTML= !t ? 'Tudo = vídeos, lives e também vendas pelo seu perfil (vitrine) ou por link.' :
+    'Mostrando <b>só '+(t==='Live'?'lives':'vídeos')+'</b> nos cartões abaixo (as setas comparam '+(t==='Live'?'live com live':'vídeo com vídeo')+'). A Meta e o Ritmo por produto continuam com tudo.';
+  var nome= !t ? 'GMV total' : (t==='Live'?'GMV em lives':'GMV em vídeos');
+  function dl(k){ return A? delta(R[k],A[k]) : ''; }
+  document.getElementById('cardsTopo').innerHTML =
+    card('destaque',nome, reais(R.gmv), 'faturamento no período'+dl('gmv')) +
+    card('destaque',!t?'Comissão':(t==='Live'?'Comissão em lives':'Comissão em vídeos'), reais(R.com), pct1(R.gmvVal? R.com/R.gmvVal*100 : 0)+' do GMV válido'+dl('com')) +
+    card('','Pedidos', inteiro(R.pedidos), inteiro(R.itens)+' itens'+dl('pedidos')) +
+    card('','Ticket médio', reais(R.ticket), 'por pedido'+dl('ticket')) +
+    card('','Comissão média', reais(R.comMedia), 'por pedido válido'+dl('comMedia')) +
+    card(R.perdida>0?'perda':'','Comissão perdida', reais(R.perdida), inteiro(R.pedInel)+' '+plural(R.pedInel,'pedido inelegível','pedidos inelegíveis')+' ('+pct0(R.pedidos? R.pedInel/R.pedidos*100:0)+')');
+}
+
 /* ---------- render ---------- */
 function render(){
 
@@ -1872,15 +1900,7 @@ function render(){
   document.getElementById('badgePeriodo').textContent = S.dataMin? fmtD(S.dataMin)+' a '+fmtD(S.dataMax) : 'sem datas';
   document.getElementById('badgePedidos').textContent = R.produtos+' produtos · '+R.lojas+' lojas no período';
 
-  // cartões (com comparação quando existe período anterior)
-  function dl(k){ return A? delta(R[k],A[k]) : ''; }
-  document.getElementById('cardsTopo').innerHTML =
-    card('destaque','GMV total', reais(R.gmv), 'faturamento no período'+dl('gmv')) +
-    card('destaque','Comissão', reais(R.com), pct1(R.gmvVal? R.com/R.gmvVal*100 : 0)+' do GMV válido'+dl('com')) +
-    card('','Pedidos', inteiro(R.pedidos), inteiro(R.itens)+' itens'+dl('pedidos')) +
-    card('','Ticket médio', reais(R.ticket), 'por pedido'+dl('ticket')) +
-    card('','Comissão média', reais(R.comMedia), 'por pedido válido'+dl('comMedia')) +
-    card(R.perdida>0?'perda':'','Comissão perdida', reais(R.perdida), inteiro(R.pedInel)+' '+plural(R.pedInel,'pedido inelegível','pedidos inelegíveis')+' ('+pct0(R.pedidos? R.pedInel/R.pedidos*100:0)+')');
+  renderCardsTopo();
 
   // canais
   var ordem=['Vídeo','Live','Vitrine','Compartilhamento de link'];
