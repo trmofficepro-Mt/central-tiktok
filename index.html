@@ -114,6 +114,7 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .janelas{display:inline-flex;background:var(--panel);border:1px solid var(--linha);border-radius:10px;padding:4px;gap:4px;margin-bottom:16px}
 .janelas button{border:none;background:none;color:var(--tinta2);padding:8px 16px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;transition:.15s}
 .janelas button.on{background:linear-gradient(135deg,var(--rosa),var(--uva));color:#fff}
+.janelas button:focus{outline:none} .janelas button:focus-visible{outline:2px solid var(--uva);outline-offset:2px}
 
 /* cartão de aposta com leitura inteligente */
 .aposta{background:var(--panel);border:1px solid var(--linha);border-radius:var(--raio);padding:18px 20px;margin-bottom:14px;position:relative;overflow:hidden}
@@ -213,6 +214,15 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .card .rot{font-size:12px;color:var(--tinta2);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
 .card .val{font-size:27px;font-weight:800;margin:6px 0 2px;letter-spacing:-.5px}
 .card .sub{font-size:12px;color:var(--tinta3)}
+.mc-card{margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.mc-card .mc-esq{flex:1 1 260px;min-width:0}
+.mc-card .val{font-size:clamp(20px,5vw,27px)}
+.mc-barra{height:10px;border-radius:6px;background:var(--bg2);overflow:hidden;margin:8px 0 6px}
+.mc-barra i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--rosa),var(--uva))}
+.mc-card.batida .mc-barra i{background:var(--verde)}
+.mc-linha{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 14px;font-size:12.5px;color:var(--tinta2)}
+.mc-linha b{color:var(--tinta)}
+.mc-ok{color:var(--verde);font-weight:800}
 .pn-canal-box{margin-top:16px} .pn-canal{margin-bottom:6px} .pn-canal-nota{margin:0}
 /* ===== lives (B1a) ===== */
 .lojas-atalho{display:none}
@@ -986,6 +996,7 @@ div.apl-t{cursor:default}
       <span class="badge" id="badgePedidos">—</span>
     </div>
 
+    <div class="card mc-card" id="metaCard"></div>
     <div class="pn-canal-box"><div class="janelas pn-canal" id="pnCanal">
       <button type="button" data-c="tudo" class="on" onclick="setCanalPainel('tudo')">Tudo</button>
       <button type="button" data-c="video" onclick="setCanalPainel('video')">▶ Vídeos</button>
@@ -2117,6 +2128,8 @@ function atualizarFichaAberta(){
 }
 window.addEventListener('popstate',function(){ fecharFicha(true); });
 var _tRes; window.addEventListener('resize',function(){ clearTimeout(_tRes); _tRes=setTimeout(function(){ if(_fichaAtual) desenharEvolucao(); },150); });
+// Grupos de botões (.janelas): clique de mouse/dedo solta o foco -> sem borda preta se depois apertar alguma tecla; pelo teclado (Enter/Espaço, detail 0) o contorno continua
+document.addEventListener('click',function(e){ var b=e.target && e.target.closest ? e.target.closest('.janelas button') : null; if(b && e.detail>0 && document.activeElement===b) b.blur(); });
 document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(_liveAberta) fecharLive(); else if(typeof _form!=='undefined' && _form) fecharForm(); else fecharFicha(); } });
 
 /* ---------- conteúdo da ficha ---------- */
@@ -2602,7 +2615,40 @@ function renderMeta(){
   box.innerHTML=h;
   document.getElementById('metaTitulo').textContent='Meta de '+M.nome;
   leituraMeta(P, meta);
+  renderCartaoMeta(P, meta);
   if(visivel(box)) desenharMeta();
+}
+/* Cartão "Meta do mês" no topo do Painel (padrão Owra P02) — usa a MESMA conta do bloco Meta (projecaoMes + metaAtual) */
+function renderCartaoMeta(P, meta){
+  var el=document.getElementById('metaCard'); if(!el) return;
+  var M=P.M, nomeMet=_metaMet==='gmv'?'GMV':'comissão';
+  var h='<div class="mc-esq"><div class="rot">Meta de '+M.nome+' · '+nomeMet+'</div>';
+  el.classList.remove('batida');
+  if(!meta){
+    h+='<div class="val">Sem meta</div><div class="sub">Defina uma meta pra ver quanto falta e quanto precisa vender por dia. Conta todas as vendas (vídeos, lives e o resto).</div></div>'+
+       '<button class="btn mini" onclick="editarMeta()">Definir meta</button>';
+  } else {
+    var pct=P.ate/meta*100, pctT=pct.toFixed(0)+'%';
+    h+='<div class="val">'+reais(meta)+'</div>'+
+       '<div class="mc-barra" role="progressbar" aria-valuenow="'+Math.round(pct)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+Math.min(100,pct).toFixed(1)+'%"></i></div><div class="mc-linha">';
+    if(P.ate>=meta){
+      el.classList.add('batida');
+      h+='<span><b class="mc-ok">'+(M.fechado?'Meta batida':'Meta batida!')+'</b> · '+pctT+' · '+reais(P.ate)+' em '+nomeMet+'</span>';
+    } else if(M.fechado){
+      h+='<span>Ficou em <b>'+pctT+'</b> · faltaram <b>'+reais(meta-P.ate)+'</b></span>';
+    } else {
+      h+='<span><b>'+pctT+'</b> · faltam <b>'+reais(meta-P.ate)+'</b></span>'+
+         '<span><b>'+reais((meta-P.ate)/Math.max(P.faltam,1))+'/dia</b> '+nosDiasFaltam(P.faltam)+'</span>';
+    }
+    h+='</div><div class="sub" style="margin-top:4px">Conta todas as vendas (vídeos, lives e o resto), igual ao bloco Meta lá embaixo.</div></div>'+
+       '<button class="btn ghost mini" onclick="editarMeta()">Editar</button>';
+  }
+  el.innerHTML=h;
+}
+function editarMeta(){
+  var box=document.getElementById('metaBox'), inp=document.getElementById('metaInput');
+  if(box) box.scrollIntoView({block:'center', behavior:'smooth'});
+  if(inp){ try{ inp.focus({preventScroll:true}); inp.select(); }catch(e){ inp.focus(); } }
 }
 function leituraMeta(P, meta){
   var M=P.M, f=function(v){ return reais(v); }, el=document.getElementById('metaLeitura');
