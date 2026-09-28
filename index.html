@@ -515,12 +515,34 @@ body.travado{overflow:hidden}
 #arqInfo{overflow-wrap:anywhere}
 .imp-aviso{display:block;margin-top:4px;color:#b45309;font-weight:700}
 @media(max-width:560px){.topo .data{display:none}.topo p{display:none}
-  #importCheio{flex-wrap:wrap}
   #importCheio .ico{display:none}
-  #importCheio>div[style*="flex:1"]{flex-basis:100%}
-  #arqNome{white-space:normal;font-size:15.5px}
-  #importCheio .btn{width:100%;justify-content:center}
+  .import.temdados:not(.fechado) #importCheio{flex-wrap:wrap}
+  .import.temdados:not(.fechado) #importCheio>div[style*="flex:1"]{flex-basis:100%}
+  .import.temdados:not(.fechado) #arqNome{white-space:normal}
 }
+/* (conv. 15) planilha carregada = linha fina em todas as telas; detalhes só depois de importar, com aviso, ou tocando no nome */
+.import.temdados{padding:9px 14px;gap:10px}
+.import.temdados .ico{width:30px;height:30px;border-radius:9px}
+.import.temdados .ico svg{width:16px;height:16px}
+.import.temdados h2#arqNome{font-size:14px;margin:0;cursor:pointer}
+#arqNome .imp-seta{color:var(--uva);font-size:12px;margin-left:4px}
+.import.temdados.fechado #arqInfo{display:none}
+.import.temdados .btn.imp-bt{margin-top:0;flex:none}
+body.sem-periodo #perBox{display:none}
+.alerta-curto{display:none}
+body.tela-planejar .alerta-amo{display:none}
+@media(max-width:899px){
+  body.tela-planejar .alerta-curto{display:flex;align-items:center;gap:8px;border:1px solid;border-radius:12px;padding:7px 8px 7px 12px;margin-bottom:10px;font-size:12.5px;font-weight:700;line-height:1.3}
+}
+.alerta-curto.venc{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+.alerta-curto.perto{background:#fff7ed;border-color:#fed7aa;color:#c2410c}
+.alerta-curto.grav{background:#fefce8;border-color:#fde68a;color:#a16207}
+.alerta-curto span{flex:1;min-width:0}
+.alerta-curto button{border:none;background:none;font:inherit;font-weight:800;color:var(--uva);cursor:pointer;padding:6px;white-space:nowrap}
+.alerta-curto button.al-x{color:var(--tinta3);font-size:15px;padding:4px 6px}
+.apl-top{scroll-margin-top:70px}
+@media(max-width:560px){ .import.temdados{padding:8px 10px 8px 14px} .import.temdados #arqNome{white-space:normal;line-height:1.25} #arqNome .imp-det{display:none} .import.temdados .btn.imp-bt{padding:7px 12px} }
+@media(max-width:380px){ .imp-nova{display:none} }
 
 /* ===== gráficos BI ===== */
 .ritmo{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--linha)}
@@ -1043,10 +1065,10 @@ div.apl-t{cursor:default}
     <div id="importCheio" class="oculto" style="display:none;align-items:center;gap:14px;width:100%">
       <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
       <div style="flex:1">
-        <h2 id="arqNome">Planilha carregada</h2>
+        <h2 id="arqNome" onclick="alternarDetImport()" title="Ver detalhes da última importação">Planilha carregada</h2>
         <p id="arqInfo"></p>
       </div>
-      <button class="btn ghost mini" onclick="document.getElementById('arq').click()">Importar planilha nova</button>
+      <button class="btn ghost mini imp-bt" onclick="document.getElementById('arq').click()">Importar<span class="imp-nova">nova</span></button>
     </div>
   </div>
 
@@ -1308,7 +1330,7 @@ function importar(input){
   input.value='';   // deixa importar o mesmo arquivo de novo
   if(!arq) return;
   if(_importando){ alert('Já estou importando uma planilha. Espera terminar (aparece "Última importação").'); return; }
-  _importando=true;
+  _importando=true; _impAberto=true; var bx=document.getElementById('boxImport'); if(bx) bx.classList.remove('fechado');
   mostrarStatusImport('Lendo a planilha… pode levar alguns segundos.');
   var reader = new FileReader();
   reader.onerror = function(){ erroImport('Não consegui abrir esse arquivo (o aparelho não entregou o conteúdo). Tente escolher de novo.'); };
@@ -1482,6 +1504,7 @@ function irPara(mod){
   document.querySelectorAll('.modulo').forEach(function(m){
     m.classList.toggle('on', m.id==='mod-'+mod);
   });
+  if(typeof ajustarTopo==='function') ajustarTopo();
   if(mod==='planejar' && typeof renderPlanejar==='function') renderPlanejar();
   if(mod==='funil' && typeof renderFunil==='function') renderFunil();   // A planejar usa a lista Para gravar, que pode ter mudado em outra tela
   if(typeof redesenharVisiveis==='function') redesenharVisiveis();
@@ -1646,8 +1669,8 @@ function setJanela(d){
 function _diaKey(d){ return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
 function x1(n){ return n.toFixed(1).replace('.',',')+'×'; }
 
-function calcApostas(dias){
-  var fimP=S.periodo&&S.periodo.fim;
+function calcApostas(dias, fixo){   // fixo (Planejar, conv. 15): até o último dia da planilha e fora dos campeões de 30 dias — não segue o período escolhido
+  var fimP=!fixo && S.periodo&&S.periodo.fim;
   var v=S.todas.filter(function(x){return x.data && (!fimP || x.data<=fimP);});
   if(!v.length) return {apostas:[], semData:true, dias:dias};
   var dmin=v[0].data, dmax=v[0].data;
@@ -1661,7 +1684,8 @@ function calcApostas(dias){
 
   // campeões do período (80% da comissão). Comissão zero no período = não existe campeão.
   var porProd={};
-  S.vendas.forEach(function(x){ porProd[x.chave]=(porProd[x.chave]||0)+x.com; });
+  if(fixo){ var c30=vdCampeoes30(soDia(dmax)).m; Object.keys(c30).forEach(function(k){ porProd[k]=c30[k]; }); }
+  else S.vendas.forEach(function(x){ porProd[x.chave]=(porProd[x.chave]||0)+x.com; });
   var arr=Object.keys(porProd).map(function(k){return {k:k,com:porProd[k]};}).sort(function(a,b){return b.com-a.com;});
   var tot=arr.reduce(function(s,p){return s+p.com;},0), ac=0, campSet={};
   if(tot>0) arr.forEach(function(p){ if(p.com>0 && ac/tot<0.8) campSet[p.k]=1; ac+=p.com; });
@@ -3869,9 +3893,18 @@ function renderAlertaAmostras(){
   if(venc.length) linhas.push('<div class="al-l venc">⛔ '+venc.length+' '+plural(venc.length,'amostra venceu o prazo','amostras venceram o prazo')+': '+nomes(venc)+'</div>');
   if(chegou.length) linhas.push('<div class="al-l perto">⚠ '+chegou.length+' '+plural(chegou.length,'amostra vence','amostras vencem')+' em até '+N+' '+plural(N,'dia','dias')+' e ainda não '+plural(chegou.length,'foi gravada','foram gravadas')+': '+nomes(chegou)+'</div>');
   if(grav.length) linhas.push('<div class="al-l grav">'+grav.length+' '+plural(grav.length,'amostra gravada','amostras gravadas')+', falta postar: '+nomes(grav)+'</div>');
-  var nivel= venc.length?'venc':(chegou.length?'perto':'grav');
-  el.innerHTML='<div class="alerta-amo '+nivel+'"><div class="al-txt">'+linhas.join('')+'</div>'+
+  var nivel= venc.length?'venc':(chegou.length?'perto':'grav'), cur=[];
+  if(venc.length) cur.push('⛔ '+venc.length+' '+plural(venc.length,'venceu','venceram'));
+  if(chegou.length) cur.push('⚠ '+chegou.length+' '+plural(chegou.length,'vence','vencem')+' em até '+N+' '+plural(N,'dia','dias'));
+  if(grav.length) cur.push(grav.length+' '+plural(grav.length,'falta postar','faltam postar'));
+  var curto='<div class="alerta-curto '+nivel+'" role="alert"><span>'+plural(todos.length,'Amostra','Amostras')+': '+cur.join(' · ')+'</span>'+
+    '<button type="button" onclick="verAmostrasPlanejar()">Ver ›</button><button type="button" class="al-x" aria-label="Ok, vi" title="Ok, vi" onclick="okAlertaAmostras(\''+attr(assin)+'\')">✕</button></div>';
+  el.innerHTML=curto+'<div class="alerta-amo '+nivel+'"><div class="al-txt">'+linhas.join('')+'</div>'+
     '<div class="al-bt"><button class="btn mini" onclick="verParaGravar()">Ver</button><button class="btn ghost mini" onclick="okAlertaAmostras(\''+attr(assin)+'\')">Ok, vi</button></div></div>';
+}
+function verAmostrasPlanejar(){   // no Planejar do celular: desce até a lista O que gravar (as amostras estão lá, a urgente em 1º)
+  var e=document.querySelector('#planConteudo .apl-top'); if(!e) return;
+  try{ e.scrollIntoView({behavior:'smooth', block:'start'}); }catch(x){ e.scrollIntoView(); }
 }
 function okAlertaAmostras(assin){ lsGravar('ct_alerta_amo_visto', assin); renderAlertaAmostras(); }
 function mudarAlertaDias(){
@@ -4243,7 +4276,7 @@ function renderImportBox(){
   }
   box.classList.add('temdados'); vazio.style.display='none'; cheio.style.display='flex'; cheio.classList.remove('oculto');
   document.body.classList.remove('sem-dados');
-  document.getElementById('arqNome').textContent = inteiro(S.todas.length)+' vendas salvas'+(S.dataMin?' · '+fmtD(S.dataMin)+' a '+fmtD(S.dataMax):'');
+  ajustarTopo();
   var u=lsLer('ct_ultima_importacao',null), t='', aviso='';
   if(u){
     var q=new Date(u.quando);
@@ -4260,6 +4293,21 @@ function renderImportBox(){
   if(DB.erro) t=DB.erro+(t?' · '+t:'');
   var el=document.getElementById('arqInfo'); el.style.color='';
   el.innerHTML=escapar(t)+(aviso?'<span class="imp-aviso">'+escapar(aviso)+'</span>':'');
+  var aberto=_impAberto || !!aviso || !!DB.erro;
+  box.classList.toggle('fechado', !aberto);
+  document.getElementById('arqNome').innerHTML = inteiro(S.todas.length)+' vendas'+(S.dataMax?' · até '+dm(S.dataMax):'')+
+    '<span class="imp-seta">'+(aberto?'▴':'<span class="imp-det">detalhes </span>▾')+'</span>';
+}
+/* (conv. 15) linha fina: detalhes abertos depois de importar (nesta visita), com aviso/erro, ou tocando no nome */
+var _impAberto=false;
+function alternarDetImport(){ _impAberto=!_impAberto; renderImportBox(); }
+/* (conv. 15) telas do Dia a dia não usam o período (conferido: Planejar, Amostras, Funil) → sem os botões de período;
+   no Planejar a faixa de amostras vira linha curta no celular e some no computador (a lista O que gravar já mostra) */
+var TELAS_SEM_PERIODO=['mod-planejar','mod-amostras','mod-funil'];
+function ajustarTopo(){
+  var m=document.querySelector('.modulo.on'), id=m?m.id:'';
+  document.body.classList.toggle('sem-periodo', TELAS_SEM_PERIODO.indexOf(id)>=0);
+  document.body.classList.toggle('tela-planejar', id==='mod-planejar');
 }
 
 /* ---------- metas no banco (antes ficavam só no navegador) ---------- */
@@ -4930,7 +4978,7 @@ function sugestoesSemana(seg){
   }
   // 3) apostas: produtos acelerando (14 dias)
   try{
-    var ap=calcApostas(14).apostas||[];
+    var ap=calcApostas(14, true).apostas||[];   // não segue o período (Planejar = sempre até o último dia da planilha)
     ap.slice(0,3).forEach(function(a){
       if(planejadoNaSemana(seg,a.chave,null)) return;
       var p=S.idxProd.lista[a.chave]; if(!p) return;
