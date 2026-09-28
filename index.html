@@ -269,9 +269,11 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .fn-foto .fn-f-tx{font-size:13px;margin-top:6px;line-height:1.6} .fn-foto .fn-f-tx b{color:var(--tinta)}
 .fn-vazio{font-size:13px;color:var(--tinta3);margin:4px 0}
 #fnTipo button{display:inline-flex;flex-direction:column;align-items:center;line-height:1.2} .fn-filtro{display:block;font-size:10.5px;font-weight:600;opacity:.75;margin-top:2px}
-.fn-atalho{display:none}
+/* (conv. 14) cartão "Funil de ontem" no topo do Planejar, no computador e no celular (tarefa do dia) */
 @media(max-width:899px){
-  .lateral .abas button[data-mod="funil"]{display:none}   /* celular: entra pelo cartão do Painel (barra de baixo já está cheia) */
+  .lateral .abas button[data-mod="funil"]{display:none}   /* celular: entra pelo cartão do Planejar (barra de baixo já está cheia) */
+}
+@media all{
   .fn-atalho{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin:0 0 12px;padding:12px 14px;border:1px solid var(--linha);border-radius:var(--raio);background:var(--panel);font-family:inherit;font-size:13px;color:var(--tinta2);cursor:pointer}
   .fn-atalho b{color:var(--tinta)} .fn-atalho .fn-seta{margin-left:auto;color:var(--uva);font-weight:800;white-space:nowrap}
   .fn-atalho.ok{border-color:#86efac;background:linear-gradient(135deg,#f0fdf4,#fff)}
@@ -649,12 +651,13 @@ body.travado{overflow:hidden}
 .meta-sug button b{color:var(--uva)}
 /* ===== menu: lateral no computador, barra embaixo no celular ===== */
 body.sem-dados .lateral{display:none}
-.lat-tit{display:none}
+.lat-tit{display:none} .lat-grupo{display:none}
 @media(min-width:900px){
   .layout{display:grid;grid-template-columns:232px minmax(0,1fr);align-items:start}
   body.sem-dados .layout{display:block}
   .lateral{position:sticky;top:0;max-height:100vh;overflow-y:auto;padding:22px 0 22px 22px}
   .lat-tit{display:block;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--tinta3);padding:0 6px 8px}
+  .lat-grupo{display:block;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--tinta3);padding:4px 6px 2px} .lat-grupo.g2{margin-top:12px;padding-top:12px;border-top:1px solid var(--linha)}
   .lateral .abas{flex-direction:column;margin:0;gap:4px;padding:8px;overflow:visible}
   .lateral .abas button{flex:none;width:100%;justify-content:flex-start;padding:12px 14px;font-size:14px;gap:10px}
   .lateral .abas button svg{width:18px;height:18px}
@@ -915,7 +918,8 @@ div.apl-t{cursor:default}
 .apl-ag-bt:hover{background:var(--uva);color:#fff}
 .apl-t span{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:3px}
 .tg{font-size:10.5px;font-weight:700;border-radius:20px;padding:1px 7px;background:var(--bg2);color:var(--tinta2);white-space:nowrap}
-.tg.camp{background:#fce7f3;color:#be185d}.tg.apo{background:#dcfce7;color:#15803d}.tg.amo{background:#e0f2fe;color:#0369a1}.tg.urg{background:#fee2e2;color:#b91c1c}.tg.ag{background:#f3ecff;color:var(--uva)}
+.tg.camp{background:#fce7f3;color:#be185d}.tg.apo{background:#dcfce7;color:#15803d}.tg.amo{background:#e0f2fe;color:#0369a1}.tg.urg{background:#fee2e2;color:#b91c1c}.tg.ag{background:#f3ecff;color:var(--uva)}.tg.mol{background:#ede9fe;color:#6d28d9}
+.apl-bts{display:flex;flex-direction:column;gap:6px;flex:none} .apl-rq{background:var(--uva);color:#fff}
 .mp-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .mp-bt{padding:7px 12px;font-size:12.5px}
 .mp-lin{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
@@ -975,23 +979,32 @@ div.apl-t{cursor:default}
 
 <div class="layout">
 <aside class="lateral" id="lateral">
-  <div class="lat-tit">Menu</div>
     <div class="abas">
-      <button class="on" data-mod="vendas" onclick="irPara('vendas')">
+      <div class="lat-grupo">Dia a dia</div>
+      <button class="on" data-mod="planejar" onclick="irPara('planejar')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+        Planejar
+      </button>
+      <button data-mod="amostras" onclick="irPara('amostras')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+        Amostras
+      </button>
+      <button data-mod="funil" onclick="irPara('funil')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg>
+        Funil
+      </button>
+      <div class="lat-grupo g2">Pra entender os números</div>
+      <button data-mod="vendas" onclick="irPara('vendas')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg>
         Painel
-      </button>
-      <button data-mod="lives" onclick="irPara('lives')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.5"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5"/></svg>
-        Lives
       </button>
       <button data-mod="videos" onclick="irPara('videos')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 10l5-3v10l-5-3z"/></svg>
         Vídeos
       </button>
-      <button data-mod="funil" onclick="irPara('funil')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg>
-        Funil
+      <button data-mod="lives" onclick="irPara('lives')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.5"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5"/></svg>
+        Lives
       </button>
       <button data-mod="campeoes" onclick="irPara('campeoes')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
@@ -1004,14 +1017,6 @@ div.apl-t{cursor:default}
       <button data-mod="apostas" onclick="irPara('apostas')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg>
         Apostas
-      </button>
-      <button data-mod="amostras" onclick="irPara('amostras')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-        Amostras
-      </button>
-      <button data-mod="planejar" onclick="irPara('planejar')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
-        Planejar
       </button>
       <button data-mod="lojas" onclick="irPara('lojas')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18M9 21v-6h6v6"/></svg>
@@ -1067,14 +1072,13 @@ div.apl-t{cursor:default}
     </div>
 
     <!-- MÓDULO: PAINEL DE VENDAS -->
-    <div class="modulo on" id="mod-vendas">
+    <div class="modulo" id="mod-vendas">
     <div class="periodo">
       <span class="tit">A planilha vai de</span>
       <span class="badge" id="badgePeriodo">—</span>
       <span class="badge" id="badgePedidos">—</span>
     </div>
 
-    <button type="button" class="fn-atalho" id="funilAtalho" onclick="irPara('funil')"></button>
     <div class="card mc-card" id="metaCard"></div>
     <div class="pn-canal-box"><div class="janelas pn-canal" id="pnCanal">
       <button type="button" data-c="tudo" class="on" onclick="setCanalPainel('tudo')">Tudo</button>
@@ -1200,9 +1204,10 @@ div.apl-t{cursor:default}
     </div>
 
     <!-- MÓDULO: PLANEJAR -->
-    <div class="modulo" id="mod-planejar">
+    <div class="modulo on" id="mod-planejar">
       <div class="sec" style="margin-top:22px">
         <h3>Planejar</h3>
+        <button type="button" class="fn-atalho" id="funilAtalho" onclick="irPara('funil')"></button>
         <p class="desc">O que gravar hoje. Gravou, toque em <b>Gravei</b>; postou, em <b>Postei</b>. Pra colocar mais coisa no dia, use <b>Agendar</b> na lista <b>O que gravar</b>.</p>
         <div id="planConteudo"></div>
       </div>
@@ -2088,9 +2093,9 @@ function ganchoDoVideo(id){   // 1º a vaga vinculada a este vídeo (o gancho qu
   l.sort(function(a,b){ return ((a.dados.video===id?0:1)-(b.dados.video===id?0:1)) || String(b.dados.criadoEm||'').localeCompare(String(a.dados.criadoEm||'')); });
   return l.length ? l[0].dados.ideia : '';
 }
-function abrirReplicar(id){
+function abrirReplicar(id, origem){
   var w=vdVida()[id]; if(!w) return; var prod=prodDaChave(w.prod); if(!prod) return;
-  _videoAberto=null; _rq={id:id, prod:prod}; _mv={prod:prod};   // _mv: reaproveita o aviso "Já tem N roteiros" e os atalhos de data
+  _videoAberto=null; _rq={id:id, prod:prod, origem:origem||'videos'}; _mv={prod:prod};   // _mv: reaproveita o aviso "Já tem N roteiros" e os atalhos de data
   var g=ganchoDoVideo(id), n=w.nprod-1;
   var h=cabPainel('Replicar vídeo '+vdCurto(id), escapar(nomeCurto(prod.nome))+' · cada roteiro vira uma vaga no Planejar');
   h+='<p class="rq-info">Produto: <b>'+escapar(nomeCurto(prod.nome))+'</b>'+(n>0?' · o vídeo vendeu também mais '+n+' '+plural(n,'produto','produtos'):'')+'</p>';
@@ -2109,7 +2114,7 @@ async function confirmarReplicar(){
   if(!nd){ err.innerHTML='⚠ Escolha a data.'; return; }
   if(nd<hojeISO()){ err.innerHTML='⚠ Esse dia já passou. Escolha hoje ou um dia pra frente.'; return; }
   var bq=document.querySelector('#mvQtd button.on'), q= bq ? (+bq.getAttribute('data-q')||3) : 3;
-  var g=String((document.getElementById('rqGancho')||{}).value||'').trim(), vid=_rq.id, lista=[];
+  var g=String((document.getElementById('rqGancho')||{}).value||'').trim(), vid=_rq.id, doPlan=_rq.origem==='planejar', lista=[];
   for(var k=0;k<q;k++){ var v=novaVaga(_rq.prod, nd, k); v.dados.ideia=g; v.dados.molde=vid; lista.push(v); }
   _rqSalvando=true; bt.disabled=true; bt.textContent='Salvando…';
   var ok=true;
@@ -2120,8 +2125,11 @@ async function confirmarReplicar(){
     err.innerHTML='✕ Sem conexão com a nuvem: nenhum roteiro foi agendado. Confira a internet e toque em Agendar de novo.'; return; }
   lista.forEach(function(o){ S.plano[o.id]={id:o.id, dados:o.dados, excluido:false}; });   // só entra no sistema depois de salvo
   fecharForm(); _rq=null; _mv=null;
+  if(doPlan){ _planSemana=segundaDe(nd); _planDia=nd; _planVista='dia'; }
   renderPlanejar(); renderParaGravar();
-  aviso('✓ '+q+' '+plural(q,'roteiro agendado','roteiros agendados')+' pra '+(nd===hojeISO()?'hoje':dmIso(nd))+' · réplica do vídeo '+vdCurto(vid), 'Ver no Planejar ›',
+  var txt='✓ '+q+' '+plural(q,'roteiro agendado','roteiros agendados')+' pra '+(nd===hojeISO()?'hoje':dmIso(nd))+' · réplica do vídeo '+vdCurto(vid);
+  if(doPlan){ aviso(txt); return; }   // já está no Planejar: a tela foi pro dia agendado
+  aviso(txt, 'Ver no Planejar ›',
     function(){ _planSemana=segundaDe(nd); _planDia=nd; _planVista='dia'; irPara('planejar'); renderPlanejar(); });
 }
 /* ===================== FUNIL DO DIA (F1 — conversa 13) =====================
@@ -4205,7 +4213,7 @@ async function _carregarTudo(){
     var gr=await DB.carregar('gravar');
     S.gravar={};   gr.forEach(function(r){ S.gravar[r.id]=r; });
     renderStatusNuvem();
-    if(!regs.length){ S.temDados=false; S.todas=[]; indexarProdutos(); renderImportBox(); return; }
+    if(!regs.length){ S.temDados=false; S.todas=[]; indexarProdutos(); renderImportBox(); if(document.getElementById('mod-planejar').classList.contains('on')) irPara('vendas'); return; }
     var vendas=registrosParaVendas(regs);
     S.todas=vendas; S.temDados=true;
     indexarProdutos();
@@ -5269,6 +5277,13 @@ function rotuloSug(s){
   if(/esfriando/.test(s.motivo)) return 'Campeão esfriando';
   return 'Campeão sem vídeo na semana';
 }
+var _moldeCache=null;
+function moldesPlanejar(){   // mesma regra da tela Vídeos (vdAnalise), janela fixa de 15 dias até o último dia da planilha
+  if(!S.dataMax || !(S.todas||[]).length) return [];
+  if(_moldeCache && _moldeCache.base===S.todas) return _moldeCache.v;
+  var v=vdAnalise(15).videos.filter(function(o){ return o.molde; });
+  _moldeCache={base:S.todas, v:v}; return v;
+}
 function listaOQueGravar(){   // UMA lista: o que a Mari marcou (Para gravar) + o que o sistema sugere pra semana
   var seg=semanaAtual(), base=listaParaGravar(), sug=sugestoesSemana(seg), idxC=indiceConteudos(), porCh={}, porAmo={}, out=[];
   S._sugPlano=sug;
@@ -5281,7 +5296,16 @@ function listaOQueGravar(){   // UMA lista: o que a Mari marcou (Para gravar) + 
     it.ult=ultimaGravacao(ch, null, idxC, it.idProduto); it.diasSem=it.ult?it.ult.dias:Infinity;
     out.push(it); if(ch) porCh[ch]=it;
   });
-  var rk=function(it){ if(it.urgente) return 0; if(it.sug && it.sug.pri===0) return 0; if(it.sug && it.sug.pri===1) return 1; return 2; };
+  // (conv. 14, decisão 60) moldes dos últimos 15 dias: produto que já está na lista ganha a etiqueta + Replicar; senão entra uma linha
+  moldesPlanejar().forEach(function(o){
+    var ch=o.vida.prod, alvo=ch && porCh[ch];
+    if(alvo){ if(!alvo.molde) alvo.molde=o; return; }
+    var q=ch && S.idxProd.lista[ch]; if(!q) return;
+    var it={tipo:'molde', id:null, ch:ch, nome:q.nome, loja:q.loja||'', idProduto:q.id||'', molde:o, com:q.com};
+    it.ult=ultimaGravacao(ch, null, idxC, it.idProduto); it.diasSem=it.ult?it.ult.dias:Infinity;
+    out.push(it); porCh[ch]=it;
+  });
+  var rk=function(it){ var r=2; if(it.urgente || (it.sug && it.sug.pri===0)) r=0; else if(it.sug && it.sug.pri===1) r=1; return (it.molde && r>0) ? 0.5 : r; };
   out.forEach(function(it,i){ it._o=i; it._rk=rk(it); });
   out.sort(function(a,b){ return a._rk-b._rk || a._o-b._o; });
   return out;
@@ -5313,9 +5337,11 @@ function renderAPlanejar(){
     if(it.tipo==='amostra' && it.nPrazo!=null) tags.push('<span class="tg'+(it.urgente?' urg':' amo')+'">Amostra · '+(it.nPrazo<0?'venceu':(it.nPrazo===0?'vence hoje':(it.nPrazo===1?'vence amanhã':'vence '+dmIso(it.prazo))))+'</span>');
     var rs=rotuloSug(it.sug); if(rs) tags.push('<span class="tg '+(it.sug.tipoSug==='aposta'?'apo':'camp')+'">'+rs+'</span>');
     if(it.sug && it.sug.tipo==='live') tags.push('<span class="tg">vende mais em live</span>');
+    if(it.molde) tags.push('<span class="tg mol">Molde · vendeu '+it.molde.ndias+' de 15 dias</span>');
     var pv=proximaVaga(it); if(pv) tags.push('<span class="tg ag">agendado '+(pv===hoje?'hoje':dmIso(pv))+'</span>');
-    h+='<div class="apl-l"><div class="apl-t"><b>'+escapar(nomeCurto(it.nome))+'</b><span>'+et+' '+tags.join(' ')+'</span></div>'+
-       '<button type="button" class="apl-ag-bt" onclick="abrirAgendar('+i+')">Agendar</button></div>';
+    h+='<div class="apl-l"'+(it.ch?' data-ch="'+attr(it.ch)+'"':'')+'><div class="apl-t"><b>'+escapar(nomeCurto(it.nome))+'</b><span>'+et+' '+tags.join(' ')+'</span></div>'+
+       '<div class="apl-bts"><button type="button" class="apl-ag-bt" onclick="abrirAgendar('+i+')">Agendar</button>'+
+       (it.molde?'<button type="button" class="apl-ag-bt apl-rq" onclick="abrirReplicar(\''+it.molde.id+'\',\'planejar\')">Replicar</button>':'')+'</div></div>';
   });
   if(prods.length>10) h+='<button class="apl-mais" onclick="_apVer.prod=!_apVer.prod;renderPlanejar()">'+(_apVer.prod?'mostrar menos':'ver todos os '+prods.length)+'</button>';
   return h+'</div></div>';
