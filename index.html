@@ -268,6 +268,7 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .fn-foto .fn-f-num{font-size:12.5px;color:var(--tinta2);line-height:1.6}
 .fn-foto .fn-f-tx{font-size:13px;margin-top:6px;line-height:1.6} .fn-foto .fn-f-tx b{color:var(--tinta)}
 .fn-vazio{font-size:13px;color:var(--tinta3);margin:4px 0}
+#fnTipo button{display:inline-flex;flex-direction:column;align-items:center;line-height:1.2} .fn-filtro{display:block;font-size:10.5px;font-weight:600;opacity:.75;margin-top:2px}
 .fn-atalho{display:none}
 @media(max-width:899px){
   .lateral .abas button[data-mod="funil"]{display:none}   /* celular: entra pelo cartão do Painel (barra de baixo já está cheia) */
@@ -280,6 +281,16 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .vd-rk{display:inline-flex;width:26px;height:26px;border-radius:8px;background:var(--bg2);color:var(--uva);font-weight:800;font-size:12px;align-items:center;justify-content:center}
 .vd-rk.top{background:linear-gradient(135deg,var(--rosa),var(--uva));color:#fff}
 .vd-id a{color:var(--uva);font-weight:700;text-decoration:none}
+.vd-acoes{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.vd-acao{background:var(--panel);border:1px solid var(--linha);border-radius:var(--raio);padding:14px 16px;display:flex;gap:12px}
+.vd-acao .vd-an{flex:none;display:inline-flex;width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--rosa),var(--uva));color:#fff;font-weight:800;font-size:13px;align-items:center;justify-content:center}
+.vd-acao .vd-ac{flex:1;min-width:0;font-size:13px;color:var(--tinta2);line-height:1.5}
+.vd-acao .vd-at{font-size:14px;font-weight:800;color:var(--tinta);margin-bottom:2px}
+.vd-acao ul{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.vd-acao li{background:var(--bg2);border-radius:9px;padding:8px 10px}
+.vd-acao li.vd-cl{cursor:pointer} .vd-acao li.vd-cl:hover{background:var(--panel2)}
+.vd-acao li b{color:var(--tinta)} .vd-acao a{color:var(--uva);font-weight:700;text-decoration:none}
+.vd-acao.nada{border-left:4px solid var(--verde)}
 .vd-selo{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:1px 6px;vertical-align:1px}
 .vd-selo.molde{background:#dcfce7;color:#15803d} .vd-selo.novo{background:#fef3c7;color:#b45309}
 .vd-mais{margin-top:10px}
@@ -1972,14 +1983,14 @@ function vdCampeoes30(hoje){
   S.todas.forEach(function(x){ if(!x.data) return; var d=soDia(x.data); if(d<ini||d>hoje) return; m[x.chave]=(m[x.chave]||0)+x.com; });
   var l=Object.keys(m).sort(function(a,b){ return m[b]-m[a]; }), tot=l.reduce(function(s,k){ return s+m[k]; },0), ac=0, c={};
   l.forEach(function(k){ if(tot>0 && ac/tot<0.8) c[k]=1; ac+=m[k]; });
-  return {set:c, n:Object.keys(c).length};
+  return {set:c, n:Object.keys(c).length, m:m};
 }
 function vdAnalise(N){
   var hoje=soDia(S.dataMax), ini=maisDias(hoje,-(N-1)), aIni=maisDias(ini,-N), aFim=maisDias(ini,-1);
-  var r={N:N, hoje:hoje, ini:ini, aIni:aIni, aFim:aFim, gmv:0, com:0, gmvA:0, comA:0, vid:0, vidA:0, live:0, liveA:0, lv:{}, lvA:{}}, P={}, V={}, lvAg={};
+  var r={N:N, hoje:hoje, ini:ini, aIni:aIni, aFim:aFim, gmv:0, com:0, gmvA:0, comA:0, vid:0, vidA:0, live:0, liveA:0, lv:{}, lvA:{}}, P={}, V={}, lvAg={}, lvP={};
   S.todas.forEach(function(x){
     if(!x.data) return; var d=soDia(x.data), dent=d>=ini&&d<=hoje, ant=d>=aIni&&d<=aFim;
-    if(ant){ r.gmvA+=x.gmv; r.comA+=x.com; if(x.tipo==='Vídeo') r.vidA+=x.gmv; if(x.tipo==='Live'){ r.liveA+=x.gmv; if(x.idCont){ r.lvA[x.idCont]=1; lvAg[x.idCont]=(lvAg[x.idCont]||0)+x.gmv; } } 
+    if(ant){ r.gmvA+=x.gmv; r.comA+=x.com; if(x.tipo==='Vídeo') r.vidA+=x.gmv; if(x.tipo==='Live'){ r.liveA+=x.gmv; var lp=lvP[x.chave]||(lvP[x.chave]={chave:x.chave, com:0, gmv:0}); lp.com+=x.com; lp.gmv+=x.gmv; if(x.idCont){ r.lvA[x.idCont]=1; lvAg[x.idCont]=(lvAg[x.idCont]||0)+x.gmv; } } 
       var pa=P[x.chave]||(P[x.chave]={chave:x.chave, com:0, gmv:0, itens:0, dias:{}, gv:0, gl:0, nv:{}, comA:0}); pa.comA+=x.com; }
     if(!dent) return;
     r.gmv+=x.gmv; r.com+=x.com;
@@ -2010,7 +2021,49 @@ function vdAnalise(N){
   var nv=r.videos.filter(function(o){ return o.novo; });
   r.nNovos=nv.length; r.gmvNovos=nv.reduce(function(s,o){ return s+o.gmv; },0); r.melhorNovo=nv[0]||null;
   var C=vdCampeoes30(hoje); r.nCamp=C.n; r.novosCamp=nv.filter(function(o){ return C.set[o.vida.prod]; }).length;
+  // ---- V2a "O que fazer" (fonte: testes/fonte_videos.py › acoes)
+  r.lvProdA=Object.keys(lvP).map(function(k){ var o=lvP[k]; o.nome=nome(k); return o; })
+    .sort(function(a,b){ return (b.com-a.com)||(b.gmv-a.gmv)||(a.nome<b.nome?-1:a.nome>b.nome?1:0); })[0]||null;
+  var Pm={}; r.produtos.forEach(function(p){ Pm[p.chave]=p; });
+  var par=Object.keys(C.set).map(function(ch){
+    var ult=null, temNovo=false;
+    Object.keys(vida).forEach(function(id){ var w=vida[id]; if(w.prod!==ch) return; if(w.pri>=ini) temNovo=true; if(!ult||w.pri>ult) ult=w.pri; });
+    if(temNovo) return null;
+    var p=Pm[ch]||{com:0, comA:(P[ch]?P[ch].comA:0)};
+    return {chave:ch, nome:nome(ch), com30:C.m[ch]||0, com:p.com||0, comA:p.comA||0, ult:ult, dias: ult? Math.round((hoje-ult)/86400000) : null};
+  }).filter(Boolean).sort(function(a,b){ return (b.com30-a.com30)||(a.nome<b.nome?-1:a.nome>b.nome?1:0); });
+  r.nParados=par.length; r.parados=par.slice(0,3);
+  r.moldes=r.videos.filter(function(o){ return o.molde; }).slice(0,3);
+  r.pegou=r.videos.filter(function(o,i){ return o.novo && i<10; }).slice(0,3);
   return r;
+}
+function vdHtmlAcoes(r){
+  var N=r.N, A=[];
+  if(r.nLiveA>0 && r.nLive<r.nLiveA/2){
+    var lp=r.lvProdA;
+    A.push({t:'Volte com as lives', c:'Eram <b>'+r.nLiveA+' '+plural(r.nLiveA,'live','lives')+' ('+reais(r.liveA)+')</b> nos '+N+' dias anteriores; agora <b>'+r.nLive+' ('+reais(r.live)+')</b>. Live é onde a conta mais vende.'+
+      (lp?'<ul><li class="vd-cl" data-ch="'+attr(lp.chave)+'" onclick="abrirFichaGeral(this.getAttribute(\'data-ch\'))">O que mais vendeu nas lives antes: <b>'+escapar(nomeCurto(lp.nome))+'</b> · '+reais(lp.com)+' de comissão</li></ul>':''), k:'lives'});
+  }
+  if(r.parados.length){
+    A.push({t:'Grave vídeo novo pros campeões parados', c:(r.nParados===1?'Este campeão':'Estes campeões')+' (os que fazem 80% da comissão em 30 dias) não '+(r.nParados===1?'ganhou':'ganharam')+' vídeo novo nesses '+N+' dias.'+
+      '<ul>'+r.parados.map(function(x){
+        var q=vdMudou(x.com,x.comA,'Comissão');
+        return '<li class="vd-cl" data-ch="'+attr(x.chave)+'" onclick="abrirFichaGeral(this.getAttribute(\'data-ch\'))"><b>'+escapar(nomeCurto(x.nome))+'</b> · '+reais(x.com30)+' em 30 dias<br>'+
+          (x.dias!=null?'Último vídeo novo há <b>'+x.dias+' '+plural(x.dias,'dia','dias')+'</b>':'<b>Nenhum vídeo</b> vendeu este produto (só live ou vitrine)')+(q?' · '+q:'')+'</li>';
+      }).join('')+'</ul>'+(r.nParados>3?'<div style="margin-top:6px">+'+(r.nParados-3)+' '+plural(r.nParados-3,'outro campeão','outros campeões')+' na mesma situação.</div>':''), k:'parados'});
+  }
+  if(r.moldes.length){
+    A.push({t:'Replique o que está funcionando', c:'Grave 2 ou 3 variações com o mesmo gancho '+(r.moldes.length===1?'deste vídeo':'destes vídeos')+' (vendem quase todo dia).'+
+      '<ul>'+r.moldes.map(function(o){ return '<li class="vd-cl" onclick="abrirVideo(\''+o.id+'\')"><a href="'+vdLink(o.id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+vdCurto(o.id)+' ↗</a> <b>'+escapar(nomeCurto(nomeProdLive(o.vida.prod)))+'</b><br>Vendeu em <b>'+o.ndias+' de '+N+'</b> dias · '+reais(o.com)+' de comissão</li>'; }).join('')+'</ul>', k:'moldes'});
+  }
+  if(r.pegou.length){
+    A.push({t:'Vídeo novo que já pegou', c:'Começou a vender nesses '+N+' dias e já está entre os 10 que mais deram comissão: grave mais um enquanto está quente.'+
+      '<ul>'+r.pegou.map(function(o){ return '<li class="vd-cl" onclick="abrirVideo(\''+o.id+'\')"><a href="'+vdLink(o.id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+vdCurto(o.id)+' ↗</a> <b>'+escapar(nomeCurto(nomeProdLive(o.vida.prod)))+'</b><br>1ª venda '+dm(o.vida.pri)+' · '+reais(o.com)+' de comissão</li>'; }).join('')+'</ul>', k:'pegou'});
+  }
+  var h='<h4 class="vd-h4">2. O que fazer <small>com o número que justifica cada ação</small></h4><div class="vd-acoes" id="vdAcoes">';
+  if(!A.length) h+='<div class="vd-acao nada"><div class="vd-ac"><div class="vd-at">Nada urgente nesses '+N+' dias</div>Nenhum campeão parado, lives no ritmo e nenhum vídeo pra replicar agora. Siga o plano.</div></div>';
+  A.forEach(function(a,i){ h+='<div class="vd-acao" data-acao="'+a.k+'"><span class="vd-an">'+(i+1)+'</span><div class="vd-ac"><div class="vd-at">'+a.t+'</div>'+a.c+'</div></div>'; });
+  return h+'</div>';
 }
 function setVdN(n){ _vdN=n; _vdTodosP=false; _vdTodosV=false; renderVideos(); }
 function vdVerTodos(q){ if(q==='p') _vdTodosP=true; else _vdTodosV=true; renderVideos(); }
@@ -2121,7 +2174,7 @@ async function salvarFunil(substituir){
   var existe=S.metas && S.metas[id];
   if(existe && id!==_fn.edit && !substituir){
     _fn.conf=id; var c=document.getElementById('fnConf');
-    c.innerHTML='<span>Já tem '+(d.tipo==='dia'?'o dia '+dm(deIso(d.de)):'a foto de '+dm(deIso(d.de))+' a '+dm(deIso(d.ate)))+'. Substituir pelos números novos?</span><button class="btn mini" onclick="salvarFunil(true)">Substituir</button><button class="btn ghost mini" onclick="document.getElementById(\'fnConf\').classList.remove(\'on\')">Não</button>';
+    c.innerHTML='<span>Já tem '+(d.tipo==='dia'?'o dia '+dm(deIso(d.de)):'o resumo de '+dm(deIso(d.de))+' a '+dm(deIso(d.ate)))+'. Substituir pelos números novos?</span><button class="btn mini" onclick="salvarFunil(true)">Substituir</button><button class="btn ghost mini" onclick="document.getElementById(\'fnConf\').classList.remove(\'on\')">Não</button>';
     c.classList.add('on'); return false;
   }
   d.salvoEm=new Date().toISOString();
@@ -2136,7 +2189,7 @@ async function salvarFunil(substituir){
     return false;
   }
   _fn.edit=null; _fn.conf=null; fnApagarRasc(d.tipo);
-  var quando = d.tipo==='dia' ? 'Dia '+dm(deIso(d.de)) : 'Foto de '+dm(deIso(d.de))+' a '+dm(deIso(d.ate));
+  var quando = d.tipo==='dia' ? 'Dia '+dm(deIso(d.de)) : 'Resumo de '+dm(deIso(d.de))+' a '+dm(deIso(d.ate));
   renderFunil();
   aviso('✓ '+quando+' salvo · '+fnTxtTaxas(d).replace(/<\/?b>/g,''));
   return true;
@@ -2152,7 +2205,7 @@ async function excluirFunil(id){
   try{ await DB.salvar('metas',[{id:id, dados:d, excluido:true}]); }
   catch(e){ S.metas[id]=d; renderFunil(); fnErro('Sem conexão com a nuvem: não excluí.'); return; }
   renderFunil();
-  var quando = d.tipo==='dia' ? 'o dia '+dm(deIso(d.de)) : 'a foto de '+dm(deIso(d.de))+' a '+dm(deIso(d.ate));
+  var quando = d.tipo==='dia' ? 'o dia '+dm(deIso(d.de)) : 'o resumo de '+dm(deIso(d.de))+' a '+dm(deIso(d.ate));
   aviso('Excluí '+quando+'.', 'Desfazer', async function(){
     S.metas[id]=d;
     try{ await DB.salvar('metas',[{id:id, dados:d, excluido:false}]); } catch(e){ delete S.metas[id]; fnErro('Sem conexão com a nuvem: não consegui desfazer.'); }
@@ -2172,10 +2225,10 @@ function renderFunil(pre){
   var el=document.getElementById('funilConteudo'); if(!el) return;
   var dia=_fn.tipo==='dia', v=pre||{}, h='';
   if(!pre){ var ra=fnRascTodos()[_fn.tipo]; if(ra && (ra.edit||null)===(_fn.edit||null)){ v={de:ra.de||'', ate:ra.ate||'', txt:ra.txt||{}}; if(_fn.edit && S.metas[_fn.edit]) v.tipo=_fn.tipo; } }
-  h+='<div class="janelas" id="fnTipo"><button class="'+(dia?'on':'')+'" onclick="setFnTipo(\'dia\')">Registro do dia</button><button class="'+(!dia?'on':'')+'" onclick="setFnTipo(\'per\')">Foto de período</button></div>';
+  h+='<div class="janelas" id="fnTipo"><button class="'+(dia?'on':'')+'" onclick="setFnTipo(\'dia\')">Dia a dia<small class="fn-filtro">filtro Ontem</small></button><button class="'+(!dia?'on':'')+'" onclick="setFnTipo(\'per\')">Resumo do período<small class="fn-filtro">filtro 7D ou Personalizar</small></button></div>';
   h+='<div class="nv-card frm fn-form" id="fnForm">';
   h+= dia ? '<p style="margin-top:0">No app: <b>Dados › Ontem › Visão geral</b>. Digite os números como aparecem lá (19.8K, 1.0K…).'+(_fn.edit?' <b>Editando '+dm(deIso(v.de))+'.</b>':'')+'</p>'
-          : '<p style="margin-top:0">No app: <b>Dados › 7D</b> ou <b>Personalizar</b>. Use as datas que aparecem embaixo do filtro (o 7D não inclui ontem). Fica separado dos dias — não soma com eles.'+(_fn.edit?' <b>Editando '+dm(deIso(v.de))+' a '+dm(deIso(v.ate))+'.</b>':'')+'</p>';
+          : '<p style="margin-top:0">No app: <b>Dados › 7D</b> ou <b>Personalizar</b>. Use as datas que aparecem embaixo do filtro (o 7D não inclui ontem). Fica separado do dia a dia — não soma com ele.'+(_fn.edit?' <b>Editando '+dm(deIso(v.de))+' a '+dm(deIso(v.ate))+'.</b>':'')+'</p>';
   var hoje=hojeISO();
   if(dia) h+='<div class="fn-datas"><label>Dia<input type="date" id="fnDia" max="'+hoje+'" value="'+(v.de||fnOntem())+'" onchange="fnPrevia()"></label></div>';
   else h+='<div class="fn-datas"><label>De<input type="date" id="fnDe" max="'+hoje+'" value="'+(v.de||'')+'" onchange="fnPrevia()"></label><label>Até<input type="date" id="fnAte" max="'+hoje+'" value="'+(v.ate||'')+'" onchange="fnPrevia()"></label></div>';
@@ -2202,10 +2255,10 @@ function renderFunil(pre){
     });
     h+='</tbody></table></div>';
   }
-  // fotos de período
+  // resumos de período
   var pers=fnRegistros('per');
-  h+='<h4 class="vd-h4">Fotos de período <small>não somam com os dias</small></h4>';
-  if(!pers.length) h+='<p class="fn-vazio">Nenhuma foto ainda. Use "Foto de período" com o filtro 7D ou Personalizar do app.</p>';
+  h+='<h4 class="vd-h4">Resumos de período <small>não somam com os dias</small></h4>';
+  if(!pers.length) h+='<p class="fn-vazio">Nenhum resumo ainda. Use "Resumo do período" com o filtro 7D ou Personalizar do app.</p>';
   else{
     h+='<div class="fn-fotos">'+pers.map(function(x){
       var d=x.d, n=diasEntre(d.de,d.ate)+1;
@@ -2254,9 +2307,10 @@ function renderVideos(){
     L.push('O vídeo nº 1 fez <b>'+pct0(r.top1)+'</b> da comissão dos vídeos; os 3 primeiros, <b>'+pct0(r.top3)+'</b>.'+(r.top1>=20?' Depender de poucos vídeos é risco: quando eles cansarem, a venda cai junto. Replicar o que eles têm é a saída.':''));
   }
   h+='<div class="vd-diag">'+L.map(function(t){ return '<div>'+t+'</div>'; }).join('')+'</div>';
+  h+=vdHtmlAcoes(r);
   // ---- 2. produtos
   var ps=r.produtos, psV=_vdTodosP? ps : ps.slice(0,10);
-  h+='<h4 class="vd-h4">2. Produtos que mais venderam <small>por comissão · toque abre a ficha</small></h4>';
+  h+='<h4 class="vd-h4">3. Produtos que mais venderam <small>por comissão · toque abre a ficha</small></h4>';
   if(!ps.length) h+='<div class="apostas-vazio">Nenhuma venda nesses dias.</div>';
   else {
     h+='<div class="vd-tab-w"><table class="vd-tab"><thead><tr><th>#</th><th>Produto</th><th>Comissão</th><th>GMV</th><th>Itens</th><th>Dias com venda</th><th>De onde veio</th><th>vs antes</th></tr></thead><tbody>';
@@ -2270,7 +2324,7 @@ function renderVideos(){
   }
   // ---- 3. vídeos
   var vs=r.videos, vsV=_vdTodosV? vs : vs.slice(0,15);
-  h+='<h4 class="vd-h4">3. Vídeos que mais venderam <small>por comissão · toque abre o detalhe</small></h4>'+
+  h+='<h4 class="vd-h4">4. Vídeos que mais venderam <small>por comissão · toque abre o detalhe</small></h4>'+
      '<p class="desc">A planilha só mostra vídeo que <b>vendeu</b> (não traz views nem texto). A data é a da <b>1ª venda</b> do vídeo (a planilha não traz a data de postagem). <span class="vd-selo molde">Molde</span> = entre os 5 que mais venderam e vendeu em pelo menos '+Math.ceil(N*0.4)+' dos '+N+' dias: é o vídeo pra replicar. <span class="vd-selo novo">Novo</span> = começou a vender nesses dias.</p>';
   if(!vs.length) h+='<div class="apostas-vazio">Nenhum vídeo vendeu nesses dias.</div>';
   else {
