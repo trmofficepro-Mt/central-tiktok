@@ -3807,23 +3807,29 @@ function registrosParaVendas(regs){
   return vendas;
 }
 
+/* status final = já liquidado ou inelegível (não volta atrás) */
+function statusFinal(s){ return /liquidad|ineleg/i.test(String(s||'')); }
 /* ---------- importar: grava só o que é novo ou mudou ---------- */
 async function importarLinhas(linhas, nomeArq){
   var regs=linhasParaRegistros(linhas, nomeArq); if(!regs) return;
   mostrarStatusImport('Conferindo '+inteiro(regs.length)+' linhas…');
   var atuais={}; (await DB.todosLocal('vendas')).forEach(function(r){ atuais[r.id]=r; });
-  var novos=0, mudou=0, iguais=0, envio=[], noArq={};
+  var novos=0, mudou=0, iguais=0, velhas=0, envio=[], noArq={};
   regs.forEach(function(r){ noArq[r.id]=r; });
   Object.keys(noArq).forEach(function(id){
     var r=noArq[id], a=atuais[id];
     if(!a){ novos++; envio.push(r); }
-    else if(vendaMudou(a,r)){ mudou++; envio.push(r); }
+    else if(vendaMudou(a,r)){
+      // status só anda pra frente: pedido já Liquidado/Inelegível não volta pra Pendente por causa de planilha mais antiga (conv. 13)
+      if(!a.excluido && statusFinal(a.status) && !statusFinal(r.status)) velhas++;
+      else { mudou++; envio.push(r); }
+    }
     else iguais++;
   });
   try{
     if(envio.length){ mostrarStatusImport((DB.modo==='nuvem'?'Salvando na nuvem ':'Salvando ')+inteiro(envio.length)+' linhas…'); await DB.salvar('vendas', envio); }
   }catch(e){ alert('Não consegui salvar: '+e.message+'\nNada foi perdido — tente de novo com internet.'); await carregarTudo(); return; }
-  var info={arquivo:nomeArq, linhas:Object.keys(noArq).length, novos:novos, mudou:mudou, iguais:iguais, quando:new Date().toISOString(),
+  var info={arquivo:nomeArq, linhas:Object.keys(noArq).length, novos:novos, mudou:mudou, iguais:iguais, velhas:velhas, quando:new Date().toISOString(),
             de:regs.de, ate:regs.ate, semData:regs.semData||0, semProduto:regs.semProduto||0};
   lsGravar('ct_ultima_importacao', info);
   if(DB.modo==='nuvem') await DB.salvar('metas',[{id:'_ultima_importacao', dados:info}]).catch(function(){});
@@ -3892,7 +3898,8 @@ function renderImportBox(){
     var fora=[];
     if(u.semData) fora.push(inteiro(u.semData)+' sem data');
     if(u.semProduto) fora.push(inteiro(u.semProduto)+' sem nome do produto');
-    if(fora.length) aviso='⚠ '+inteiro((u.semData||0)+(u.semProduto||0))+' '+plural((u.semData||0)+(u.semProduto||0),'linha não entrou','linhas não entraram')+' nas contas ('+fora.join(', ')+'). Confira a planilha.';
+    if(u.velhas) aviso='⚠ '+inteiro(u.velhas)+' '+plural(u.velhas,'pedido não foi alterado','pedidos não foram alterados')+': essa planilha é mais antiga (trazia como pendente o que o sistema já tinha como liquidado ou inelegível).'+(fora.length?' ':'');
+    if(fora.length) aviso+='⚠ '+inteiro((u.semData||0)+(u.semProduto||0))+' '+plural((u.semData||0)+(u.semProduto||0),'linha não entrou','linhas não entraram')+' nas contas ('+fora.join(', ')+'). Confira a planilha.';
   }
   if(DB.erro) t=DB.erro+(t?' · '+t:'');
   var el=document.getElementById('arqInfo'); el.style.color='';
