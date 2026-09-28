@@ -251,6 +251,31 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .vd-tab td small{display:block;color:var(--tinta3);font-size:11.5px}
 .vd-tab td.vd-nome{white-space:normal;min-width:200px;font-weight:700}
 .vd-tab tr:last-child td{border-bottom:none}
+/* ===== funil do dia (F1 — conv. 13) ===== */
+.fn-form .fn-campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+.fn-form .fn-datas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+.fn-form label small{font-weight:500;color:var(--tinta3)}
+.fn-prev{margin:12px 0 4px;padding:10px 12px;border-radius:10px;background:var(--bg2);font-size:13px;color:var(--tinta2);line-height:1.5}
+.fn-prev b{color:var(--tinta)}
+.fn-nota{font-size:12px;color:var(--tinta3);margin:8px 0 0;line-height:1.5}
+.fn-conf{display:none;margin:4px 0 10px;padding:9px 12px;border-radius:9px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;font-size:13px;font-weight:600}
+.fn-conf.on{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.fn-tab td.fn-acoes{white-space:nowrap} .fn-tab td.fn-acoes button{margin-left:4px}
+.fn-lnk{border:none;background:none;color:var(--uva);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:4px 6px}
+.fn-lnk.del{color:var(--tinta3)}
+.fn-fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.fn-foto .fn-f-tit{font-weight:800;font-size:14px} .fn-foto .fn-f-sub{font-size:12px;color:var(--tinta3);margin:2px 0 8px}
+.fn-foto .fn-f-num{font-size:12.5px;color:var(--tinta2);line-height:1.6}
+.fn-foto .fn-f-tx{font-size:13px;margin-top:6px;line-height:1.6} .fn-foto .fn-f-tx b{color:var(--tinta)}
+.fn-vazio{font-size:13px;color:var(--tinta3);margin:4px 0}
+.fn-atalho{display:none}
+@media(max-width:899px){
+  .lateral .abas button[data-mod="funil"]{display:none}   /* celular: entra pelo cartão do Painel (barra de baixo já está cheia) */
+  .fn-atalho{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin:0 0 12px;padding:12px 14px;border:1px solid var(--linha);border-radius:var(--raio);background:var(--panel);font-family:inherit;font-size:13px;color:var(--tinta2);cursor:pointer}
+  .fn-atalho b{color:var(--tinta)} .fn-atalho .fn-seta{margin-left:auto;color:var(--uva);font-weight:800;white-space:nowrap}
+  .fn-atalho.ok{border-color:#86efac;background:linear-gradient(135deg,#f0fdf4,#fff)}
+}
+@media(max-width:560px){ .fn-form .fn-campos{grid-template-columns:1fr} }
 .vd-lin{cursor:pointer} .vd-lin:hover{background:var(--bg2)} .vd-lin:focus{outline:none} .vd-lin:focus-visible{outline:2px solid var(--uva);outline-offset:-2px}
 .vd-rk{display:inline-flex;width:26px;height:26px;border-radius:8px;background:var(--bg2);color:var(--uva);font-weight:800;font-size:12px;align-items:center;justify-content:center}
 .vd-rk.top{background:linear-gradient(135deg,var(--rosa),var(--uva));color:#fff}
@@ -948,6 +973,10 @@ div.apl-t{cursor:default}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 10l5-3v10l-5-3z"/></svg>
         Vídeos
       </button>
+      <button data-mod="funil" onclick="irPara('funil')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg>
+        Funil
+      </button>
       <button data-mod="campeoes" onclick="irPara('campeoes')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
         Campeões
@@ -1029,6 +1058,7 @@ div.apl-t{cursor:default}
       <span class="badge" id="badgePedidos">—</span>
     </div>
 
+    <button type="button" class="fn-atalho" id="funilAtalho" onclick="irPara('funil')"></button>
     <div class="card mc-card" id="metaCard"></div>
     <div class="pn-canal-box"><div class="janelas pn-canal" id="pnCanal">
       <button type="button" data-c="tudo" class="on" onclick="setCanalPainel('tudo')">Tudo</button>
@@ -1070,6 +1100,14 @@ div.apl-t{cursor:default}
         <h3>Vídeos</h3>
         <p class="desc">O que mais vendeu nos últimos dias — produtos e vídeos — pra saber o que replicar e escalar. Toque num vídeo pra ver o detalhe.</p>
         <div id="videosConteudo"></div>
+      </div>
+    </div>
+
+    <div class="modulo" id="mod-funil">
+      <div class="sec" style="margin-top:22px">
+        <h3>Funil</h3>
+        <p class="desc">Os números do app do TikTok (Central do criador › Dados) que a planilha não tem: impressões e cliques. Com eles saem a taxa de clique (CTR), a conversão e o ticket — o que o TikTok não mostra.</p>
+        <div id="funilConteudo"></div>
       </div>
     </div>
 
@@ -1423,7 +1461,8 @@ function irPara(mod){
   document.querySelectorAll('.modulo').forEach(function(m){
     m.classList.toggle('on', m.id==='mod-'+mod);
   });
-  if(mod==='planejar' && typeof renderPlanejar==='function') renderPlanejar();   // A planejar usa a lista Para gravar, que pode ter mudado em outra tela
+  if(mod==='planejar' && typeof renderPlanejar==='function') renderPlanejar();
+  if(mod==='funil' && typeof renderFunil==='function') renderFunil();   // A planejar usa a lista Para gravar, que pode ter mudado em outra tela
   if(typeof redesenharVisiveis==='function') redesenharVisiveis();
   try{ window.scrollTo({top:0, behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); }
 }
@@ -1979,6 +2018,194 @@ function vdMudou(a,b,oque){   // "caiu 76% (R$ A → R$ B)"
   if(!(b>0)) return a>0? oque+' começou a vender ('+reais(a)+')' : '';
   var d=(a-b)/b*100; return oque+' '+(Math.abs(d)<1?'ficou igual':(d<0?'caiu ':'subiu ')+Math.abs(d).toFixed(0)+'%')+' ('+reais(b)+' → '+reais(a)+')';
 }
+/* ===================== FUNIL DO DIA (F1 — conversa 13) =====================
+   Números digitados do app (Central do criador › Dados). Dois tipos, guardados SEPARADOS nas metas (nunca somam):
+   funil_dia_AAAA-MM-DD (filtro Ontem) e funil_per_AAAA-MM-DD_AAAA-MM-DD (filtro 7D / Personalizar).
+   CTR = cliques ÷ impressões · conversão = itens ÷ cliques · ticket = GMV ÷ itens · GPM = GMV ÷ mil visualizações.
+   Cálculo-fonte: testes/fonte_funil.py */
+var FN_CAMPOS=[
+  {k:'imp',  rot:'Impressões do produto',     ex:'ex: 19.8K', obr:true},
+  {k:'cli',  rot:'Cliques no produto',        ex:'ex: 1.0K',  obr:true},
+  {k:'itens',rot:'Itens vendidos atribuídos', ex:'ex: 8',     obr:true},
+  {k:'gmv',  rot:'GMV atribuído',             ex:'ex: 594,4', obr:true},
+  {k:'com',  rot:'Comissões estimadas',       ex:'aba Comissões', obr:false},
+  {k:'views',rot:'Visualizações',             ex:'Desempenho do conteúdo › Vídeo', obr:false}
+];
+var _fn={tipo:'dia', edit:null, conf:null};
+/* "19.8K" → 19800 · "R$ 6,9K" → 6900 · "594,4" → 594.4 · "" → null · lixo → NaN */
+function numApp(t){
+  var s=String(t==null?'':t).trim().toLowerCase().replace(/r\$/g,'').replace(/\s+/g,'');
+  if(!s) return {v:null, aprox:false};
+  var m=1;
+  if(/mil$/.test(s)){ m=1000; s=s.slice(0,-3); } else if(/k$/.test(s)){ m=1000; s=s.slice(0,-1); }
+  if(!/^\d[\d.,]*$/.test(s)) return {v:NaN, aprox:false};
+  return {v:Math.round(numBR(s)*m*100)/100, aprox:m!==1};
+}
+function fnTaxas(d){
+  var ap=d.aprox||{};
+  return {
+    ctr:   d.imp>0 ? {v:d.cli/d.imp*100, ap:ap.imp||ap.cli} : null,
+    conv:  d.cli>0 && d.itens!=null ? {v:d.itens/d.cli*100, ap:ap.cli||ap.itens} : null,
+    ticket:d.itens>0 && d.gmv!=null ? {v:d.gmv/d.itens, ap:ap.gmv||ap.itens} : null,
+    gpm:   d.views>0 && d.gmv!=null ? {v:d.gmv/(d.views/1000), ap:ap.gmv||ap.views} : null
+  };
+}
+function fnPct(t,c){ return t? (t.ap?'~':'')+t.v.toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c})+'%' : '—'; }
+function fnRs(t){ return t? (t.ap?'~':'')+reais(t.v) : '—'; }
+function fnTxtTaxas(d){
+  var t=fnTaxas(d);
+  return 'CTR <b>'+fnPct(t.ctr,1)+'</b> · conversão <b>'+fnPct(t.conv,2)+'</b> · ticket <b>'+fnRs(t.ticket)+'</b>'+(t.gpm?' · GPM <b>'+fnRs(t.gpm)+'</b>':'');
+}
+function fnMostra(d,k){   // mostra como a Mari digitou (igual ao app); se não tiver, o número
+  var tx=d.txt&&d.txt[k]; if(tx) return escapar((k==='gmv'||k==='com') && !/r\$/i.test(tx) ? 'R$ '+tx : tx);
+  var v=d[k]; if(v==null) return '—';
+  return (k==='gmv'||k==='com') ? reais(v) : inteiro(v);
+}
+function fnDiaSem(iso){ var d=deIso(iso); return ['dom','seg','ter','qua','qui','sex','sáb'][d.getDay()]+' '+dm(d); }
+function fnRegistros(tipo){
+  var pre='funil_'+tipo+'_', out=[];
+  Object.keys(S.metas||{}).forEach(function(id){ if(id.indexOf(pre)===0 && S.metas[id]) out.push({id:id, d:S.metas[id]}); });
+  out.sort(function(a,b){ return a.d.de<b.d.de?1:(a.d.de>b.d.de?-1:(a.d.ate<b.d.ate?1:-1)); });
+  return out;
+}
+function fnOntem(){ return isoMais(hojeISO(),-1); }
+function setFnTipo(t){ _fn.tipo=t; _fn.edit=null; _fn.conf=null; renderFunil(); }
+function fnLerForm(){
+  var d={tipo:_fn.tipo, txt:{}, aprox:{}}, erros=[];
+  if(_fn.tipo==='dia'){ d.de=d.ate=(document.getElementById('fnDia')||{}).value||''; }
+  else { d.de=(document.getElementById('fnDe')||{}).value||''; d.ate=(document.getElementById('fnAte')||{}).value||''; }
+  FN_CAMPOS.forEach(function(c){
+    var raw=(document.getElementById('fn_'+c.k)||{}).value||'', r=numApp(raw);
+    if(r.v===null){ if(c.obr) erros.push('Falta preencher: '+c.rot+'.'); d[c.k]=null; return; }
+    if(isNaN(r.v)){ erros.push(c.rot+': não entendi "'+raw.trim()+'". Digite como está no app, ex.: 19.8K ou 594,4.'); d[c.k]=null; return; }
+    d[c.k]=r.v; d.txt[c.k]=raw.trim(); if(r.aprox) d.aprox[c.k]=true;
+  });
+  var hoje=hojeISO();
+  if(_fn.tipo==='dia'){
+    if(!d.de) erros.unshift('Escolha o dia.');
+    else if(d.de>hoje) erros.unshift('Esse dia ainda não chegou.');
+  }else{
+    if(!d.de || !d.ate) erros.unshift('Escolha as datas De e Até (as que aparecem no print).');
+    else if(d.de>d.ate) erros.unshift('A data "De" tem que ser antes da "Até".');
+    else if(d.ate>hoje) erros.unshift('A data "Até" ainda não chegou.');
+  }
+  if(d.imp!=null && d.cli!=null && d.cli>d.imp) erros.push('Cliques ('+fnMostra(d,'cli')+') maior que impressões ('+fnMostra(d,'imp')+'): confira os dois números.');
+  if(d.cli!=null && d.itens!=null && d.itens>d.cli) erros.push('Itens vendidos ('+fnMostra(d,'itens')+') maior que cliques ('+fnMostra(d,'cli')+'): confira os dois números.');
+  return {d:d, erros:erros};
+}
+function fnPrevia(){
+  var r=fnLerForm(), el=document.getElementById('fnPrev'); if(!el) return;
+  var d=r.d;
+  var ruim=(d.imp!=null&&d.cli!=null&&d.cli>d.imp)||(d.cli!=null&&d.itens!=null&&d.itens>d.cli);
+  el.innerHTML = ruim ? 'Tem número que não fecha — confira antes de salvar.'
+               : (d.imp!=null&&d.cli!=null&&d.itens!=null&&d.gmv!=null) ? fnTxtTaxas(d) : 'Preencha os 4 números obrigatórios pra ver CTR, conversão e ticket.';
+  var c=document.getElementById('fnConf'); if(c){ c.classList.remove('on'); } _fn.conf=null;
+}
+function fnErro(msg){ var e=document.getElementById('fnErro'); if(!e) return; e.innerHTML=msg; e.classList.toggle('on', !!msg); }
+async function salvarFunil(substituir){
+  var r=fnLerForm(); fnErro('');
+  if(r.erros.length){ fnErro(r.erros.map(escapar).join('<br>')); return false; }
+  var d=r.d, id= d.tipo==='dia' ? 'funil_dia_'+d.de : 'funil_per_'+d.de+'_'+d.ate;
+  var existe=S.metas && S.metas[id];
+  if(existe && id!==_fn.edit && !substituir){
+    _fn.conf=id; var c=document.getElementById('fnConf');
+    c.innerHTML='<span>Já tem '+(d.tipo==='dia'?'o dia '+dm(deIso(d.de)):'a foto de '+dm(deIso(d.de))+' a '+dm(deIso(d.ate)))+'. Substituir pelos números novos?</span><button class="btn mini" onclick="salvarFunil(true)">Substituir</button><button class="btn ghost mini" onclick="document.getElementById(\'fnConf\').classList.remove(\'on\')">Não</button>';
+    c.classList.add('on'); return false;
+  }
+  d.salvoEm=new Date().toISOString();
+  var rows=[{id:id, dados:d, excluido:false}], velho=_fn.edit && _fn.edit!==id ? _fn.edit : null, antes={};
+  if(velho) rows.push({id:velho, dados:S.metas[velho]||{}, excluido:true});
+  S.metas=S.metas||{};
+  rows.forEach(function(x){ antes[x.id]=S.metas[x.id]; if(x.excluido) delete S.metas[x.id]; else S.metas[x.id]=x.dados; });
+  try{ await DB.salvar('metas', rows); }
+  catch(e){
+    Object.keys(antes).forEach(function(k){ if(antes[k]) S.metas[k]=antes[k]; else delete S.metas[k]; });
+    fnErro('Sem conexão com a nuvem: não salvei. Os números continuam aqui — tente de novo quando tiver internet.');
+    return false;
+  }
+  _fn.edit=null; _fn.conf=null;
+  var quando = d.tipo==='dia' ? 'Dia '+dm(deIso(d.de)) : 'Foto de '+dm(deIso(d.de))+' a '+dm(deIso(d.ate));
+  renderFunil();
+  aviso('✓ '+quando+' salvo · '+fnTxtTaxas(d).replace(/<\/?b>/g,''));
+  return true;
+}
+function editarFunil(id){
+  var d=S.metas[id]; if(!d) return;
+  _fn.tipo=d.tipo==='per'?'per':'dia'; _fn.edit=id; _fn.conf=null; renderFunil(d);
+  var f=document.getElementById('fnForm'); if(f && f.scrollIntoView) f.scrollIntoView({block:'start'});
+}
+async function excluirFunil(id){
+  var d=S.metas[id]; if(!d) return;
+  delete S.metas[id]; if(_fn.edit===id) _fn.edit=null;
+  try{ await DB.salvar('metas',[{id:id, dados:d, excluido:true}]); }
+  catch(e){ S.metas[id]=d; renderFunil(); fnErro('Sem conexão com a nuvem: não excluí.'); return; }
+  renderFunil();
+  var quando = d.tipo==='dia' ? 'o dia '+dm(deIso(d.de)) : 'a foto de '+dm(deIso(d.de))+' a '+dm(deIso(d.ate));
+  aviso('Excluí '+quando+'.', 'Desfazer', async function(){
+    S.metas[id]=d;
+    try{ await DB.salvar('metas',[{id:id, dados:d, excluido:false}]); } catch(e){ delete S.metas[id]; fnErro('Sem conexão com a nuvem: não consegui desfazer.'); }
+    renderFunil();
+  });
+}
+function cancelarEdicaoFunil(){ _fn.edit=null; _fn.conf=null; renderFunil(); }
+function renderFunilAtalho(){
+  var el=document.getElementById('funilAtalho'); if(!el) return;
+  var o=fnOntem(), d=S.metas && S.metas['funil_dia_'+o];
+  el.classList.toggle('ok', !!d);
+  el.innerHTML = d ? '<span><b>Funil de ontem ('+dm(deIso(o))+') ✓</b><br>'+fnTxtTaxas(d)+'</span><span class="fn-seta">Ver ›</span>'
+                   : '<span><b>Funil</b> · registrar os números de ontem ('+dm(deIso(o))+')</span><span class="fn-seta">Registrar ›</span>';
+}
+function renderFunil(pre){
+  renderFunilAtalho();
+  var el=document.getElementById('funilConteudo'); if(!el) return;
+  var dia=_fn.tipo==='dia', v=pre||{}, h='';
+  h+='<div class="janelas" id="fnTipo"><button class="'+(dia?'on':'')+'" onclick="setFnTipo(\'dia\')">Registro do dia</button><button class="'+(!dia?'on':'')+'" onclick="setFnTipo(\'per\')">Foto de período</button></div>';
+  h+='<div class="nv-card frm fn-form" id="fnForm">';
+  h+= dia ? '<p style="margin-top:0">No app: <b>Dados › Ontem › Visão geral</b>. Digite os números como aparecem lá (19.8K, 1.0K…).'+(_fn.edit?' <b>Editando '+dm(deIso(v.de))+'.</b>':'')+'</p>'
+          : '<p style="margin-top:0">No app: <b>Dados › 7D</b> ou <b>Personalizar</b>. Use as datas que aparecem embaixo do filtro (o 7D não inclui ontem). Fica separado dos dias — não soma com eles.'+(_fn.edit?' <b>Editando '+dm(deIso(v.de))+' a '+dm(deIso(v.ate))+'.</b>':'')+'</p>';
+  var hoje=hojeISO();
+  if(dia) h+='<div class="fn-datas"><label>Dia<input type="date" id="fnDia" max="'+hoje+'" value="'+(v.de||fnOntem())+'" onchange="fnPrevia()"></label></div>';
+  else h+='<div class="fn-datas"><label>De<input type="date" id="fnDe" max="'+hoje+'" value="'+(v.de||'')+'" onchange="fnPrevia()"></label><label>Até<input type="date" id="fnAte" max="'+hoje+'" value="'+(v.ate||'')+'" onchange="fnPrevia()"></label></div>';
+  h+='<div class="fn-campos">'+FN_CAMPOS.map(function(c){
+      var val=v.txt&&v.txt[c.k]!=null ? v.txt[c.k] : (v[c.k]!=null?String(v[c.k]).replace('.',','):'');
+      return '<label>'+c.rot+(c.obr?' *':' <small>(opcional)</small>')+'<input id="fn_'+c.k+'" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="'+c.ex+'" value="'+attr(val)+'" oninput="fnPrevia()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();salvarFunil();}"></label>';
+    }).join('')+'</div>';
+  h+='<div class="fn-prev" id="fnPrev"></div>';
+  h+='<div class="f-erro" id="fnErro"></div><div class="fn-conf" id="fnConf"></div>';
+  h+='<div class="nv-botoes"><button class="btn" onclick="salvarFunil()">Salvar</button>'+(_fn.edit?'<button class="btn ghost mini" onclick="cancelarEdicaoFunil()">Cancelar edição</button>':'')+'</div>';
+  h+='<p class="fn-nota">~ = aproximado: o app arredonda (1.0K pode ser de 950 a 1.049). O que vale é comparar com os seus próprios dias. Referência citada na aula (não verificada): CTR acima de 2,3%; conversão de 1,8% a 2,2%.</p>';
+  h+='</div>';
+  // histórico dos dias
+  var dias=fnRegistros('dia');
+  h+='<h4 class="vd-h4">Dias registrados <small>'+dias.length+' '+plural(dias.length,'dia','dias')+'</small></h4>';
+  if(!dias.length) h+='<p class="fn-vazio">Nenhum dia ainda. Registre o de ontem no formulário acima.</p>';
+  else{
+    h+='<div class="vd-tab-w"><table class="vd-tab fn-tab" id="fnTabDias"><thead><tr><th>Dia</th><th>Impressões</th><th>Cliques</th><th>Itens</th><th>GMV</th><th>CTR</th><th>Conversão</th><th>Ticket</th><th>Comissão</th><th></th></tr></thead><tbody>';
+    dias.forEach(function(x){
+      var d=x.d, t=fnTaxas(d);
+      h+='<tr data-fn="'+x.id+'"><td><b>'+fnDiaSem(d.de)+'</b></td><td>'+fnMostra(d,'imp')+'</td><td>'+fnMostra(d,'cli')+'</td><td>'+fnMostra(d,'itens')+'</td><td>'+fnMostra(d,'gmv')+'</td>'+
+         '<td><b>'+fnPct(t.ctr,1)+'</b></td><td><b>'+fnPct(t.conv,2)+'</b></td><td>'+fnRs(t.ticket)+'</td><td>'+fnMostra(d,'com')+'</td>'+
+         '<td class="fn-acoes"><button class="fn-lnk" onclick="editarFunil(\''+x.id+'\')">Editar</button><button class="fn-lnk del" onclick="excluirFunil(\''+x.id+'\')">Excluir</button></td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  // fotos de período
+  var pers=fnRegistros('per');
+  h+='<h4 class="vd-h4">Fotos de período <small>não somam com os dias</small></h4>';
+  if(!pers.length) h+='<p class="fn-vazio">Nenhuma foto ainda. Use "Foto de período" com o filtro 7D ou Personalizar do app.</p>';
+  else{
+    h+='<div class="fn-fotos">'+pers.map(function(x){
+      var d=x.d, n=diasEntre(d.de,d.ate)+1;
+      return '<div class="nv-card fn-foto" data-fn="'+x.id+'"><div class="fn-f-tit">'+dm(deIso(d.de))+' a '+dm(deIso(d.ate))+'</div><div class="fn-f-sub">'+n+' '+plural(n,'dia','dias')+'</div>'+
+        '<div class="fn-f-num">Impressões '+fnMostra(d,'imp')+' · cliques '+fnMostra(d,'cli')+'<br>Itens '+fnMostra(d,'itens')+' · GMV '+fnMostra(d,'gmv')+(d.com!=null?'<br>Comissão '+fnMostra(d,'com'):'')+(d.views!=null?' · views '+fnMostra(d,'views'):'')+'</div>'+
+        '<div class="fn-f-tx">'+fnTxtTaxas(d)+'</div>'+
+        '<div class="nv-botoes"><button class="fn-lnk" onclick="editarFunil(\''+x.id+'\')">Editar</button><button class="fn-lnk del" onclick="excluirFunil(\''+x.id+'\')">Excluir</button></div></div>';
+    }).join('')+'</div>';
+  }
+  el.innerHTML=h;
+  fnPrevia();
+}
+
 function renderVideos(){
   var box=document.getElementById('videosConteudo'); if(!box) return;
   if(!S.todas || !S.todas.length || !S.dataMax){ box.innerHTML='<div class="apostas-vazio">Importe a planilha pra ver a análise dos vídeos.</div>'; return; }
@@ -2159,6 +2386,7 @@ function render(){
   renderLojas();
   renderLives();
   renderVideos();
+  renderFunil();
   renderAmostras();
   renderPlanejar();
   renderParaGravar();
