@@ -290,6 +290,11 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .vd-acao li{background:var(--bg2);border-radius:9px;padding:8px 10px}
 .vd-acao li.vd-cl{cursor:pointer} .vd-acao li.vd-cl:hover{background:var(--panel2)}
 .vd-acao li b{color:var(--tinta)} .vd-acao a{color:var(--uva);font-weight:700;text-decoration:none}
+.rq-bt{float:right;margin:0 0 4px 8px;font-family:inherit;font-size:12.5px;font-weight:800;color:#fff;background:var(--uva);border:0;border-radius:8px;padding:7px 12px;min-height:34px;cursor:pointer}
+.rq-bt:hover{filter:brightness(1.1)} .loja .rq-bt{float:none;margin:0 0 0 8px;vertical-align:middle}
+.rq-erro{font-size:13px;font-weight:700;color:#b91c1c;margin:8px 0 0;min-height:4px;line-height:1.45}
+.rq-info{font-size:13px;color:var(--tinta2);margin:0 0 6px;line-height:1.45} .rq-info a{color:var(--uva);font-weight:700}
+.vg-molde{color:var(--tinta3)} .vg-molde a{color:var(--uva);font-weight:700;text-decoration:none}
 .vd-acao.nada{border-left:4px solid var(--verde)}
 .vd-selo{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:1px 6px;vertical-align:1px}
 .vd-selo.molde{background:#dcfce7;color:#15803d} .vd-selo.novo{background:#fef3c7;color:#b45309}
@@ -2054,11 +2059,11 @@ function vdHtmlAcoes(r){
   }
   if(r.moldes.length){
     A.push({t:'Replique o que está funcionando', c:'Grave 2 ou 3 variações com o mesmo gancho '+(r.moldes.length===1?'deste vídeo':'destes vídeos')+' (vendem quase todo dia).'+
-      '<ul>'+r.moldes.map(function(o){ return '<li class="vd-cl" onclick="abrirVideo(\''+o.id+'\')"><a href="'+vdLink(o.id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+vdCurto(o.id)+' ↗</a> <b>'+escapar(nomeCurto(nomeProdLive(o.vida.prod)))+'</b><br>Vendeu em <b>'+o.ndias+' de '+N+'</b> dias · '+reais(o.com)+' de comissão</li>'; }).join('')+'</ul>', k:'moldes'});
+      '<ul>'+r.moldes.map(function(o){ return '<li class="vd-cl" onclick="abrirVideo(\''+o.id+'\')">'+rqBotao(o.id)+'<a href="'+vdLink(o.id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+vdCurto(o.id)+' ↗</a> <b>'+escapar(nomeCurto(nomeProdLive(o.vida.prod)))+'</b><br>Vendeu em <b>'+o.ndias+' de '+N+'</b> dias · '+reais(o.com)+' de comissão</li>'; }).join('')+'</ul>', k:'moldes'});
   }
   if(r.pegou.length){
     A.push({t:'Vídeo novo que já pegou', c:'Começou a vender nesses '+N+' dias e já está entre os 10 que mais deram comissão: grave mais um enquanto está quente.'+
-      '<ul>'+r.pegou.map(function(o){ return '<li class="vd-cl" onclick="abrirVideo(\''+o.id+'\')"><a href="'+vdLink(o.id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+vdCurto(o.id)+' ↗</a> <b>'+escapar(nomeCurto(nomeProdLive(o.vida.prod)))+'</b><br>1ª venda '+dm(o.vida.pri)+' · '+reais(o.com)+' de comissão</li>'; }).join('')+'</ul>', k:'pegou'});
+      '<ul>'+r.pegou.map(function(o){ return '<li class="vd-cl" onclick="abrirVideo(\''+o.id+'\')">'+rqBotao(o.id)+'<a href="'+vdLink(o.id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+vdCurto(o.id)+' ↗</a> <b>'+escapar(nomeCurto(nomeProdLive(o.vida.prod)))+'</b><br>1ª venda '+dm(o.vida.pri)+' · '+reais(o.com)+' de comissão</li>'; }).join('')+'</ul>', k:'pegou'});
   }
   var h='<h4 class="vd-h4">2. O que fazer <small>com o número que justifica cada ação</small></h4><div class="vd-acoes" id="vdAcoes">';
   if(!A.length) h+='<div class="vd-acao nada"><div class="vd-ac"><div class="vd-at">Nada urgente nesses '+N+' dias</div>Nenhum campeão parado, lives no ritmo e nenhum vídeo pra replicar agora. Siga o plano.</div></div>';
@@ -2070,6 +2075,54 @@ function vdVerTodos(q){ if(q==='p') _vdTodosP=true; else _vdTodosV=true; renderV
 function vdMudou(a,b,oque){   // "caiu 76% (R$ A → R$ B)"
   if(!(b>0)) return a>0? oque+' começou a vender ('+reais(a)+')' : '';
   var d=(a-b)/b*100; return oque+' '+(Math.abs(d)<1?'ficou igual':(d<0?'caiu ':'subiu ')+Math.abs(d).toFixed(0)+'%')+' ('+reais(b)+' → '+reais(a)+')';
+}
+/* ===================== V2b REPLICAR (conversa 14) =====================
+   Botão Replicar (itens 3 e 4 do "O que fazer" e detalhe do vídeo) → cria N vagas no Planejar com o produto principal
+   do vídeo e o gancho do vídeo-molde. Campo `molde` = SÓ referência (a vaga NÃO mostra venda do molde; a venda dela
+   só aparece quando for vinculada ao vídeo novo, campo `video`). Salva tudo numa chamada: sem nuvem, nada é criado. */
+var _rq=null, _rqSalvando=false;
+function rqBotao(id){ return '<button type="button" class="rq-bt" onclick="event.stopPropagation();abrirReplicar(\''+id+'\')">Replicar</button>'; }
+function prodDaChave(ch){ var p=S.idxProd && S.idxProd.lista[ch]; return p ? {nome:p.nome, loja:p.loja||'', idProduto:p.id||''} : null; }
+function ganchoDoVideo(id){   // 1º a vaga vinculada a este vídeo (o gancho que foi pro ar); depois a réplica mais recente
+  var l=Object.values(S.plano||{}).filter(function(x){ var d=x.dados||{}; return !x.excluido && d.tipo!=='live' && (d.video===id || d.molde===id) && String(d.ideia||'').trim(); });
+  l.sort(function(a,b){ return ((a.dados.video===id?0:1)-(b.dados.video===id?0:1)) || String(b.dados.criadoEm||'').localeCompare(String(a.dados.criadoEm||'')); });
+  return l.length ? l[0].dados.ideia : '';
+}
+function abrirReplicar(id){
+  var w=vdVida()[id]; if(!w) return; var prod=prodDaChave(w.prod); if(!prod) return;
+  _videoAberto=null; _rq={id:id, prod:prod}; _mv={prod:prod};   // _mv: reaproveita o aviso "Já tem N roteiros" e os atalhos de data
+  var g=ganchoDoVideo(id), n=w.nprod-1;
+  var h=cabPainel('Replicar vídeo '+vdCurto(id), escapar(nomeCurto(prod.nome))+' · cada roteiro vira uma vaga no Planejar');
+  h+='<p class="rq-info">Produto: <b>'+escapar(nomeCurto(prod.nome))+'</b>'+(n>0?' · o vídeo vendeu também mais '+n+' '+plural(n,'produto','produtos'):'')+'</p>';
+  h+='<label>Gancho do vídeo-molde<textarea id="rqGancho" class="fp-gancho" rows="3" placeholder="A primeira frase do vídeo">'+escapar(g)+'</textarea></label>'+
+     '<p class="fp-dica" id="rqDica">'+(g ? 'Veio do roteiro que já tem esse gancho. Mude o que quiser pra fazer a variação.' :
+       '<a href="'+vdLink(id)+'" target="_blank" rel="noopener">Abra o vídeo ↗</a>, veja a primeira frase e escreva aqui. Pode deixar vazio e escrever depois.')+'</p>';
+  h+='<label>Dia da gravação<input type="date" id="mvData" value="'+hojeISO()+'" min="'+hojeISO()+'" oninput="avisoJaTem()" onchange="avisoJaTem()"></label>'+chipsDatas()+'<div id="mvJaTem" class="mv-jatem"></div>';
+  h+='<label>Quantos roteiros?</label><div class="f-seg" id="mvQtd">'+[1,2,3,4,5].map(function(k){ return '<button type="button" data-q="'+k+'" class="'+(k===3?'on':'')+'" onclick="selQtd(this)">'+k+'</button>'; }).join('')+'</div>';
+  h+='<div class="nv-botoes"><button class="btn" id="rqSalvar" onclick="confirmarReplicar()">Agendar</button></div><div class="rq-erro" id="rqErro" role="alert"></div></div></div>';
+  abrirPainel(h); avisoJaTem();
+}
+async function confirmarReplicar(){
+  if(!_rq || _rqSalvando) return;   // toque duplo: o 2º toque é ignorado enquanto salva
+  var err=document.getElementById('rqErro'), bt=document.getElementById('rqSalvar'); err.innerHTML='';
+  var nd=(document.getElementById('mvData')||{}).value||'';
+  if(!nd){ err.innerHTML='⚠ Escolha a data.'; return; }
+  if(nd<hojeISO()){ err.innerHTML='⚠ Esse dia já passou. Escolha hoje ou um dia pra frente.'; return; }
+  var bq=document.querySelector('#mvQtd button.on'), q= bq ? (+bq.getAttribute('data-q')||3) : 3;
+  var g=String((document.getElementById('rqGancho')||{}).value||'').trim(), vid=_rq.id, lista=[];
+  for(var k=0;k<q;k++){ var v=novaVaga(_rq.prod, nd, k); v.dados.ideia=g; v.dados.molde=vid; lista.push(v); }
+  _rqSalvando=true; bt.disabled=true; bt.textContent='Salvando…';
+  var ok=true;
+  try{ await DB.salvar('planejamento', lista.map(function(o){ return {id:o.id, dados:o.dados, excluido:false}; })); }
+  catch(e){ ok=false; }
+  _rqSalvando=false;
+  if(!ok){ bt.disabled=false; bt.textContent='Agendar';
+    err.innerHTML='✕ Sem conexão com a nuvem: nenhum roteiro foi agendado. Confira a internet e toque em Agendar de novo.'; return; }
+  lista.forEach(function(o){ S.plano[o.id]={id:o.id, dados:o.dados, excluido:false}; });   // só entra no sistema depois de salvo
+  fecharForm(); _rq=null; _mv=null;
+  renderPlanejar(); renderParaGravar();
+  aviso('✓ '+q+' '+plural(q,'roteiro agendado','roteiros agendados')+' pra '+(nd===hojeISO()?'hoje':dmIso(nd))+' · réplica do vídeo '+vdCurto(vid), 'Ver no Planejar ›',
+    function(){ _planSemana=segundaDe(nd); _planDia=nd; _planVista='dia'; irPara('planejar'); renderPlanejar(); });
 }
 /* ===================== FUNIL DO DIA (F1 — conversa 13) =====================
    Números digitados do app (Central do criador › Dados). Dois tipos, guardados SEPARADOS nas metas (nunca somam):
@@ -2351,7 +2404,7 @@ function abrirVideo(id){
   var ini=maisDias(hoje,-(_vdN-1));
   var voltar='<button class="voltar" onclick="fecharVideo()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Voltar</button>';
   var h='<div class="ficha-cab"><div class="barra">'+voltar+'</div><h2>Vídeo '+vdCurto(id)+' · '+escapar(nomeCurto(nomeProdLive(w.prod)))+'</h2>'+
-    '<div class="loja">1ª venda em '+dm(w.pri)+' · <a href="'+vdLink(id)+'" target="_blank" rel="noopener">abrir no TikTok ↗</a> · nº '+id+'</div></div><div class="ficha-corpo">';
+    '<div class="loja">1ª venda em '+dm(w.pri)+' · <a href="'+vdLink(id)+'" target="_blank" rel="noopener">abrir no TikTok ↗</a> · nº '+id+rqBotao(id)+'</div></div><div class="ficha-corpo">';
   h+='<div class="cards lv-cards vd-cards">'+
     '<div class="card"><div class="rot">Desde o começo</div><div class="val">'+reais(w.gmv)+'</div><div class="sub">'+reais(w.com)+' de comissão · '+inteiro(w.itens)+' '+plural(w.itens,'item','itens')+'</div></div>'+
     '<div class="card"><div class="rot">Primeiras 48h</div><div class="val">'+reais(g48)+'</div><div class="sub">'+(w.gmv>0?Math.round(g48/w.gmv*100):0)+'% de tudo que ele vendeu (dia da 1ª venda + o seguinte)</div></div>'+
@@ -4951,6 +5004,10 @@ function htmlVaga(x,i){
   var nc=(d.cenas||[]).length, det=[nc?nc+' '+plural(nc,'cena','cenas'):'', d.cta?'CTA':'', d.legenda?'legenda':''].filter(Boolean).join(', ');
   var sub=[d.status==='gravado'?'gravado, falta postar':'', d.hora?'às '+d.hora:'', extra, det?'roteiro: '+det:'', atr?'passou do dia':''].filter(Boolean).join(' · ');
   var vv=htmlVidVaga(x);
+  if(d.molde && d.tipo!=='live'){
+    var ml='<span class="vg-molde">🔁 réplica do vídeo <a href="'+vdLink(d.molde)+'" target="_blank" rel="noopener">'+vdCurto(d.molde)+' ↗</a></span>';
+    vv = vv ? vv.replace(/^(<div class="[^"]*">)/, '$1'+ml+'<br>') : '<div class="vg-vid st-'+d.status+'">'+ml+'</div>';
+  }
   return '<div class="vg st-'+d.status+(atr?' atrasado':'')+(vv?' com-vid':'')+'" data-id="'+x.id+'">'+
     '<span class="vg-n">'+(i+1)+'</span>'+
     '<button type="button" class="vg-t" onclick="abrirFormPlano(\''+x.id+'\')">'+(d.ideia? escapar(d.ideia) : '<i>Sem gancho ainda (toque pra escrever)</i>')+(sub?'<small>'+sub+'</small>':'')+'</button>'+
@@ -5625,7 +5682,7 @@ function copiarLegenda(){
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ aviso('✓ Legenda copiada'); }, velho); else velho();
 }
 function limparRoteiro(d){   // só grava os campos novos quando têm conteúdo (registro de quem não usa fica igual ao de antes)
-  if(d.tipo==='live'){ delete d.cenas; delete d.cta; delete d.legenda; delete d.video; delete d.videoLink; return; }
+  if(d.tipo==='live'){ delete d.cenas; delete d.cta; delete d.legenda; delete d.video; delete d.videoLink; delete d.molde; return; }
   var cenas=(_fp && _fp.cenas || d.cenas || []).map(function(c){ return String(c||'').trim(); }).filter(Boolean);
   if(cenas.length) d.cenas=cenas; else delete d.cenas;
   ['cta','legenda'].forEach(function(k){ var v=String(d[k]||'').trim(); if(v) d[k]=v; else delete d[k]; });
