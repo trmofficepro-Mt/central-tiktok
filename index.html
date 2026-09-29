@@ -685,6 +685,14 @@ body.sem-dados .lateral{display:none}
 .amo-barra{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 12px}
 .amo-busca{flex:1;min-width:140px;border:1.5px solid var(--linha2);background:var(--panel);border-radius:10px;padding:8px 12px;font-family:inherit;font-size:13.5px;color:var(--tinta)}
 .amo-cfg{font-size:12px;color:var(--uva);font-weight:700;text-decoration:none;white-space:nowrap}
+/* (conv. 16, item 3) nada abre por cima: número, aviso de campo e confirmação ficam no lugar onde a Mari tocou */
+.amo-cfg-ed{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;font-weight:700;color:var(--tinta2)}
+.amo-cfg-ed input{width:62px;border:1.5px solid var(--linha2);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:14px;font-weight:700;color:var(--tinta);background:var(--panel)}
+.campo-erro{flex-basis:100%;color:var(--vermelho);font-size:12.5px;font-weight:700;line-height:1.35}
+.campo-erro:empty{display:none}
+.btn.conf-sim{background:var(--vermelho)}
+.copia-manual{display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11.5px;color:var(--tinta3);font-weight:600}
+.copia-manual input{font-family:inherit;font-size:13px;padding:6px 8px;border:1.5px solid var(--linha2);border-radius:8px;width:100%;max-width:260px;box-sizing:border-box;color:var(--tinta)}
 .amo-item{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--linha);cursor:pointer}
 .amo-item:last-child{border-bottom:none}
 .amo-item:hover{background:var(--panel2)}
@@ -1084,6 +1092,7 @@ div.apl-t{cursor:default}
       <div class="per-custom" id="perCustom">
         de <input type="date" id="perIni"> até <input type="date" id="perFim">
         <button class="btn mini" onclick="_fichaEmp=null;aplicarCustom()">Aplicar</button>
+        <span class="campo-erro" id="perErro" role="alert"></span>
       </div>
       <div class="per-info" id="perInfo"></div>
     </div>
@@ -1320,7 +1329,7 @@ function importar(input){
   var arq = input.files && input.files[0];
   input.value='';   // deixa importar o mesmo arquivo de novo
   if(!arq) return;
-  if(_importando){ alert('Já estou importando uma planilha. Espera terminar (aparece "Última importação").'); return; }
+  if(_importando){ var m='Ainda estou lendo a planilha anterior. Espere terminar (aparece "Última importação").'; mostrarStatusImport(m); try{ aviso(m); }catch(e){} return; }
   _importando=true; _impAberto=true; var bx=document.getElementById('boxImport'); if(bx) bx.classList.remove('fechado');
   mostrarStatusImport('Lendo a planilha… pode levar alguns segundos.');
   var reader = new FileReader();
@@ -1442,12 +1451,14 @@ function escolherPeriodo(tipo){
     _perPendente=true; renderPerInfo();
     return; // espera o Aplicar
   }
-  box.classList.remove('on');
+  box.classList.remove('on'); var er=document.getElementById('perErro'); if(er) er.textContent='';
   aplicarPeriodo(calcPeriodo(tipo));
 }
 function aplicarCustom(){
   var a=deIso(document.getElementById('perIni').value), b=deIso(document.getElementById('perFim').value);
-  if(!a||!b){ alert('Escolha as duas datas.'); return; }
+  var er=document.getElementById('perErro');
+  if(!a||!b){ if(er) er.textContent='Escolha as duas datas.'; return; }
+  if(er) er.textContent='';
   if(a>b){ var t=a; a=b; b=t; }
   if(b>S.dataMax) b=soDia(S.dataMax);
   if(a<soDia(S.dataMin)) a=soDia(S.dataMin);
@@ -3003,10 +3014,18 @@ function infoDia(i){
   document.getElementById('evoInfo').innerHTML='<b>'+sem[o.d.getDay()]+' '+dm(o.d)+'</b>: '+inteiro(o.itens)+' '+plural(o.itens,'item','itens')+' · '+reais(o.com)+' comissão'+(partes.length>1?' ('+partes.join(', ')+')':'');
 }
 
+/* (conv. 16, item 3) o aparelho não deixou copiar sozinho: mostra o número embaixo do botão, já selecionado (antes: janela do navegador) */
+function copiaManual(t,btn){
+  var par=btn && btn.parentNode; if(!par) return;
+  var c=par.querySelector('.copia-manual');
+  if(!c){ c=document.createElement('div'); c.className='copia-manual'; par.appendChild(c); }
+  c.innerHTML='<input readonly value="'+attr(t)+'" onfocus="this.select()" aria-label="Número pra copiar"><span>Toque e segure no número pra copiar.</span>';
+  var i=c.querySelector('input'); try{ i.focus(); i.select(); }catch(e){}
+}
 function copiarTexto(t,btn){
   function ok(){ var o=btn.innerHTML; btn.innerHTML='Copiado'; setTimeout(function(){btn.innerHTML=o;},1400); }
-  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(ok,function(){ prompt('Copie o ID:',t); }); }
-  else { prompt('Copie o ID:',t); }
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(ok,function(){ copiaManual(t,btn); }); }
+  else { copiaManual(t,btn); }
 }
 
 /* =====================================================================
@@ -3172,7 +3191,7 @@ function renderMeta(){
   else if(M.fechado || M.anteriorCompleto){ sug.push({t:'+10% sobre '+(M.anteriorCompleto?M.aNome:M.nome), v:base*1.1}); }
   var h='<div class="meta-top">'+
       '<div class="janelas" style="margin:0"><button class="'+(_metaMet==='gmv'?'on':'')+'" onclick="setMetaMet(\'gmv\')">GMV</button><button class="'+(_metaMet==='com'?'on':'')+'" onclick="setMetaMet(\'com\')">Comissão</button></div>'+
-      '<div class="meta-campo">Meta de '+nomeMet+': <input id="metaInput" inputmode="decimal" placeholder="ex: 150.000" value="'+(meta?Math.round(meta).toLocaleString('pt-BR'):'')+'" onkeydown="if(event.key===\'Enter\')salvarMetaCampo()"><button class="btn mini" onclick="salvarMetaCampo()">Salvar</button>'+(meta?'<button class="btn ghost mini" onclick="apagarMeta()">Apagar</button>':'')+'</div>'+
+      '<div class="meta-campo">Meta de '+nomeMet+': <input id="metaInput" inputmode="decimal" placeholder="ex: 150.000" value="'+(meta?Math.round(meta).toLocaleString('pt-BR'):'')+'" onkeydown="if(event.key===\'Enter\')salvarMetaCampo()"><button class="btn mini" onclick="salvarMetaCampo()">Salvar</button>'+(meta?'<button class="btn ghost mini" onclick="apagarMeta()">Apagar</button>':'')+'<span class="campo-erro" id="metaErro" role="alert"></span></div>'+
     '</div>'+
     '<div class="meta-sug">Sugestões: '+(sug.length?'':'<span style="color:var(--tinta3)">a projeção e as sugestões aparecem a partir do dia 3 do mês</span>')+sug.map(function(s){ return '<button onclick="usarSugestao('+Math.round(s.v)+')">'+s.t+' <b>'+fmtCurto(s.v)+'</b></button>'; }).join('')+'</div>'+
     '<div class="evo-info" id="metaLeitura" style="margin:10px 0 6px"></div>'+
@@ -3743,10 +3762,27 @@ function verAmostrasPlanejar(){   // no Planejar do celular: desce até a lista 
   try{ e.scrollIntoView({behavior:'smooth', block:'start'}); }catch(x){ e.scrollIntoView(); }
 }
 function okAlertaAmostras(assin){ lsGravar('ct_alerta_amo_visto', assin); renderAlertaAmostras(); }
-function mudarAlertaDias(){
-  var v=prompt('Avisar quantos dias antes do prazo da amostra?', alertaDias());
-  if(v==null) return; var n=parseInt(v,10);
-  if(!(n>0 && n<=30)){ alert('Digite um número de 1 a 30.'); return; }
+/* (conv. 16, item 3) prazo padrão e aviso de dias: o link vira um campo ali mesmo (antes: janela do navegador) */
+var _amoCfgEd=null, _amoCfgRasc=null;
+function edCfgAmo(rot, max, fim){
+  var v= _amoCfgRasc!=null ? _amoCfgRasc : (_amoCfgEd==='prazo'? prazoPadrao() : alertaDias());
+  return '<span class="amo-cfg-ed" id="amoCfgEd">'+rot+' <input id="amoCfgNum" type="number" inputmode="numeric" min="1" max="'+max+'" value="'+attr(String(v))+'"'+
+    ' oninput="_amoCfgRasc=this.value" onkeydown="if(event.key===\'Enter\')salvarCfgAmo();if(event.key===\'Escape\')fecharCfgAmo()"> '+fim+
+    ' <button type="button" class="btn mini" id="amoCfgSalvar" onclick="salvarCfgAmo()">Salvar</button><button type="button" class="btn ghost mini" onclick="fecharCfgAmo()">Cancelar</button>'+
+    '<span class="campo-erro" id="amoCfgErro" role="alert"></span></span>';
+}
+function abrirCfgAmo(tipo){ _amoCfgEd=tipo; _amoCfgRasc=null; renderAmostras(); var i=document.getElementById('amoCfgNum'); if(i){ try{ i.focus(); i.select(); }catch(e){} } }
+function fecharCfgAmo(){ _amoCfgEd=null; _amoCfgRasc=null; renderAmostras(); }
+function salvarCfgAmo(){
+  var tipo=_amoCfgEd; if(!tipo) return;
+  var max= tipo==='prazo'? 90 : 30, el=document.getElementById('amoCfgNum'), v=String(el&&el.value||'').trim(), n=Number(v);
+  if(!/^\d+$/.test(v) || !(n>=1 && n<=max)){ var e=document.getElementById('amoCfgErro'); if(e) e.textContent='Digite um número de 1 a '+max+'.'; if(el) el.focus(); return; }
+  _amoCfgEd=null; _amoCfgRasc=null;
+  if(tipo==='prazo') gravarPrazoPadrao(n); else gravarAlertaDias(n);
+}
+function mudarAlertaDias(){ abrirCfgAmo('alerta'); }
+function mudarPrazoPadrao(){ abrirCfgAmo('prazo'); }
+function gravarAlertaDias(n){
   var antes=S.metas._config;
   S.metas._config=Object.assign({}, S.metas._config||{}, {alertaDias:n});
   renderAmostras();
@@ -4165,7 +4201,7 @@ function salvarMetaCampo(){
   var bruto=document.getElementById('metaInput').value.toLowerCase(), mult=1;
   if(/milh/.test(bruto)) mult=1000000; else if(/\d\s*(mil|k)\b/.test(bruto)) mult=1000;
   var v=numBR(bruto.replace(/[^\d,.\-]/g,''))*mult;
-  if(!(v>0)){ alert('Digite um valor, por exemplo 150.000'); return; }
+  if(!(v>0)){ var er=document.getElementById('metaErro'); if(er) er.textContent='Digite um valor, por exemplo 150.000'; document.getElementById('metaInput').focus(); return; }
   gravarMeta(v);
 }
 function usarSugestao(v){ gravarMeta(v); }
@@ -4279,8 +4315,11 @@ async function entrarNuvem(){
   await carregarTudo();
 }
 async function sincronizarAgora(){ msgNuvem('Sincronizando…'); await carregarTudo(); renderNuvem(); msgNuvem(DB.erro?DB.erro:'Tudo em dia.', DB.erro?'erro':'ok'); }
-async function sairNuvem(){
-  if(!confirm('Sair deste aparelho? Os dados continuam na nuvem, mas a cópia deste aparelho será apagada.')) return;
+function sairNuvem(){
+  var b=document.querySelector('#nuvemConteudo .nv-card.ok .nv-botoes');
+  confirmarAqui(b, 'Sair deste aparelho? Os dados continuam na nuvem, mas a cópia deste aparelho será apagada.', 'Sair deste aparelho', sairNuvemJa);
+}
+async function sairNuvemJa(){
   await DB.sair(); S.temDados=false; S.todas=[]; S.vendas=[]; S.metas={}; S.periodo=null; S.amostras={}; S.garimpo={}; S.plano={};
   renderNuvem(); renderImportBox(); renderStatusNuvem();
 }
@@ -4454,8 +4493,8 @@ function htmlAmostras(){
   h+='<div class="amo-barra"><button class="btn mini" onclick="abrirFormAmostra()">+ Nova amostra</button>'+
      '<div class="ordem">'+[['abertas','Pra gravar'],['postadas','Postadas'],['descartadas','Descartadas'],['todas','Todas']].map(function(f){ return '<button class="'+(_amoFiltro===f[0]?'on':'')+'" onclick="_amoFiltro=\''+f[0]+'\';renderAmostras()">'+f[1]+'</button>'; }).join('')+'</div>'+
      '<input class="amo-busca" type="search" placeholder="Buscar" value="'+attr(_amoBusca)+'" oninput="_amoBusca=this.value;renderListaAmostras()">'+
-     '<a href="#" class="amo-cfg" onclick="event.preventDefault();mudarPrazoPadrao()">Prazo padrão: '+prazoPadrao()+' dias</a>'+
-     '<a href="#" class="amo-cfg" id="amoCfgAlerta" onclick="event.preventDefault();mudarAlertaDias()">Aviso: '+alertaDias()+' '+plural(alertaDias(),'dia','dias')+' antes</a></div>';
+     (_amoCfgEd==='prazo' ? edCfgAmo('Prazo padrão:', 90, 'dias') : '<a href="#" class="amo-cfg" onclick="event.preventDefault();mudarPrazoPadrao()">Prazo padrão: '+prazoPadrao()+' dias</a>')+
+     (_amoCfgEd==='alerta' ? edCfgAmo('Aviso:', 30, 'dias antes') : '<a href="#" class="amo-cfg" id="amoCfgAlerta" onclick="event.preventDefault();mudarAlertaDias()">Aviso: '+alertaDias()+' '+plural(alertaDias(),'dia','dias')+' antes</a>')+'</div>';
   h+='<div class="plista" id="amoLista"></div>';
   return h;
 }
@@ -4510,10 +4549,7 @@ function abrirFichaGeral(ch){
   abrirFicha(ch);
 }
 function rotPeriodoAtualDe(p){ return p.tipo==='custom'? dm(p.ini)+' a '+dm(p.fim) : p.rot; }
-function mudarPrazoPadrao(){
-  var v=prompt('Prazo padrão pra postar uma amostra (em dias):', prazoPadrao());
-  if(v==null) return; var n=parseInt(v,10);
-  if(!(n>0 && n<=90)){ alert('Digite um número de 1 a 90.'); return; }
+function gravarPrazoPadrao(n){
   var antes=S.metas._config;
   S.metas._config=Object.assign({}, S.metas._config||{}, {prazoPadrao:n});
   renderAmostras();
@@ -4637,13 +4673,26 @@ async function excluirForm(){
     var gid=o.dados.origemGarimpo, g=gid && S.garimpo[gid];
     if(g){ escolhaExcluir(g); return; }
   }
-  var msg='Excluir "'+(F.d.nome||'')+'"?';
-  if(F.tab==='garimpo' && o.dados.amostraId && S.amostras[o.dados.amostraId]) msg+='\n\nA amostra que ele virou continua em Amostras.';
-  if(!confirm(msg)) return;
-  fecharForm();
-  await salvarItem(F.tab,{id:F.id, dados:o.dados, excluido:true});
+  var msg='Excluir "<b>'+escapar(F.d.nome||'')+'</b>"? Isso não tem volta.';
+  if(F.tab==='garimpo' && o.dados.amostraId && S.amostras[o.dados.amostraId]) msg+=' A amostra que ele virou continua em Amostras.';
+  var box=document.getElementById('fErro'); box=box && box.nextElementSibling;
+  confirmarAqui(box, msg, 'Excluir de vez', async function(){
+    if(_form!==F) return;
+    fecharForm();
+    await salvarItem(F.tab,{id:F.id, dados:o.dados, excluido:true});
+  });
 }
 var _botoesForm='';
+/* (conv. 16, item 3) confirmar no lugar dos botões (antes: janela do navegador). box = a linha de botões (.nv-botoes) */
+var _confAqui=null;
+function confirmarAqui(box, msg, sim, acao){
+  if(!box) return;
+  _confAqui={box:box, antes:box.innerHTML, acao:acao};
+  box.innerHTML='<div class="f-escolha conf-aqui"><p>'+msg+'</p><button type="button" class="btn mini conf-sim" onclick="confirmouAqui()">'+sim+'</button>'+
+    '<button type="button" class="btn ghost mini conf-nao" onclick="cancelouAqui()">Cancelar</button></div>';
+}
+function cancelouAqui(){ var c=_confAqui; _confAqui=null; if(c && c.box.isConnected) c.box.innerHTML=c.antes; }
+function confirmouAqui(){ var c=_confAqui; if(!c) return; _confAqui=null; if(c.box.isConnected) c.box.innerHTML=c.antes; c.acao(); }   // 2º toque: já saiu
 function escolhaExcluir(g){
   var box=document.getElementById('fErro'), bt=box && box.nextElementSibling; if(!bt) return;
   _botoesForm=bt.innerHTML;
@@ -5845,8 +5894,13 @@ async function salvarFormPlano(){
   fecharForm(); _fp=null;
   if(d.data){ _planSemana=segundaDe(d.data); _planDia=d.data; } renderPlanejar();
 }
-async function excluirPlano(){
-  if(!_fp||!_fp.id) return; if(!confirm('Excluir este conteúdo do calendário?')) return;
+function excluirPlano(){
+  if(!_fp||!_fp.id) return;
+  var e=document.getElementById('fpErro'), box=e && e.previousElementSibling;
+  confirmarAqui(box, 'Excluir este conteúdo do calendário? Isso não tem volta.', 'Excluir de vez', excluirPlanoJa);
+}
+async function excluirPlanoJa(){
+  if(!_fp||!_fp.id) return;
   var id=_fp.id, x=S.plano[id];
   var r=await salvarJunto([{id:id, dados:x.dados, excluido:true}], []);
   if(r===null) return;
