@@ -294,6 +294,9 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .vd-acao li b{color:var(--tinta)} .vd-acao a{color:var(--uva);font-weight:700;text-decoration:none}
 .rq-bt{float:right;margin:0 0 4px 8px;font-family:inherit;font-size:12.5px;font-weight:800;color:#fff;background:var(--uva);border:0;border-radius:8px;padding:7px 12px;min-height:34px;cursor:pointer}
 .rq-bt:hover{filter:brightness(1.1)} .loja .rq-bt{float:none;margin:0 0 0 8px;vertical-align:middle}
+.nv-card label.rq-usar{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;font-weight:600;color:var(--tinta);margin:10px 0 2px;line-height:1.4;cursor:pointer}
+.nv-card label.rq-usar input{display:inline-block;width:20px;height:20px;flex:none;margin:0;padding:0}
+.nv-card label.rq-usar a{color:var(--uva);font-weight:700;margin-left:4px}
 .rq-erro{font-size:13px;font-weight:700;color:#b91c1c;margin:8px 0 0;min-height:4px;line-height:1.45}
 .rq-info{font-size:13px;color:var(--tinta2);margin:0 0 6px;line-height:1.45} .rq-info a{color:var(--uva);font-weight:700}
 .vg-molde{color:var(--tinta3)} .vg-molde a{color:var(--uva);font-weight:700;text-decoration:none}
@@ -527,7 +530,8 @@ body.travado{overflow:hidden}
 .import.temdados h2#arqNome{font-size:14px;margin:0;cursor:pointer}
 #arqNome .imp-seta{color:var(--uva);font-size:12px;margin-left:4px}
 .import.temdados.fechado #arqInfo{display:none}
-.import.temdados .btn.imp-bt{margin-top:0;flex:none}
+.import.temdados .btn.imp-bt{margin-top:0;flex:none;gap:0}
+.imp-nova{margin-left:.3em}
 body.sem-periodo #perBox{display:none}
 .alerta-curto{display:none}
 body.tela-planejar .alerta-amo{display:none}
@@ -880,6 +884,7 @@ div.apl-t{cursor:default}
 .apl-t b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:12.5px;line-height:1.3;color:var(--tinta)}
 .apl-t span{font-size:11.5px;color:var(--tinta3)}
 .apl-t .gv-et{font-size:10.5px;padding:1px 7px}
+.apl-t .tg{white-space:normal;display:inline-block;max-width:100%}   /* (conv. 15) etiqueta longa quebra linha, não passa por baixo do botão */
 .apl-ag{font-style:normal;font-weight:700;color:var(--uva)}
 .apl-tag{font-size:10.5px;font-weight:800;border-radius:20px;padding:2px 8px;background:var(--bg2);color:var(--tinta2);white-space:nowrap}
 .apl-tag.atras{background:#ffedd5;color:#c2410c}
@@ -966,6 +971,12 @@ div.apl-t{cursor:default}
 #avisoRapido button{margin-left:12px;font-family:inherit;font-size:13.5px;font-weight:800;color:#f9a8d4;background:none;border:0;padding:8px 4px;min-height:36px;cursor:pointer;text-decoration:underline}
 @media(max-width:899px){ #avisoRapido{bottom:calc(86px + env(safe-area-inset-bottom,0px))} }
 @media(prefers-reduced-motion:reduce){ #avisoRapido{transition:none} }
+/* (conv. 15) erro de salvar: faixa vermelha fixa, fica até a Mari fechar */
+#erroSalvar{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:95;display:none;align-items:center;gap:8px;width:min(560px,calc(100% - 24px));background:#fef2f2;color:#b91c1c;border:1.5px solid #fca5a5;font-size:13.5px;font-weight:700;line-height:1.4;padding:10px 8px 10px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(26,16,48,.18)}
+#erroSalvar.on{display:flex}
+#erroSalvar span{flex:1;min-width:0}
+#erroSalvar button{border:0;background:none;color:#b91c1c;font-size:16px;font-weight:800;padding:6px 8px;min-height:36px;cursor:pointer}
+
 @media(max-width:560px){
   .vg{flex-wrap:nowrap}
   .vg-t{flex-basis:auto}
@@ -2012,6 +2023,21 @@ function vdVida(){
     o.prod=ks[0]; o.nprod=ks.length; });
   _vdCache={base:S.todas, v:v}; return v;
 }
+/* (conv. 15, item 3) UMA regra de "campeão parado" pro Planejar e pra tela Vídeos: campeão (80% da comissão em 30 dias)
+   SEM vídeo novo na janela de N dias que termina em `hoje`. Vídeo novo = 1ª venda do vídeo na planilha (produto principal = ele)
+   OU vaga marcada Postei no Planejar (a planilha chega atrasada). Planejar: N=7 e hoje = dia do aparelho;
+   Vídeos: N = chave 7/15/30 e hoje = último dia da planilha. Cálculo-fonte: testes/fonte_planejar.py › sem_video_novo */
+function semVideoNovo(N, hoje){
+  if(!S.dataMax) return [];
+  hoje=soDia(hoje); var ini=maisDias(hoje,-(N-1)), C=vdCampeoes30(soDia(S.dataMax)), vida=vdVida(), ult={}, fonte={};
+  Object.keys(vida).forEach(function(id){ var w=vida[id]; if(!C.set[w.prod]) return; if(!ult[w.prod] || w.pri>ult[w.prod]){ ult[w.prod]=w.pri; fonte[w.prod]='planilha'; } });
+  Object.values(S.plano||{}).forEach(function(x){ var d=x.dados||{}; if(x.excluido || d.tipo==='live' || d.status!=='postado' || !d.data) return;
+    var ch=chaveDoProd((d.produtos||[])[0]||null); if(!ch || !C.set[ch]) return;
+    var dt=deIso(d.data); if(!ult[ch] || dt>ult[ch]){ ult[ch]=dt; fonte[ch]='postei'; } });
+  return Object.keys(C.set).map(function(ch){ var u=ult[ch]||null;
+    return {chave:ch, com30:C.m[ch]||0, ult:u, fonte:u?fonte[ch]:null, dias: u ? Math.max(0, Math.round((hoje-soDia(u))/86400000)) : null, parado: !u || soDia(u)<ini}; })
+    .sort(function(a,b){ return b.com30-a.com30; });
+}
 function vdCampeoes30(hoje){
   var ini=maisDias(hoje,-29), m={};
   S.todas.forEach(function(x){ if(!x.data) return; var d=soDia(x.data); if(d<ini||d>hoje) return; m[x.chave]=(m[x.chave]||0)+x.com; });
@@ -2059,13 +2085,10 @@ function vdAnalise(N){
   r.lvProdA=Object.keys(lvP).map(function(k){ var o=lvP[k]; o.nome=nome(k); return o; })
     .sort(function(a,b){ return (b.com-a.com)||(b.gmv-a.gmv)||(a.nome<b.nome?-1:a.nome>b.nome?1:0); })[0]||null;
   var Pm={}; r.produtos.forEach(function(p){ Pm[p.chave]=p; });
-  var par=Object.keys(C.set).map(function(ch){
-    var ult=null, temNovo=false;
-    Object.keys(vida).forEach(function(id){ var w=vida[id]; if(w.prod!==ch) return; if(w.pri>=ini) temNovo=true; if(!ult||w.pri>ult) ult=w.pri; });
-    if(temNovo) return null;
-    var p=Pm[ch]||{com:0, comA:(P[ch]?P[ch].comA:0)};
-    return {chave:ch, nome:nome(ch), com30:C.m[ch]||0, com:p.com||0, comA:p.comA||0, ult:ult, dias: ult? Math.round((hoje-ult)/86400000) : null};
-  }).filter(Boolean).sort(function(a,b){ return (b.com30-a.com30)||(a.nome<b.nome?-1:a.nome>b.nome?1:0); });
+  var par=semVideoNovo(N, hoje).filter(function(z){ return z.parado; }).map(function(z){   // mesma função do Planejar (conv. 15)
+    var ch=z.chave, p=Pm[ch]||{com:0, comA:(P[ch]?P[ch].comA:0)};
+    return {chave:ch, nome:nome(ch), com30:z.com30, com:p.com||0, comA:p.comA||0, ult:z.ult, dias:z.dias, fonte:z.fonte};
+  }).sort(function(a,b){ return (b.com30-a.com30)||(a.nome<b.nome?-1:a.nome>b.nome?1:0); });
   r.nParados=par.length; r.parados=par.slice(0,3);
   r.moldes=r.videos.filter(function(o){ return o.molde; }).slice(0,3);
   r.pegou=r.videos.filter(function(o,i){ return o.novo && i<10; }).slice(0,3);
@@ -2109,7 +2132,7 @@ function vdMudou(a,b,oque){   // "caiu 76% (R$ A → R$ B)"
    Botão Replicar (itens 3 e 4 do "O que fazer" e detalhe do vídeo) → cria N vagas no Planejar com o produto principal
    do vídeo e o gancho do vídeo-molde. Campo `molde` = SÓ referência (a vaga NÃO mostra venda do molde; a venda dela
    só aparece quando for vinculada ao vídeo novo, campo `video`). Salva tudo numa chamada: sem nuvem, nada é criado. */
-var _rq=null, _rqSalvando=false;
+
 function rqBotao(id){ return '<button type="button" class="rq-bt" onclick="event.stopPropagation();abrirReplicar(\''+id+'\')">Replicar</button>'; }
 function prodDaChave(ch){ var p=S.idxProd && S.idxProd.lista[ch]; return p ? {nome:p.nome, loja:p.loja||'', idProduto:p.id||''} : null; }
 function ganchoDoVideo(id){   // 1º a vaga vinculada a este vídeo (o gancho que foi pro ar); depois a réplica mais recente
@@ -2117,44 +2140,10 @@ function ganchoDoVideo(id){   // 1º a vaga vinculada a este vídeo (o gancho qu
   l.sort(function(a,b){ return ((a.dados.video===id?0:1)-(b.dados.video===id?0:1)) || String(b.dados.criadoEm||'').localeCompare(String(a.dados.criadoEm||'')); });
   return l.length ? l[0].dados.ideia : '';
 }
-function abrirReplicar(id, origem){
+function abrirReplicar(id, origem){   // (conv. 15) Replicar = a MESMA janela do Agendar, já com o molde e a caixinha do gancho marcada
   var w=vdVida()[id]; if(!w) return; var prod=prodDaChave(w.prod); if(!prod) return;
-  _videoAberto=null; _rq={id:id, prod:prod, origem:origem||'videos'}; _mv={prod:prod};   // _mv: reaproveita o aviso "Já tem N roteiros" e os atalhos de data
-  var g=ganchoDoVideo(id), n=w.nprod-1;
-  var h=cabPainel('Replicar vídeo '+vdCurto(id), escapar(nomeCurto(prod.nome))+' · cada roteiro vira uma vaga no Planejar');
-  h+='<p class="rq-info">Produto: <b>'+escapar(nomeCurto(prod.nome))+'</b>'+(n>0?' · o vídeo vendeu também mais '+n+' '+plural(n,'produto','produtos'):'')+'</p>';
-  h+='<label>Gancho do vídeo-molde<textarea id="rqGancho" class="fp-gancho" rows="3" placeholder="A primeira frase do vídeo">'+escapar(g)+'</textarea></label>'+
-     '<p class="fp-dica" id="rqDica">'+(g ? 'Veio do roteiro que já tem esse gancho. Mude o que quiser pra fazer a variação.' :
-       '<a href="'+vdLink(id)+'" target="_blank" rel="noopener">Abra o vídeo ↗</a>, veja a primeira frase e escreva aqui. Pode deixar vazio e escrever depois.')+'</p>';
-  h+='<label>Dia da gravação<input type="date" id="mvData" value="'+hojeISO()+'" min="'+hojeISO()+'" oninput="avisoJaTem()" onchange="avisoJaTem()"></label>'+chipsDatas()+'<div id="mvJaTem" class="mv-jatem"></div>';
-  h+='<label>Quantos roteiros?</label><div class="f-seg" id="mvQtd">'+[1,2,3,4,5].map(function(k){ return '<button type="button" data-q="'+k+'" class="'+(k===3?'on':'')+'" onclick="selQtd(this)">'+k+'</button>'; }).join('')+'</div>';
-  h+='<div class="nv-botoes"><button class="btn" id="rqSalvar" onclick="confirmarReplicar()">Agendar</button></div><div class="rq-erro" id="rqErro" role="alert"></div></div></div>';
-  abrirPainel(h); avisoJaTem();
-}
-async function confirmarReplicar(){
-  if(!_rq || _rqSalvando) return;   // toque duplo: o 2º toque é ignorado enquanto salva
-  var err=document.getElementById('rqErro'), bt=document.getElementById('rqSalvar'); err.innerHTML='';
-  var nd=(document.getElementById('mvData')||{}).value||'';
-  if(!nd){ err.innerHTML='⚠ Escolha a data.'; return; }
-  if(nd<hojeISO()){ err.innerHTML='⚠ Esse dia já passou. Escolha hoje ou um dia pra frente.'; return; }
-  var bq=document.querySelector('#mvQtd button.on'), q= bq ? (+bq.getAttribute('data-q')||3) : 3;
-  var g=String((document.getElementById('rqGancho')||{}).value||'').trim(), vid=_rq.id, doPlan=_rq.origem==='planejar', lista=[];
-  for(var k=0;k<q;k++){ var v=novaVaga(_rq.prod, nd, k); v.dados.ideia=g; v.dados.molde=vid; lista.push(v); }
-  _rqSalvando=true; bt.disabled=true; bt.textContent='Salvando…';
-  var ok=true;
-  try{ await DB.salvar('planejamento', lista.map(function(o){ return {id:o.id, dados:o.dados, excluido:false}; })); }
-  catch(e){ ok=false; }
-  _rqSalvando=false;
-  if(!ok){ bt.disabled=false; bt.textContent='Agendar';
-    err.innerHTML='✕ Sem conexão com a nuvem: nenhum roteiro foi agendado. Confira a internet e toque em Agendar de novo.'; return; }
-  lista.forEach(function(o){ S.plano[o.id]={id:o.id, dados:o.dados, excluido:false}; });   // só entra no sistema depois de salvo
-  fecharForm(); _rq=null; _mv=null;
-  if(doPlan){ _planSemana=segundaDe(nd); _planDia=nd; _planVista='dia'; }
-  renderPlanejar(); renderParaGravar();
-  var txt='✓ '+q+' '+plural(q,'roteiro agendado','roteiros agendados')+' pra '+(nd===hojeISO()?'hoje':dmIso(nd))+' · réplica do vídeo '+vdCurto(vid);
-  if(doPlan){ aviso(txt); return; }   // já está no Planejar: a tela foi pro dia agendado
-  aviso(txt, 'Ver no Planejar ›',
-    function(){ _planSemana=segundaDe(nd); _planDia=nd; _planVista='dia'; irPara('planejar'); renderPlanejar(); });
+  _videoAberto=null;
+  abrirAgendarProd(prod, {molde:id, origem:origem||'videos', outros:w.nprod-1});
 }
 /* ===================== FUNIL DO DIA (F1 — conversa 13) =====================
    Números digitados do app (Central do criador › Dados). Dois tipos, guardados SEPARADOS nas metas (nunca somam):
@@ -4551,8 +4540,8 @@ async function salvarItem(tab, obj){
   try{ await DB.salvar(tab,[obj]); return true; }
   catch(e){
     if(antes) mapa[obj.id]=antes; else delete mapa[obj.id];
-    renderAmostras();
-    alert('Sem conexão com a nuvem: não foi salvo. Tente de novo quando tiver internet.');
+    renderAmostras(); if(typeof renderPlanejar==='function') renderPlanejar();
+    erroTela(MSG_SEM_NUVEM);
     return false;
   }
 }
@@ -4957,22 +4946,21 @@ function sugestoesSemana(seg){
       prod:{nome:d.nome, loja:d.loja||'', idProduto:d.idProduto||'', amostraId:a.id}, tipo:'video'});
   });
   // 2) campeões dos últimos 30 dias (planilha inteira, não depende do período escolhido)
+  //    (conv. 15) "parado" = SEM VÍDEO NOVO em 7 dias (mesma função da tela Vídeos, conta os Postei); esfriando continua;
+  //    campeão com vídeo novo na semana e sem esfriar não entra. "sem venda há N dias" (≥ 5) vira etiqueta à parte.
   if(S.dataMax){
-    var ini=maisDias(S.dataMax,-29), m={}, tot=0;
-    S.todas.forEach(function(x){ if(x.data && x.data>=ini){ m[x.chave]=(m[x.chave]||0)+x.com; tot+=x.com; } });
-    var rank=Object.keys(m).sort(function(a,b){return m[b]-m[a];}), ac=0;
-    rank.forEach(function(ch){
-      if(ac/tot>=0.8 || tot<=0) return; ac+=m[ch];
-      if(planejadoNaSemana(seg,ch,null)) return;
-      var vs=S.todas.filter(function(x){return x.chave===ch && x.data;}), ult=null, it7=0, itA=0;
-      var i7=maisDias(S.dataMax,-6), iA=maisDias(i7,-7);
-      vs.forEach(function(x){ if(!ult||x.data>ult) ult=x.data; if(x.data>=i7) it7+=x.itens; else if(x.data>=iA) itA+=x.itens; });
-      var dias=Math.round((soDia(S.dataMax)-ult)/86400000), p=S.idxProd.lista[ch], motivo, pri;
-      if(dias>=5){ motivo='Campeão parado: última venda há '+dias+' dias'; pri=0; }
+    var i7=maisDias(S.dataMax,-6), iA=maisDias(i7,-7);
+    semVideoNovo(7, deIso(hoje)).forEach(function(z){
+      var ch=z.chave; if(planejadoNaSemana(seg,ch,null)) return;
+      var ult=null, it7=0, itA=0;
+      S.todas.forEach(function(x){ if(x.chave!==ch || !x.data) return; if(!ult||x.data>ult) ult=x.data; if(x.data>=i7) it7+=x.itens; else if(x.data>=iA) itA+=x.itens; });
+      var semVenda= ult ? Math.round((soDia(S.dataMax)-soDia(ult))/86400000) : null, p=S.idxProd.lista[ch], motivo, pri;
+      if(z.parado){ motivo= z.ult ? 'Campeão sem vídeo novo há '+z.dias+' '+plural(z.dias,'dia','dias')+(z.fonte==='postei'?' (último Postei '+dm(z.ult)+')':'') : 'Campeão sem vídeo novo: nenhum vídeo vendeu este produto'; pri=0; }
       else if(itA>=3 && it7<itA*0.7){ motivo='Campeão esfriando: '+it7+' '+plural(it7,'item','itens')+' na última semana (antes '+itA+')'; pri=1; }
-      else { motivo='Campeão sem conteúdo nesta semana'; pri=2; }
+      else return;
       var cf=canalForte(ch);
       sug.push({pri:pri, tipoSug:'campeao', cor:'#ec4899', rot:'Campeão', titulo:p.nome, motivo:motivo+(cf==='live'?' · vende mais em live':''),
+        semVideo:z, semVenda:(semVenda!=null && semVenda>=5) ? semVenda : null,
         prod:{nome:p.nome, loja:p.loja, idProduto:p.id||''}, tipo:cf});
     });
   }
@@ -5321,9 +5309,9 @@ function rotuloSug(s){
   if(!s) return '';
   if(s.tipoSug==='amostra') return '';            // amostra já mostra o prazo
   if(s.tipoSug==='aposta') return /Começou/.test(s.motivo)? 'Aposta nova' : 'Aposta subindo';
-  if(/parado/.test(s.motivo)) return 'Campeão parado';
+  if(s.semVideo && s.semVideo.parado) return s.semVideo.ult ? 'Campeão sem vídeo novo há '+s.semVideo.dias+' '+plural(s.semVideo.dias,'dia','dias') : 'Campeão sem vídeo novo';
   if(/esfriando/.test(s.motivo)) return 'Campeão esfriando';
-  return 'Campeão sem vídeo na semana';
+  return 'Campeão';
 }
 var _moldeCache=null;
 function moldesPlanejar(){   // mesma regra da tela Vídeos (vdAnalise), janela fixa de 15 dias até o último dia da planilha
@@ -5380,16 +5368,17 @@ function renderAPlanejar(){
     if(it.tipo==='amostra' && it.st==='gravando') et='<span class="gv-et grav">gravando agora</span>';
     else if(!it.ult) et='<span class="gv-et nunca">nunca gravado</span>';
     else if(it.ult.dias===0) et='<span class="gv-et hoje">gravado hoje</span>';
+    else if(it.sug && it.sug.semVideo && it.sug.semVideo.parado) et='';   // (conv. 15) não repete: a etiqueta "sem vídeo novo há N dias" já diz
     else et='<span class="gv-et dias">há '+it.ult.dias+' '+plural(it.ult.dias,'dia','dias')+'</span>';
     var tags=[];
     if(it.tipo==='amostra' && it.nPrazo!=null) tags.push('<span class="tg'+(it.urgente?' urg':' amo')+'">Amostra · '+(it.nPrazo<0?'venceu':(it.nPrazo===0?'vence hoje':(it.nPrazo===1?'vence amanhã':'vence '+dmIso(it.prazo))))+'</span>');
     var rs=rotuloSug(it.sug); if(rs) tags.push('<span class="tg '+(it.sug.tipoSug==='aposta'?'apo':'camp')+'">'+rs+'</span>');
+    if(it.sug && it.sug.semVenda) tags.push('<span class="tg semv">sem venda há '+it.sug.semVenda+' dias</span>');
     if(it.sug && it.sug.tipo==='live') tags.push('<span class="tg">vende mais em live</span>');
     if(it.molde) tags.push('<span class="tg mol">Molde · vendeu '+it.molde.ndias+' de 15 dias</span>');
     var pv=proximaVaga(it); if(pv) tags.push('<span class="tg ag">agendado '+(pv===hoje?'hoje':dmIso(pv))+'</span>');
     h+='<div class="apl-l"'+(it.ch?' data-ch="'+attr(it.ch)+'"':'')+'><div class="apl-t"><b>'+escapar(nomeCurto(it.nome))+'</b><span>'+et+' '+tags.join(' ')+'</span></div>'+
-       '<div class="apl-bts"><button type="button" class="apl-ag-bt" onclick="abrirAgendar('+i+')">Agendar</button>'+
-       (it.molde?'<button type="button" class="apl-ag-bt apl-rq" onclick="abrirReplicar(\''+it.molde.id+'\',\'planejar\')">Replicar</button>':'')+'</div></div>';
+       '<div class="apl-bts"><button type="button" class="apl-ag-bt" onclick="abrirAgendar('+i+')">Agendar</button></div></div>';
   });
   if(prods.length>10) h+='<button class="apl-mais" onclick="_apVer.prod=!_apVer.prod;renderPlanejar()">'+(_apVer.prod?'mostrar menos':'ver todos os '+prods.length)+'</button>';
   return h+'</div></div>';
@@ -5433,10 +5422,11 @@ async function mudarStatusPlano(id, st){
   _ultToque[id]=agora;
   var antes=x.dados.status, novo=Object.assign({}, x.dados, {status:st}), hoje=hojeISO();
   var mudouDia=(st==='gravado'||st==='postado') && (!novo.data || novo.data>hoje);
-  if(mudouDia){ novo.data=hoje; _planSemana=segundaDe(hoje); _planDia=hoje; }   // a tela acompanha o item, ele não "some"
-  var ok=await salvarPlano(id, novo);
-  if(!ok) return;
-  await efeitosAmostra(id, S.plano[id].dados, antes, st);
+  if(mudouDia) novo.data=hoje;
+  var r=await salvarJunto([{id:id, dados:novo}], mudancasAmostra(id, novo, antes, st));   // vaga + amostra juntas
+  if(r===null) return;
+  if(!r){ _ultToque[id]=0; erroTela('✕ Sem conexão com a nuvem: '+({gravado:'o Gravei', postado:'o Postei', planejado:'o Voltar', cancelado:'o Descartar'}[st]||'a mudança')+' não foi salvo. Nada mudou. Confira a internet e toque de novo.'); return; }
+  if(mudouDia){ _planSemana=segundaDe(hoje); _planDia=hoje; renderPlanejar(); }   // a tela acompanha o item, ele não "some"
   var tem=(S.plano[id].dados.produtos||[]).some(function(p){return p.amostraId;});
   if(st==='postado' && S.plano[id].dados.tipo!=='live' && !S.plano[id].dados.video){ aviso('✓ Postado'+(tem?' · amostra marcada como postada':''), 'Vincular vídeo', function(){ abrirVincular(id); }); return; }
   aviso(st==='gravado'?'✓ Gravado'+(tem?' · amostra passou pra "Gravando"':''):(st==='postado'?'✓ Postado'+(tem?' · amostra marcada como postada':''):(st==='cancelado'?'Roteiro descartado':'Voltou pra pendente')));
@@ -5454,34 +5444,71 @@ function aviso(txt, rotulo, acao){
   el.classList.add('on'); clearTimeout(_avT); _avT=setTimeout(function(){ el.classList.remove('on'); }, acao? 6000 : 3200);
 }
 function avancarPlano(id, st){ return mudarStatusPlano(id, st); }
-/* amostra acompanha o roteiro — inclusive quando a Mari desfaz (Voltar pra pendente / Descartar) */
-async function efeitosAmostra(id, d, antes, st){
-  if(antes===st) return;
-  if(st==='gravado' && antes!=='postado') await gravandoAmostrasDoPlano(d);
-  if(st==='postado') await postarAmostrasDoPlano(d);
-  if(antes==='postado' || (antes==='gravado' && (st==='planejado'||st==='cancelado'))) await desfazerAmostras(id, d, st);
-}
-async function desfazerAmostras(id, d, st){
-  var ids=(d.produtos||[]).map(function(p){return p.amostraId;}).filter(Boolean);
-  for(var i=0;i<ids.length;i++){
-    var aid=ids[i], a=S.amostras[aid]; if(!a) continue;
-    var outros=Object.values(S.plano).filter(function(x){ return x.id!==id && (x.dados.produtos||[]).some(function(p){return p.amostraId===aid;}); });
-    if(outros.some(function(x){return x.dados.status==='postado';})) continue;          // outro roteiro dela já foi postado: continua postada
-    var gravou = st==='gravado' || outros.some(function(x){return x.dados.status==='gravado';});
-    if(a.dados.status==='postado') await atualizarDados('amostras', aid, {status: gravou?'gravando':'chegou', postadoEm:''});
-    else if(a.dados.status==='gravando' && !gravou) await atualizarDados('amostras', aid, {status:'chegou'});
+/* ===== (conv. 15, item 5) UM jeito de salvar vagas e amostras (Agendar, Montar produção, "+", Gravei, Postei, Voltar,
+   Descartar, Mover, editar, Excluir e a amostra que acompanha o roteiro):
+   - salva tudo junto e SÓ muda a tela depois que a nuvem confirmou;
+   - se a 2ª parte (amostras) falhar, desfaz a 1ª (vagas) → nada fica pela metade;
+   - enquanto salva, outro toque é ignorado (devolve null);
+   - quem chama escreve o erro na tela (na janela aberta ou na faixa vermelha fixa). */
+var _salvando=false, MSG_SEM_NUVEM='✕ Sem conexão com a nuvem: nada foi salvo. Confira a internet e tente de novo.';
+async function salvarJunto(planos, amostras){
+  planos=planos||[]; amostras=amostras||[];
+  if(_salvando) return null;
+  _salvando=true;
+  var antes=planos.map(function(p){ return S.plano[p.id]||null; }), foi=false, ok=true;
+  try{
+    if(planos.length){ await DB.salvar('planejamento', planos.map(function(p){ return {id:p.id, dados:p.dados, excluido:!!p.excluido}; })); foi=true; }
+    if(amostras.length) await DB.salvar('amostras', amostras.map(function(a){ return {id:a.id, dados:a.dados, excluido:false}; }));
+  }catch(e){
+    ok=false;
+    if(foi){ try{ await DB.salvar('planejamento', planos.map(function(p,i){ var a=antes[i]; return a ? {id:a.id, dados:a.dados, excluido:false} : {id:p.id, dados:p.dados, excluido:true}; })); }catch(e2){} }
   }
+  if(ok){
+    planos.forEach(function(p){ if(p.excluido) delete S.plano[p.id]; else S.plano[p.id]={id:p.id, dados:p.dados, excluido:false}; });
+    amostras.forEach(function(a){ S.amostras[a.id]=Object.assign({}, S.amostras[a.id]||{}, {id:a.id, dados:a.dados, excluido:false}); });
+    limparErroTela();
+  }
+  _salvando=false;
+  if(ok){ renderPlanejar(); renderParaGravar(); if(amostras.length){ renderAmostras(); renderAlertaAmostras(); } }
+  return ok;
 }
-async function gravandoAmostrasDoPlano(d){   // gravou o roteiro da amostra: amostra passa pra "Gravando"
-  var ids=(d.produtos||[]).map(function(p){return p.amostraId;}).filter(Boolean);
-  for(var i=0;i<ids.length;i++){ var a=S.amostras[ids[i]]; if(a && a.dados.status==='chegou') await atualizarDados('amostras', ids[i], {status:'gravando'}); }
+function erroTela(txt){
+  var el=document.getElementById('erroSalvar');
+  if(!el){ el=document.createElement('div'); el.id='erroSalvar'; el.setAttribute('role','alert'); document.body.appendChild(el); }
+  el.innerHTML='<span>'+txt+'</span><button type="button" aria-label="Fechar" onclick="limparErroTela()">✕</button>'; el.classList.add('on');
 }
-async function salvarVariosPlano(lista){   // [{id,dados}]
-  var antes={}; lista.forEach(function(o){ antes[o.id]=S.plano[o.id]; S.plano[o.id]={id:o.id, dados:o.dados, excluido:false}; });
-  renderPlanejar(); renderParaGravar();
-  try{ await DB.salvar('planejamento', lista.map(function(o){ return {id:o.id, dados:o.dados, excluido:false}; })); return true; }
-  catch(e){ lista.forEach(function(o){ if(antes[o.id]) S.plano[o.id]=antes[o.id]; else delete S.plano[o.id]; }); renderPlanejar(); renderParaGravar();
-    alert('Sem conexão com a nuvem: não foi salvo. Tente de novo quando tiver internet.'); return false; }
+function limparErroTela(){ var el=document.getElementById('erroSalvar'); if(el) el.classList.remove('on'); }
+function erroJanela(id, txt){ var el=document.getElementById(id); if(el){ el.innerHTML=txt; return; } erroTela(txt); }
+/* amostra acompanha o roteiro (inclusive quando a Mari desfaz): devolve as amostras que mudam — salvas JUNTO com a vaga */
+function mudancasAmostra(id, d, antes, st){
+  if(antes===st) return [];
+  var ids=[], out=[];
+  (d.produtos||[]).forEach(function(p){ if(p.amostraId && ids.indexOf(p.amostraId)<0) ids.push(p.amostraId); });
+  ids.forEach(function(aid){
+    var a=S.amostras[aid]; if(!a) return; var ad=a.dados, m=null;
+    if(st==='gravado' && antes!=='postado' && ad.status==='chegou') m={status:'gravando'};
+    if(st==='postado' && ad.status!=='postado') m={status:'postado', postadoEm:d.data};
+    if(antes==='postado' || (antes==='gravado' && (st==='planejado'||st==='cancelado'))){
+      var outros=Object.values(S.plano).filter(function(x){ return x.id!==id && (x.dados.produtos||[]).some(function(p){ return p.amostraId===aid; }); });
+      if(!outros.some(function(x){ return x.dados.status==='postado'; })){
+        var gravou= st==='gravado' || outros.some(function(x){ return x.dados.status==='gravado'; });
+        if(ad.status==='postado') m={status: gravou?'gravando':'chegou', postadoEm:''};
+        else if(ad.status==='gravando' && !gravou) m={status:'chegou'};
+      }
+    }
+    if(m) out.push({id:aid, dados:Object.assign({}, ad, m)});
+  });
+  return out;
+}
+async function salvarVariosPlano(lista){   // [{id,dados}] — "+" e Montar produção
+  var r=await salvarJunto(lista.map(function(o){ return {id:o.id, dados:o.dados}; }), []);
+  if(r===false) erroTela(MSG_SEM_NUVEM);
+  return r===true;
+}
+async function salvarPlano(id, dados){   // uma vaga (vincular vídeo)
+  var r=await salvarJunto([{id:id, dados:dados}], []);
+  if(r===false) erroTela(MSG_SEM_NUVEM);
+  return r===true;
 }
 function novaVaga(prod, data, seq){
   var p={nome:prod.nome, loja:prod.loja||'', idProduto:prod.idProduto||''}; if(prod.amostraId) p.amostraId=prod.amostraId;
@@ -5514,7 +5541,7 @@ function abrirMover(id){
   h+='<label>Nova data<input type="date" id="mvData" value="'+(feitoJa? (d.data||hojeISO()) : (d.data && d.data>=hojeISO()? d.data : hojeISO()))+'"'+(feitoJa?' max="'+hojeISO()+'"':'')+'></label>'+
      (feitoJa?'<p class="mv-jatem">Já foi '+(d.status==='gravado'?'gravado':'postado')+': dá pra corrigir pra um dia que já passou, não pra frente.</p>':chipsDatas());
   h+='<div class="nv-botoes"><button class="btn" id="mvSalvar" onclick="confirmarMover(false)">Salvar data</button>'+
-     (d.tipo!=='live' && d.status==='planejado'?'<button class="btn ghost mini" onclick="confirmarMover(true)">Sem data (vai pra "Esperando data")</button>':'')+'</div></div></div>';
+     (d.tipo!=='live' && d.status==='planejado'?'<button class="btn ghost mini" onclick="confirmarMover(true)">Sem data (vai pra "Esperando data")</button>':'')+'</div><div class="rq-erro" id="mvErro" role="alert"></div></div></div>';
   abrirPainel(h);
 }
 async function confirmarMover(semData){
@@ -5522,21 +5549,71 @@ async function confirmarMover(semData){
   var nd= semData ? '' : (document.getElementById('mvData').value||'');
   if(!semData && !nd){ aviso('⚠ Escolha a data.'); return; }
   if(nd && nd>hojeISO() && (x.dados.status==='gravado'||x.dados.status==='postado')){ aviso('⚠ Esse roteiro já foi '+(x.dados.status==='gravado'?'gravado':'postado')+'. A data dele não pode ser no futuro.'); return; }
-  var novo=Object.assign({}, x.dados, {data:nd}); fecharForm(); _mv=null;
-  var ok=await salvarPlano(x.id, novo);
-  if(ok && nd){ _planSemana=segundaDe(nd); _planDia=nd; renderPlanejar(); }
-  if(ok) aviso(nd? '✓ Roteiro movido pra '+(nd===hojeISO()?'hoje':dmIso(nd)) : '✓ Roteiro em "Esperando data"');
+  var novo=Object.assign({}, x.dados, {data:nd});
+  var r=await salvarJunto([{id:x.id, dados:novo}], []);
+  if(r===null) return;
+  if(!r){ erroJanela('mvErro', '✕ Sem conexão com a nuvem: a data não foi mudada. Confira a internet e toque de novo.'); return; }
+  fecharForm(); _mv=null;
+  if(nd){ _planSemana=segundaDe(nd); _planDia=nd; renderPlanejar(); }
+  aviso(nd? '✓ Roteiro movido pra '+(nd===hojeISO()?'hoje':dmIso(nd)) : '✓ Roteiro em "Esperando data"');
 }
 function abrirAgendar(i){
   var it=(S._apProd||[])[i]; if(!it) return;
   var prod={nome:it.nome, loja:it.loja||'', idProduto:it.idProduto || (it.ch && S.idxProd.lista[it.ch] && S.idxProd.lista[it.ch].id) || ''};
   if(it.tipo==='amostra') prod.amostraId=it.id;
-  _mv={prod:prod};
-  var h=cabPainel('Agendar produto', escapar(nomeCurto(it.nome))+' · cada roteiro vira uma vaga no dia');
-  h+='<label>Dia da gravação<input type="date" id="mvData" value="'+diaSugeridoAgendar()+'" oninput="avisoJaTem()" onchange="avisoJaTem()"></label>'+chipsDatas()+'<div id="mvJaTem" class="mv-jatem"></div>';
-  h+='<label>Quantos roteiros desse produto?</label><div class="f-seg" id="mvQtd">'+[1,2,3,4,5].map(function(n){ return '<button type="button" data-q="'+n+'" class="'+(n===1?'on':'')+'" onclick="selQtd(this)">'+n+'</button>'; }).join('')+'</div>';
-  h+='<div class="nv-botoes"><button class="btn" id="mvSalvar" onclick="confirmarAgendar(false)">Agendar</button><button class="btn ghost mini" onclick="confirmarAgendar(true)">Sem data (vai pra "Esperando data")</button></div></div></div>';
+  abrirAgendarProd(prod, {molde: it.molde ? it.molde.id : null, origem:'planejar'});
+}
+/* (conv. 15, item 4) UMA janela pra agendar: botão Agendar do "O que gravar" e Replicar da tela Vídeos.
+   Produto com molde: caixinha "Usar o gancho do vídeo-molde …XXXXXX" já marcada (gancho + marca de réplica);
+   desmarcou = vaga normal (sem gancho do molde e sem marca). Salva tudo numa chamada: sem nuvem nada é criado
+   e o erro fica escrito na janela; toque duplo ignorado enquanto salva. */
+var _ag=null, _agSalvando=false;
+function abrirAgendarProd(prod, o){
+  o=o||{}; _ag={prod:prod, molde:o.molde||null, origem:o.origem||'planejar'}; _mv={prod:prod};   // _mv: aviso "Já tem N roteiros" e atalhos de data
+  var mo=_ag.molde, doVid=_ag.origem==='videos', h;
+  h=cabPainel(mo && doVid ? 'Replicar vídeo '+vdCurto(mo) : 'Agendar produto', escapar(nomeCurto(prod.nome))+' · cada roteiro vira uma vaga no Planejar');
+  if(mo){
+    var g=ganchoDoVideo(mo);
+    if(doVid) h+='<p class="rq-info">Produto: <b>'+escapar(nomeCurto(prod.nome))+'</b>'+(o.outros>0?' · o vídeo vendeu também mais '+o.outros+' '+plural(o.outros,'produto','produtos'):'')+'</p>';
+    h+='<label class="rq-usar"><input type="checkbox" id="rqUsar" checked onchange="rqUsarMudou()"><span>Usar o gancho do vídeo-molde <b>'+vdCurto(mo)+'</b></span></label>'+
+       '<div id="rqGanchoBox"><label>Gancho do vídeo-molde<textarea id="rqGancho" class="fp-gancho" rows="3" placeholder="A primeira frase do vídeo">'+escapar(g)+'</textarea></label>'+
+       '<p class="fp-dica" id="rqDica">'+(g ? 'Veio do roteiro que já tem esse gancho. Mude o que quiser pra fazer a variação. <a href="'+vdLink(mo)+'" target="_blank" rel="noopener">Abrir o vídeo ↗</a>' :
+         '<a href="'+vdLink(mo)+'" target="_blank" rel="noopener">Abra o vídeo ↗</a>, veja a primeira frase e escreva aqui. Pode deixar vazio e escrever depois.')+'</p></div>';
+  }
+  var dia= doVid ? hojeISO() : diaSugeridoAgendar(), qp= mo ? 3 : 1;
+  h+='<label>Dia da gravação<input type="date" id="mvData" value="'+dia+'" min="'+hojeISO()+'" oninput="avisoJaTem()" onchange="avisoJaTem()"></label>'+chipsDatas()+'<div id="mvJaTem" class="mv-jatem"></div>';
+  h+='<label>Quantos roteiros desse produto?</label><div class="f-seg" id="mvQtd">'+[1,2,3,4,5].map(function(n){ return '<button type="button" data-q="'+n+'" class="'+(n===qp?'on':'')+'" onclick="selQtd(this)">'+n+'</button>'; }).join('')+'</div>';
+  h+='<div class="nv-botoes"><button class="btn" id="rqSalvar" onclick="confirmarAgendar(false)">Agendar</button>'+
+     '<button class="btn ghost mini" id="rqSemData" onclick="confirmarAgendar(true)">Sem data (vai pra "Esperando data")</button></div>'+
+     '<div class="rq-erro" id="rqErro" role="alert"></div></div></div>';
   abrirPainel(h); avisoJaTem();
+}
+function rqUsarMudou(){ var c=document.getElementById('rqUsar'), b=document.getElementById('rqGanchoBox'); if(c && b) b.style.display = c.checked ? '' : 'none'; }
+function confirmarReplicar(){ return confirmarAgendar(false); }   // nome antigo (V2b)
+async function confirmarAgendar(semData){
+  if(!_ag || _agSalvando) return;   // toque duplo: o 2º toque é ignorado enquanto salva
+  var err=document.getElementById('rqErro'), bt=document.getElementById('rqSalvar'); err.innerHTML='';
+  var nd= semData ? '' : ((document.getElementById('mvData')||{}).value||'');
+  if(!semData && !nd){ err.innerHTML='⚠ Escolha a data.'; return; }
+  if(nd && nd<hojeISO()){ err.innerHTML='⚠ Esse dia já passou. Escolha hoje ou um dia pra frente.'; return; }
+  var bq=document.querySelector('#mvQtd button.on'), q= bq ? (+bq.getAttribute('data-q')||1) : 1;
+  var cx=document.getElementById('rqUsar'), usar=!!(_ag.molde && cx && cx.checked), vid=_ag.molde;
+  var g= usar ? String((document.getElementById('rqGancho')||{}).value||'').trim() : '', lista=[];
+  for(var k=0;k<q;k++){ var v=novaVaga(_ag.prod, nd, k); if(usar){ v.dados.ideia=g; v.dados.molde=vid; } lista.push(v); }
+  _agSalvando=true; bt.disabled=true; bt.textContent='Salvando…';
+  var ok=await salvarJunto(lista.map(function(o){ return {id:o.id, dados:o.dados}; }), []);
+  _agSalvando=false;
+  if(ok===null){ bt.disabled=false; bt.textContent='Agendar'; return; }
+  if(!ok){ bt.disabled=false; bt.textContent='Agendar';
+    err.innerHTML='✕ Sem conexão com a nuvem: nenhum roteiro foi agendado. Confira a internet e toque em Agendar de novo.'; return; }
+  var doVid=_ag.origem==='videos', nm=String(_ag.prod.nome||''), nome= nm.length>30 ? nm.slice(0,30).trim()+'…' : nm;
+  fecharForm(); _ag=null; _mv=null;
+  if(nd && !doVid){ _planSemana=segundaDe(nd); _planDia=nd; _planVista='dia'; }
+  renderPlanejar(); renderParaGravar();
+  var txt='✓ '+q+' '+plural(q,'roteiro agendado','roteiros agendados')+(nd? ' pra '+(nd===hojeISO()?'hoje':dmIso(nd)) : ' em "Esperando data"')+
+          (usar ? ' · réplica do vídeo '+vdCurto(vid) : ' · '+nome);
+  if(!doVid){ aviso(txt); return; }   // já está no Planejar: a tela foi pro dia agendado
+  aviso(txt, 'Ver no Planejar ›', function(){ if(nd){ _planSemana=segundaDe(nd); _planDia=nd; } _planVista='dia'; irPara('planejar'); renderPlanejar(); });
 }
 function selQtd(bt){ document.querySelectorAll('#mvQtd button').forEach(function(b){ b.classList.toggle('on', b===bt); }); }
 function vagasDoProdNoDia(prod, dia){
@@ -5550,17 +5627,6 @@ function avisoJaTem(){
   el.innerHTML = n ? '⚠ Já tem <b>'+n+' '+plural(n,'roteiro','roteiros')+'</b> desse produto em '+dmIso(dia)+'. Agendar vai <b>somar</b> mais.' : '';
 }
 function diaSugeridoAgendar(){ var h=hojeISO(); return planVista()==='dia' && diaAtual()>=h ? diaAtual() : h; }
-async function confirmarAgendar(semData){
-  if(!_mv || !_mv.prod) return;
-  var nd= semData ? '' : (document.getElementById('mvData').value||''); if(!semData && !nd){ aviso('⚠ Escolha a data.'); return; }
-  var bq=document.querySelector('#mvQtd button.on'), q= bq? (+bq.getAttribute('data-q')||1) : 1;
-  var lista=[]; for(var k=0;k<q;k++) lista.push(novaVaga(_mv.prod, nd, k));
-  fecharForm(); _mv=null;
-  if(nd){ _planSemana=segundaDe(nd); _planDia=nd; if(planVista()!=='dia') _planVista='dia'; }
-  var nm=String(lista[0].dados.produtos[0].nome||''), nome= nm.length>30 ? nm.slice(0,30).trim()+'…' : nm;
-  if(await salvarVariosPlano(lista)) aviso('✓ '+q+' '+plural(q,'roteiro agendado','roteiros agendados')+(nd? ' pra '+(nd===hojeISO()?'hoje':dmIso(nd)) : ' em "Esperando data"')+' · '+nome);
-}
-
 /* ---------- A3.2a Montar produção: meta de vídeos por dia × dias → roteiros por produto ----------
    Regra (aprovada pelo Thiago, 25/09): momento perfeito = o dobro · normal = 1 por dia · em baixa = metade, nunca zero.
    Fila: campeões do mês (comissão) → amostras abertas (vence antes primeiro) → apostas da lista → resto do "O que gravar".
@@ -5611,7 +5677,7 @@ function abrirProducao(){
      '<div class="mv-chips"><button type="button" onclick="mpDia(\''+hojeISO()+'\')">Hoje</button><button type="button" onclick="mpDia(\''+am+'\')">Amanhã</button></div>'+
      '<label>Gravando pra quantos dias de postagem?</label><div class="f-seg" id="mpDias">'+[1,2,3,4,5].map(function(n){ return '<button type="button" data-d="'+n+'" class="'+(n===c.dias?'on':'')+'" onclick="mpSelDias(this)">'+n+'</button>'; }).join('')+'</div>'+
      '<div id="mpPrev"></div>'+
-     '<div class="nv-botoes"><button class="btn" id="mpSalvar" onclick="confirmarProducao()">Agendar</button><button class="btn ghost mini" onclick="fecharForm()">Cancelar</button></div></div></div>';
+     '<div class="nv-botoes"><button class="btn" id="mpSalvar" onclick="confirmarProducao()">Agendar</button><button class="btn ghost mini" onclick="fecharForm()">Cancelar</button></div><div class="rq-erro" id="mpErro" role="alert"></div></div></div>';
   abrirPainel(h); mpMudou();
 }
 function mpDia(d){ var el=document.getElementById('mpDia'); if(el){ el.value=d; mpMudou(); } }
@@ -5653,34 +5719,23 @@ async function confirmarProducao(){
   if(!F.itens.length){ aviso('⚠ Nenhum produto pra montar. Marque produtos com + pra gravar.'); return; }
   var lista=[], seq=0;
   F.itens.forEach(function(f){ for(var k=0;k<f.criar;k++) lista.push(novaVaga(f.prod, v.dia, seq++)); });
-  // guarda a meta (ela também passa a mandar na sugestão de vídeos do Ritmo por produto)
-  var cfg=Object.assign({}, S.metas._config||{}); cfg.producao={porDia:v.porDia, dias:v.dias}; delete cfg.videosRitmo; S.metas._config=cfg;
-  DB.salvar('metas',[{id:'_config', dados:cfg}]).catch(function(){});
-  fecharForm(); _mp=null;
-  _planSemana=segundaDe(v.dia); _planDia=v.dia; if(planVista()!=='dia') _planVista='dia';
-  if(!lista.length){ renderPlanejar(); aviso('✓ Nada novo: a produção de '+(v.dia===hojeISO()?'hoje':dmIso(v.dia))+' já estava montada.'); return; }
+  // guarda a meta (ela também passa a mandar na sugestão de vídeos do Ritmo por produto) — só depois que as vagas foram salvas
+  function guardaMeta(){ var cfg=Object.assign({}, S.metas._config||{}); cfg.producao={porDia:v.porDia, dias:v.dias}; delete cfg.videosRitmo; S.metas._config=cfg;
+    DB.salvar('metas',[{id:'_config', dados:cfg}]).catch(function(){}); }
+  if(!lista.length){ guardaMeta(); fecharForm(); _mp=null; _planSemana=segundaDe(v.dia); _planDia=v.dia; if(planVista()!=='dia') _planVista='dia';
+    renderPlanejar(); aviso('✓ Nada novo: a produção de '+(v.dia===hojeISO()?'hoje':dmIso(v.dia))+' já estava montada.'); return; }
   _mpSalvando=true;
   try{
     var np=F.itens.filter(function(f){ return f.criar>0; }).length;
-    if(await salvarVariosPlano(lista)) aviso('✓ '+lista.length+' '+plural(lista.length,'roteiro agendado','roteiros agendados')+' pra '+(v.dia===hojeISO()?'hoje':dmIso(v.dia))+' · '+np+' '+plural(np,'produto','produtos')+(F.falta?' · faltaram '+F.falta:''));
+    var r=await salvarJunto(lista.map(function(o){ return {id:o.id, dados:o.dados}; }), []);
+    if(r===null) return;
+    if(!r){ erroJanela('mpErro', '✕ Sem conexão com a nuvem: nenhum roteiro foi agendado. Confira a internet e toque em Agendar de novo.'); return; }
+    guardaMeta(); fecharForm(); _mp=null;
+    _planSemana=segundaDe(v.dia); _planDia=v.dia; if(planVista()!=='dia') _planVista='dia'; renderPlanejar();
+    aviso('✓ '+lista.length+' '+plural(lista.length,'roteiro agendado','roteiros agendados')+' pra '+(v.dia===hojeISO()?'hoje':dmIso(v.dia))+' · '+np+' '+plural(np,'produto','produtos')+(F.falta?' · faltaram '+F.falta:''));
   } finally { _mpSalvando=false; }
 }
 
-async function postarAmostrasDoPlano(d){
-  var ids=(d.produtos||[]).map(function(p){return p.amostraId;}).filter(Boolean);
-  for(var i=0;i<ids.length;i++){
-    var a=S.amostras[ids[i]]; if(!a || a.dados.status==='postado') continue;
-    await atualizarDados('amostras', ids[i], {status:'postado', postadoEm:d.data});
-  }
-}
-function salvarPlano(id, dados){
-  var o={id:id, dados:dados, excluido:false}, antes=S.plano[id];
-  S.plano[id]=o; renderPlanejar(); renderParaGravar();
-  return DB.salvar('planejamento',[o]).then(function(){ return true; }, function(){
-    if(antes) S.plano[id]=antes; else delete S.plano[id]; renderPlanejar();
-    alert('Sem conexão com a nuvem: não foi salvo. Tente de novo quando tiver internet.'); return false;
-  });
-}
 function planejarSugestao(i){
   var s=S._sugPlano[i]; if(!s) return;
   // primeiro dia livre a partir de hoje (ou da segunda, se a semana for futura)
@@ -5717,7 +5772,7 @@ function htmlFormPlano(){
      '<label>Horário (opcional)<input type="time" id="fpHora" value="'+(d.hora||'')+'" onchange="_fp.d.hora=this.value"></label></div>'+
      (d.tipo!=='live' && d.status==='planejado' ? '<label class="fp-semdata"><input type="checkbox" id="fpSemData"'+(d.data?'':' checked')+' onchange="semDataPlano(this.checked)"> Sem data (fica em "Esperando data")</label>' : '');
   h+='<label>Status</label><div class="f-seg" id="fpStatus">'+Object.keys(ST_PLAN).map(function(k){ return '<button type="button" data-s="'+k+'" class="'+(d.status===k?'on':'')+'" onclick="_fp.d.status=\''+k+'\';document.querySelectorAll(\'#fpStatus button\').forEach(function(b){b.classList.toggle(\'on\',b.getAttribute(\'data-s\')===\''+k+'\')})">'+ST_PLAN[k].rot+'</button>'; }).join('')+'</div>';
-  h+='<div class="nv-botoes"><button class="btn" onclick="salvarFormPlano()">Salvar</button>'+(_fp.id?'<button class="btn ghost mini" onclick="duplicarPlano()">Repetir em outro dia</button><button class="btn ghost mini" style="margin-left:auto" onclick="excluirPlano()">Excluir</button>':'')+'</div>';
+  h+='<div class="nv-botoes"><button class="btn" onclick="salvarFormPlano()">Salvar</button>'+(_fp.id?'<button class="btn ghost mini" onclick="duplicarPlano()">Repetir em outro dia</button><button class="btn ghost mini" style="margin-left:auto" onclick="excluirPlano()">Excluir</button>':'')+'</div><div class="rq-erro" id="fpErro" role="alert"></div>';
   h+='</div></div>';
   setTimeout(renderProdsPlano,0);
   return h;
@@ -5824,17 +5879,19 @@ async function salvarFormPlano(){
   limparRoteiro(d);
   var id=_fp.id||novoId(), eraPostado=_fp.id && S.plano[_fp.id] && S.plano[_fp.id].dados.status==='postado';
   var _fpAntes=_fp.id && S.plano[_fp.id] ? S.plano[_fp.id].dados.status : null;
+  var r=await salvarJunto([{id:id, dados:d}], mudancasAmostra(id, d, _fpAntes||'planejado', d.status));   // vaga + amostra juntas; janela só fecha depois de salvo
+  if(r===null) return;
+  if(!r){ erroJanela('fpErro', '✕ Sem conexão com a nuvem: o roteiro não foi salvo. O que você escreveu continua aqui. Confira a internet e toque em Salvar de novo.'); return; }
   fecharForm(); _fp=null;
-  var ok=await salvarPlano(id, d);
-  if(ok) await efeitosAmostra(id, d, _fpAntes||'planejado', d.status);
   if(d.data){ _planSemana=segundaDe(d.data); _planDia=d.data; } renderPlanejar();
 }
 async function excluirPlano(){
   if(!_fp||!_fp.id) return; if(!confirm('Excluir este conteúdo do calendário?')) return;
-  var id=_fp.id, x=S.plano[id]; fecharForm(); _fp=null;
-  delete S.plano[id]; renderPlanejar();
-  try{ await DB.salvar('planejamento',[{id:id, dados:x.dados, excluido:true}]); }
-  catch(e){ S.plano[id]=x; renderPlanejar(); alert('Sem conexão com a nuvem: não foi excluído.'); }
+  var id=_fp.id, x=S.plano[id];
+  var r=await salvarJunto([{id:id, dados:x.dados, excluido:true}], []);
+  if(r===null) return;
+  if(!r){ erroJanela('fpErro', '✕ Sem conexão com a nuvem: o roteiro não foi excluído. Confira a internet e toque de novo.'); return; }
+  fecharForm(); _fp=null; aviso('Roteiro excluído');
 }
 function semDataPlano(on){
   var el=document.getElementById('fpData'); el.disabled=on;
