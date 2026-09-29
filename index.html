@@ -251,6 +251,24 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .vd-tab td small{display:block;color:var(--tinta3);font-size:11.5px}
 .vd-tab td.vd-nome{white-space:normal;min-width:200px;font-weight:700}
 .vd-tab tr:last-child td{border-bottom:none}
+/* ===== F2 leitura do funil (conv. 17) ===== */
+.fl-card{margin-bottom:12px}
+.fl-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.fl-tit{font-size:15px}
+.fl-comp{font-size:13px;color:var(--tinta2);line-height:1.5;margin:8px 0 0}
+.fl-velho{font-size:13px;margin:8px 0 0;padding:7px 10px;border-radius:8px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e}
+.fl-onde{margin:10px 0 6px;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.5;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
+.fl-onde.fl-nada{background:#f0fdf4;border-color:#bbf7d0;color:#14532d}
+.fl-frases{margin:4px 0 0;padding:0;list-style:none;font-size:13.5px;line-height:1.5}
+.fl-frases li{padding:5px 0 5px 22px;position:relative;border-bottom:1px solid var(--linha)}
+.fl-frases li:last-child{border-bottom:none}
+.fl-frases li::before{position:absolute;left:2px;top:5px;font-weight:800}
+.fl-frases li.fl-caiu::before{content:'↓';color:var(--vermelho)}
+.fl-frases li.fl-subiu::before{content:'↑';color:var(--verde)}
+.fl-frases li.fl-igual::before{content:'=';color:var(--tinta3)}
+.fl-frases li.fl-pouco::before{content:'?';color:var(--amarelo)}
+.fl-live{font-size:13px;margin:8px 0 0;padding:7px 10px;border-radius:8px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e}
+.fl-mini{font-size:12.5px}
 /* ===== ler do print (conv. 17) ===== */
 .lp-caixa{border:2px dashed var(--linha2);margin-bottom:12px}
 .lp-caixa.arrasto{border-color:var(--uva);background:#f5f3ff}
@@ -2291,7 +2309,8 @@ function renderFunilAtalho(){
   var el=document.getElementById('funilAtalho'); if(!el) return;
   var o=fnOntem(), d=S.metas && S.metas['funil_dia_'+o];
   el.classList.toggle('ok', !!d);
-  el.innerHTML = d ? '<span><b>Funil de ontem ('+dm(deIso(o))+') ✓</b><br>'+fnTxtTaxas(d)+'</span><span class="fn-seta">Ver ›</span>'
+  var L=d ? fnLeitura(_fl.N) : null, linha=(L && L.modo==='compara' && L.atual.fim===o) ? flResumoCurto(L) : '';
+  el.innerHTML = d ? '<span><b>Funil de ontem ('+dm(deIso(o))+') ✓</b><br>'+fnTxtTaxas(d)+(linha?'<br><span class="fl-mini" id="flMini">'+linha+'</span>':'')+'</span><span class="fn-seta">Ver ›</span>'
                    : '<span><b>Funil</b> · registrar os números de ontem ('+dm(deIso(o))+')</span><span class="fn-seta">Registrar ›</span>';
 }
 function renderFunil(pre){
@@ -2299,6 +2318,7 @@ function renderFunil(pre){
   var el=document.getElementById('funilConteudo'); if(!el) return;
   var dia=_fn.tipo==='dia', v=pre||{}, h='';
   if(!pre){ var ra=fnRascTodos()[_fn.tipo]; if(ra && (ra.edit||null)===(_fn.edit||null)){ v={de:ra.de||'', ate:ra.ate||'', txt:ra.txt||{}}; if(_fn.edit && S.metas[_fn.edit]) v.tipo=_fn.tipo; } }
+  h+=flCardHTML();
   h+=lpCaixaHTML();
   h+='<div class="janelas" id="fnTipo"><button class="'+(dia?'on':'')+'" onclick="setFnTipo(\'dia\')">Dia a dia<small class="fn-filtro">filtro Ontem</small></button><button class="'+(!dia?'on':'')+'" onclick="setFnTipo(\'per\')">Resumo do período<small class="fn-filtro">filtro 7D ou Personalizar</small></button></div>';
   h+='<div class="nv-card frm fn-form" id="fnForm">';
@@ -2347,6 +2367,107 @@ function renderFunil(pre){
   lpAplicarMarcas();
   fnPrevia();
 }
+/* ===================== F2 — LEITURA DO FUNIL (conv. 17) — o "gestor" do funil =====================
+   Compara a média dos últimos N dias registrados (3/7/15) com os N anteriores; sem dias suficientes, compara o último
+   dia com o Resumo do período mais recente. Regras fixas (grátis, nunca inventa), só com os números da própria Mari.
+   Cálculo-fonte: testes/fonte_f2.py (mesmas regras, mesmos limites). */
+var FL_MINIMO={3:2, 7:5, 15:10}, FL_LIMIAR=15, FL_MIN_ITENS=20;
+var _fl={N:3};
+function flSoma(regs){ var t={imp:0,cli:0,itens:0,gmv:0}; regs.forEach(function(r){ t.imp+=r.imp||0; t.cli+=r.cli||0; t.itens+=r.itens||0; t.gmv+=r.gmv||0; }); return t; }
+function flMetricas(t, nd){
+  return {impDia:t.imp/nd, ctr:t.imp?t.cli/t.imp*100:null, conv:t.cli?t.itens/t.cli*100:null, ticket:t.itens?t.gmv/t.itens:null, gmvDia:t.gmv/nd, itens:t.itens};
+}
+function flLiveFracao(ini, fim){   // fração do GMV da planilha que veio de live no período; null = a planilha não cobre
+  if(!S.todas || !S.todas.length || !S.dataMax || isoD(S.dataMax)<fim) return null;
+  var g=0, l=0;
+  S.todas.forEach(function(x){ if(!x.data) return; var d=isoD(x.data); if(d<ini||d>fim) return; g+=x.gmv||0; if(x.tipo==='Live') l+=x.gmv||0; });
+  return g>0 ? l/g : 0;
+}
+function fnLeitura(N){
+  var dias={}; fnRegistros('dia').forEach(function(x){ dias[x.d.de]=x.d; });
+  var ks=Object.keys(dias).sort(); if(!ks.length) return {modo:'vazio'};
+  var fim=ks[ks.length-1];
+  function jan(desl){ var f=isoMais(fim,-desl), i=isoMais(f,-(N-1)); return {ini:i, fim:f, ks:ks.filter(function(k){ return k>=i && k<=f; })}; }
+  var a=jan(0), atual;
+  if(a.ks.length>=FL_MINIMO[N]) atual={tipo:'janela', ini:a.ini, fim:a.fim, n:a.ks.length, prim:a.ks[0], m:flMetricas(flSoma(a.ks.map(function(k){ return dias[k]; })), a.ks.length)};
+  else atual={tipo:'dia', ini:fim, fim:fim, n:1, prim:fim, m:flMetricas(flSoma([dias[fim]]),1)};
+  var base=null;
+  if(atual.tipo==='janela'){
+    var b=jan(N);
+    if(b.ks.length>=FL_MINIMO[N]) base={tipo:'janela', ini:b.ini, fim:b.fim, n:b.ks.length, m:flMetricas(flSoma(b.ks.map(function(k){ return dias[k]; })), b.ks.length)};
+  }
+  if(!base){
+    var lim=isoMais(atual.prim,-14), cand=fnRegistros('per').map(function(x){ return x.d; }).filter(function(r){ return r.ate<atual.prim && r.ate>=lim; });
+    cand.sort(function(p,q){ return p.ate<q.ate?1:(p.ate>q.ate?-1:(p.de<q.de?1:(p.de>q.de?-1:0))); });
+    if(cand.length){ var r=cand[0], nd=diasEntre(r.de,r.ate)+1; base={tipo:'resumo', ini:r.de, fim:r.ate, n:nd, m:flMetricas(flSoma([r]),nd)}; }
+  }
+  if(!base) return {modo:'sem_base', atual:atual, N:N, registrados:a.ks.length};
+  var A=atual.m, B=base.m, st={};
+  ['impDia','ctr','conv','ticket','gmvDia'].forEach(function(k){
+    if(A[k]==null || !B[k]){ st[k]={delta:null, status:'sem'}; return; }
+    var dl=(A[k]/B[k]-1)*100;
+    st[k]={delta:dl, status: Math.abs(dl)<FL_LIMIAR ? 'igual' : (dl<0?'caiu':'subiu')};
+  });
+  if(st.conv.status!=='sem' && (A.itens<FL_MIN_ITENS || B.itens<FL_MIN_ITENS)) st.conv.status='pouco';
+  var onde='nada';
+  [['impDia','alcance'],['ctr','clique'],['conv','compra']].some(function(p){ if(st[p[0]].status==='caiu'){ onde=p[1]; return true; } return false; });
+  if(onde==='nada' && st.gmvDia.status==='caiu' && st.ticket.status==='caiu') onde='ticket';
+  var la=flLiveFracao(atual.ini, atual.fim), lb=flLiveFracao(base.ini, base.fim);
+  var live=((la!=null && la>=0.2) || (lb!=null && lb>=0.2)) ? {atual:la, base:lb} : null;
+  return {modo:'compara', atual:atual, base:base, st:st, onde:onde, live:live, N:N};
+}
+function flPct(dl){ return Math.round(Math.abs(dl))+'%'; }
+function flVerbo(nome, s){ return nome+' '+(s.status==='igual'?'igual':(s.status==='caiu'?'caiu ':'subiu ')+flPct(s.delta)); }
+function flPorMil(v){ return inteiro(Math.round(v*10)); }
+function flQuando(x){ return x.tipo==='dia' ? 'dia '+dm(deIso(x.ini)) : dm(deIso(x.ini))+' a '+dm(deIso(x.fim)); }
+function flFrases(L){
+  var A=L.atual.m, B=L.base.m, s=L.st, f=[];
+  if(s.impDia.status!=='sem') f.push({k:'impDia', st:s.impDia.status, t:'<b>'+flVerbo('Alcance',s.impDia)+'</b>: '+inteiro(Math.round(A.impDia))+' impressões por dia (antes '+inteiro(Math.round(B.impDia))+').'});
+  if(s.ctr.status!=='sem') f.push({k:'ctr', st:s.ctr.status, t:'<b>'+flVerbo('Clique',s.ctr)+'</b>: de cada 1.000 pessoas que viram o produto, '+flPorMil(A.ctr)+' clicaram (antes '+flPorMil(B.ctr)+').'});
+  if(s.conv.status==='pouco') f.push({k:'conv', st:'pouco', t:'<b>Compra</b>: de cada 1.000 cliques, '+flPorMil(A.conv)+' viraram venda (antes '+flPorMil(B.conv)+') — mas foram só '+inteiro(Math.min(A.itens,B.itens))+' itens: pouco pra concluir.'});
+  else if(s.conv.status!=='sem') f.push({k:'conv', st:s.conv.status, t:'<b>'+flVerbo('Compra',s.conv)+'</b>: de cada 1.000 cliques, '+flPorMil(A.conv)+' viraram venda (antes '+flPorMil(B.conv)+').'});
+  if(s.ticket.status!=='sem') f.push({k:'ticket', st:s.ticket.status, t:'<b>'+flVerbo('Ticket',s.ticket)+'</b>: '+reais(A.ticket)+' por item (antes '+reais(B.ticket)+').'});
+  if(s.gmvDia.status!=='sem') f.push({k:'gmvDia', st:s.gmvDia.status, t:'<b>Resultado: GMV '+(s.gmvDia.status==='igual'?'igual':(s.gmvDia.status==='caiu'?'caiu ':'subiu ')+flPct(s.gmvDia.delta))+'</b> — '+reais(A.gmvDia)+' por dia (antes '+reais(B.gmvDia)+').'});
+  return f;
+}
+function flOndeTexto(L){
+  var s=L.st;
+  if(L.onde==='alcance') return '<b>Onde agir primeiro: o alcance.</b> O produto apareceu pra menos gente — o que aumenta isso é postar mais vídeos e lives com ele.';
+  if(L.onde==='clique') return '<b>Onde agir primeiro: o clique.</b> '+(s.impDia.status==='igual'||s.impDia.status==='subiu' ? 'O produto apareceu pra '+(s.impDia.status==='subiu'?'mais gente':'mesma quantidade de gente')+' e menos gente clicou' : 'Menos gente clicou')+' — olhe o vídeo e o produto que está sendo mostrado.';
+  if(L.onde==='compra') return '<b>Onde agir primeiro: a compra.</b> Clicaram, mas compraram menos — olhe a página do produto: preço, avaliações, frete e estoque.';
+  if(L.onde==='ticket') return '<b>O GMV caiu porque o ticket caiu:</b> vendeu produtos mais baratos.';
+  return '<b>Nada caiu 15% ou mais.</b> Siga o plano.';
+}
+function flResumoCurto(L){   // 1 linha pro Planejar
+  if(!L || L.modo!=='compara') return '';
+  var m={alcance:['o alcance','impressões','impDia'], clique:['o clique','CTR','ctr'], compra:['a compra','conversão','conv'], ticket:['o ticket','ticket','ticket']}[L.onde];
+  return m ? 'Onde agir: <b>'+m[0]+'</b> ('+m[1]+' −'+flPct(L.st[m[2]].delta)+')' : 'Nada caiu 15% ou mais — siga o plano';
+}
+function flCardHTML(){
+  var N=_fl.N, L=fnLeitura(N);
+  var h='<div class="nv-card fl-card" id="flCard"><div class="fl-top"><b class="fl-tit">Leitura do funil</b><div class="janelas" id="flJanela" style="margin:0">'+
+    [3,7,15].map(function(n){ return '<button type="button" data-n="'+n+'" class="'+(n===N?'on':'')+'" onclick="setFlN('+n+')">'+n+' dias</button>'; }).join('')+'</div></div>';
+  if(L.modo==='vazio') return h+'<p class="fl-comp">Ainda não tem dia registrado. Registre o dia de ontem (Ler do print, logo abaixo) — a leitura aparece aqui.</p></div>';
+  var ult=L.atual.fim, aviso= ult<fnOntem() ? '<p class="fl-velho">Os números vão até <b>'+dm(deIso(ult))+'</b> (último dia registrado) — registre os dias que faltam.</p>' : '';
+  if(L.modo==='sem_base'){
+    var falta=Math.max(0, FL_MINIMO[N]-L.registrados);
+    return h+aviso+'<p class="fl-comp">Ainda não dá pra comparar. '+(falta? 'A média de '+N+' dias precisa de '+FL_MINIMO[N]+' dias registrados em '+N+' (faltam '+falta+') e mais '+FL_MINIMO[N]+' nos '+N+' dias antes.' : 'Faltam dias registrados nos '+N+' dias antes pra comparar.')+' Enquanto isso, salve um <b>Resumo do período</b> (filtro 7D) — o dia de ontem é comparado com ele.</p></div>';
+  }
+  var comp = L.base.tipo==='janela'
+    ? 'Média dos <b>últimos '+N+' dias</b> ('+flQuando(L.atual)+', '+L.atual.n+' '+plural(L.atual.n,'dia registrado','dias registrados')+') × <b>'+N+' dias antes</b> ('+flQuando(L.base)+', '+L.base.n+' '+plural(L.base.n,'dia','dias')+').'
+    : '<b>'+(L.atual.tipo==='dia'?'Dia '+dm(deIso(L.atual.ini)):'Últimos '+N+' dias ('+flQuando(L.atual)+', '+L.atual.n+' registrados)')+'</b> × média por dia do <b>Resumo de '+dm(deIso(L.base.ini))+' a '+dm(deIso(L.base.fim))+'</b>.'+
+      (L.atual.tipo==='dia' ? ' A média de '+N+' dias começa com '+FL_MINIMO[N]+' dias registrados.' : '');
+  h+=aviso+'<p class="fl-comp">'+comp+'</p>';
+  h+='<div class="fl-onde fl-'+L.onde+'" id="flOnde">'+flOndeTexto(L)+'</div>';
+  h+='<ul class="fl-frases" id="flFrases">'+flFrases(L).map(function(x){ return '<li class="fl-'+x.st+'" data-k="'+x.k+'">'+x.t+'</li>'; }).join('')+'</ul>';
+  if(L.live){
+    var p=function(v){ return v==null?'sem planilha':Math.round(v*100)+'%'; };
+    h+='<p class="fl-live" id="flLive">⚠ Teve live: '+p(L.live.atual)+' das vendas da planilha no período de agora ('+p(L.live.base)+' antes). Dia com live costuma ter conversão diferente — compare com cuidado.</p>';
+  }
+  h+='<p class="fn-nota" style="margin-top:6px">Compara só com os números da própria Mari. "Igual" = menos de 15% de diferença. Conversão só conclui com 20 itens ou mais.</p>';
+  return h+'</div>';
+}
+function setFlN(n){ _fl.N=n; var c=document.getElementById('flCard'); if(c) c.outerHTML=flCardHTML(); renderFunilAtalho(); }
 /* ===================== LER DO PRINT (conv. 17) =====================
    A Mari arrasta/cola/escolhe 1 ou 2 prints do app (Dados › Visão geral e Comissões) e o sistema PREENCHE o formulário do
    Funil — nunca salva sozinho. O leitor de texto (Tesseract.js, grátis, versão travada) roda no navegador: a imagem não é
