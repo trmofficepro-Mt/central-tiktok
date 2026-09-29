@@ -1309,6 +1309,7 @@ var _importando=false;
 function fimImportacao(){ _importando=false; renderImportBox(); }
 /* erro de importação: fica escrito na tela (em vermelho), não depende de janela do navegador —
    algumas telas (ex.: a pré-visualização do app do Claude no iPhone) bloqueiam alert() em silêncio */
+function erroNaTela(txt){ var e=new Error(txt); e.tela=txt; return e; }   // (conv. 16) erro que já vem com o texto pra tela
 function erroImport(txt){
   fimImportacao();
   var el=document.getElementById(S.temDados?'arqInfo':'importVazioInfo');
@@ -1349,7 +1350,7 @@ function importar(input){
       }
       if(!linhas.length){ erroImport('A planilha parece vazia ('+(arq.name||'sem nome')+', '+Math.round((arq.size||0)/1024)+' KB). Confira o arquivo.'); return; }
       importarLinhas(linhas, arq.name)
-        .then(fimImportacao, function(e){ erroImport('Algo deu errado ao salvar: '+(e&&e.message||e)+'. Nada foi perdido. Tente de novo.'); });
+        .then(fimImportacao, function(e){ erroImport(e&&e.tela ? e.tela : 'Algo deu errado ao salvar: '+(e&&e.message||e)+'. Nada foi perdido. Tente de novo.'); });
     }, 30);
   };
   reader.readAsArrayBuffer(arq);
@@ -3501,9 +3502,9 @@ function salvarAjusteVideos(padrao){
     fraco:(document.getElementById('rpvB').value||'').trim().slice(0,12)||VIDEOS_PADRAO.fraco };
   var cfg=Object.assign({}, S.metas._config||{}); if(novo) cfg.videosRitmo=novo; else delete cfg.videosRitmo;
   S.metas._config=cfg; _rpAjuste=false; renderRitmoProduto();
-  DB.salvar('metas',[{id:'_config', dados:cfg}]).catch(function(){
+  DB.salvar('metas',[{id:'_config', dados:cfg}]).then(limparErroTela, function(){
     S.metas._config=antes; renderRitmoProduto();
-    alert('Sem conexão com a nuvem: o ajuste não foi salvo.');
+    erroTela('✕ Sem conexão com a nuvem: o ajuste dos vídeos do Ritmo não foi salvo. Nada mudou. Confira a internet e tente de novo.');
   });
 }
 
@@ -3749,7 +3750,7 @@ function mudarAlertaDias(){
   var antes=S.metas._config;
   S.metas._config=Object.assign({}, S.metas._config||{}, {alertaDias:n});
   renderAmostras();
-  DB.salvar('metas',[{id:'_config', dados:S.metas._config}]).catch(function(){ S.metas._config=antes; renderAmostras(); alert('Sem conexão com a nuvem: o aviso não foi salvo.'); });
+  DB.salvar('metas',[{id:'_config', dados:S.metas._config}]).then(limparErroTela, function(){ S.metas._config=antes; renderAmostras(); renderAlertaAmostras(); erroTela('✕ Sem conexão com a nuvem: o aviso de dias das amostras não foi salvo. Nada mudou. Confira a internet e tente de novo.'); });
 }
 
 /* =====================================================================
@@ -3969,9 +3970,8 @@ function linhasParaRegistros(linhas, nomeArq){
              ['status','Status de liquidação do pedido'],['comPad','Comissão padrão estimada']]
             .filter(function(x){ return !C[x[0]]; }).map(function(x){ return '"'+x[1]+'"'; });
   if(falta.length){
-    alert((falta.length===1?'Essa planilha veio sem a coluna ':'Essa planilha veio sem as colunas ')+falta.join(', ')+'.\n\n'+
+    throw erroNaTela((falta.length===1?'Essa planilha veio sem a coluna ':'Essa planilha veio sem as colunas ')+falta.join(', ')+'. '+
           'Não importei nada, pra não bagunçar os números. Confira se é a exportação de pedidos do TikTok Shop (afiliado).');
-    return null;
   }
   var txt=function(c,l){ return c? String(l[c]==null?'':l[c]).trim() : ''; };
   var num=function(c,l){ return c? numBR(l[c]) : 0; };
@@ -4052,7 +4052,7 @@ async function importarLinhas(linhas, nomeArq){
   });
   try{
     if(envio.length){ mostrarStatusImport((DB.modo==='nuvem'?'Salvando na nuvem ':'Salvando ')+inteiro(envio.length)+' linhas…'); await DB.salvar('vendas', envio); }
-  }catch(e){ alert('Não consegui salvar: '+e.message+'\nNada foi perdido — tente de novo com internet.'); await carregarTudo(); return; }
+  }catch(e){ await carregarTudo(); throw erroNaTela('Sem conexão com a nuvem: a planilha não foi salva ('+(e&&e.message||e)+'). Nada foi perdido — confira a internet e importe de novo.'); }
   var info={arquivo:nomeArq, linhas:Object.keys(noArq).length, novos:novos, mudou:mudou, iguais:iguais, velhas:velhas, quando:new Date().toISOString(),
             de:regs.de, ate:regs.ate, semData:regs.semData||0, semProduto:regs.semProduto||0};
   lsGravar('ct_ultima_importacao', info);
@@ -4153,11 +4153,11 @@ async function gravarMeta(v){
   var id=idMeta(); S.metas=S.metas||{}; var antes=S.metas[id];
   if(v>0) S.metas[id]={valor:v}; else delete S.metas[id];
   renderMeta();
-  try{ await DB.salvar('metas',[{id:id, dados:{valor:v>0?v:0}, excluido:!(v>0)}]); }
+  try{ await DB.salvar('metas',[{id:id, dados:{valor:v>0?v:0}, excluido:!(v>0)}]); limparErroTela(); }
   catch(e){
     if(antes) S.metas[id]=antes; else delete S.metas[id];   // volta como estava: não finge que salvou
     renderMeta();
-    alert('Sem conexão com a nuvem: a meta não foi salva. Tente de novo quando tiver internet.');
+    erroTela('✕ Sem conexão com a nuvem: a meta do mês não foi salva. Nada mudou. Confira a internet e tente de novo.');
   }
 }
 function salvarMetaCampo(){
@@ -4514,9 +4514,10 @@ function mudarPrazoPadrao(){
   var v=prompt('Prazo padrão pra postar uma amostra (em dias):', prazoPadrao());
   if(v==null) return; var n=parseInt(v,10);
   if(!(n>0 && n<=90)){ alert('Digite um número de 1 a 90.'); return; }
+  var antes=S.metas._config;
   S.metas._config=Object.assign({}, S.metas._config||{}, {prazoPadrao:n});
   renderAmostras();
-  DB.salvar('metas',[{id:'_config', dados:S.metas._config}]).catch(function(){ alert('Sem conexão com a nuvem: o prazo padrão não foi salvo.'); });
+  DB.salvar('metas',[{id:'_config', dados:S.metas._config}]).then(limparErroTela, function(){ S.metas._config=antes; renderAmostras(); erroTela('✕ Sem conexão com a nuvem: o prazo padrão das amostras não foi salvo. Nada mudou. Confira a internet e tente de novo.'); });
 }
 
 /* ----- formulário (amostra e garimpo usam a mesma tela) ----- */
