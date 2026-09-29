@@ -251,6 +251,25 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .vd-tab td small{display:block;color:var(--tinta3);font-size:11.5px}
 .vd-tab td.vd-nome{white-space:normal;min-width:200px;font-weight:700}
 .vd-tab tr:last-child td{border-bottom:none}
+/* ===== ler do print (conv. 17) ===== */
+.lp-caixa{border:2px dashed var(--linha2);margin-bottom:12px}
+.lp-caixa.arrasto{border-color:var(--uva);background:#f5f3ff}
+.lp-tit{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:15px}
+.lp-bt{position:relative;overflow:hidden;cursor:pointer}
+.lp-bt input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.lp-sub{font-size:13px;color:var(--tinta2);line-height:1.5;margin-top:6px}
+.lp-msg{display:none;margin-top:10px;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:600;line-height:1.5}
+.lp-msg.on{display:block}
+.lp-msg.lendo{background:var(--bg2);color:var(--tinta2)}
+.lp-msg.ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.lp-msg.erro{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c}
+.lp-aviso{margin-top:6px;padding:7px 10px;border-radius:8px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e}
+.fn-form input.lp-lido{background:#fffbeb;border-color:#f59e0b}
+.fn-form input.lp-data{border-width:2px;font-weight:700}
+.fn-form input.lp-falta{background:#fef2f2;border-color:var(--vermelho)}
+.fn-form small.lp-nota{display:block;margin:3px 0 0;font-size:12px;font-weight:700;line-height:1.35}
+.fn-form small.lp-nota.lp-lido{color:#b45309}
+.fn-form small.lp-nota.lp-falta{color:var(--vermelho)}
 /* ===== funil do dia (F1 — conv. 13) ===== */
 .fn-form .fn-campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
 .fn-form .fn-datas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
@@ -2188,7 +2207,7 @@ function fnGuardarRasc(){
   var t=fnRascTodos(); if(algum){ t[_fn.tipo]=r; t._ult=_fn.tipo; } else { delete t[_fn.tipo]; if(t._ult===_fn.tipo) delete t._ult; } lsGravar('ct_funil_rasc', t);
 }
 function fnApagarRasc(tipo){ var t=fnRascTodos(); delete t[tipo]; if(t._ult===tipo) delete t._ult; lsGravar('ct_funil_rasc', t); }
-function setFnTipo(t){ _fn.tipo=t; _fn.edit=null; _fn.conf=null; renderFunil(); }
+function setFnTipo(t){ lpLimpar(); _fn.tipo=t; _fn.edit=null; _fn.conf=null; renderFunil(); }
 function fnLerForm(){
   var d={tipo:_fn.tipo, txt:{}, aprox:{}}, erros=[];
   if(_fn.tipo==='dia'){ d.de=d.ate=(document.getElementById('fnDia')||{}).value||''; }
@@ -2243,7 +2262,7 @@ async function salvarFunil(substituir){
     fnErro('Sem conexão com a nuvem: não salvei. Os números continuam aqui — tente de novo quando tiver internet.');
     return false;
   }
-  _fn.edit=null; _fn.conf=null; fnApagarRasc(d.tipo);
+  _fn.edit=null; _fn.conf=null; fnApagarRasc(d.tipo); lpLimpar();
   var quando = d.tipo==='dia' ? 'Dia '+dm(deIso(d.de)) : 'Resumo de '+dm(deIso(d.de))+' a '+dm(deIso(d.ate));
   renderFunil();
   aviso('✓ '+quando+' salvo · '+fnTxtTaxas(d).replace(/<\/?b>/g,''));
@@ -2251,7 +2270,7 @@ async function salvarFunil(substituir){
 }
 function editarFunil(id){
   var d=S.metas[id]; if(!d) return;
-  _fn.tipo=d.tipo==='per'?'per':'dia'; _fn.edit=id; _fn.conf=null; fnApagarRasc(_fn.tipo); renderFunil(d);
+  lpLimpar(); _fn.tipo=d.tipo==='per'?'per':'dia'; _fn.edit=id; _fn.conf=null; fnApagarRasc(_fn.tipo); renderFunil(d);
   var f=document.getElementById('fnForm'); if(f && f.scrollIntoView) f.scrollIntoView({block:'start'});
 }
 async function excluirFunil(id){
@@ -2267,7 +2286,7 @@ async function excluirFunil(id){
     renderFunil();
   });
 }
-function cancelarEdicaoFunil(){ fnApagarRasc(_fn.tipo); _fn.edit=null; _fn.conf=null; renderFunil(); }
+function cancelarEdicaoFunil(){ lpLimpar(); fnApagarRasc(_fn.tipo); _fn.edit=null; _fn.conf=null; renderFunil(); }
 function renderFunilAtalho(){
   var el=document.getElementById('funilAtalho'); if(!el) return;
   var o=fnOntem(), d=S.metas && S.metas['funil_dia_'+o];
@@ -2280,12 +2299,13 @@ function renderFunil(pre){
   var el=document.getElementById('funilConteudo'); if(!el) return;
   var dia=_fn.tipo==='dia', v=pre||{}, h='';
   if(!pre){ var ra=fnRascTodos()[_fn.tipo]; if(ra && (ra.edit||null)===(_fn.edit||null)){ v={de:ra.de||'', ate:ra.ate||'', txt:ra.txt||{}}; if(_fn.edit && S.metas[_fn.edit]) v.tipo=_fn.tipo; } }
+  h+=lpCaixaHTML();
   h+='<div class="janelas" id="fnTipo"><button class="'+(dia?'on':'')+'" onclick="setFnTipo(\'dia\')">Dia a dia<small class="fn-filtro">filtro Ontem</small></button><button class="'+(!dia?'on':'')+'" onclick="setFnTipo(\'per\')">Resumo do período<small class="fn-filtro">filtro 7D ou Personalizar</small></button></div>';
   h+='<div class="nv-card frm fn-form" id="fnForm">';
   h+= dia ? '<p style="margin-top:0">No app: <b>Dados › Ontem › Visão geral</b>. Digite os números como aparecem lá (19.8K, 1.0K…).'+(_fn.edit?' <b>Editando '+dm(deIso(v.de))+'.</b>':'')+'</p>'
           : '<p style="margin-top:0">No app: <b>Dados › 7D</b> ou <b>Personalizar</b>. Use as datas que aparecem embaixo do filtro (o 7D não inclui ontem). Fica separado do dia a dia — não soma com ele.'+(_fn.edit?' <b>Editando '+dm(deIso(v.de))+' a '+dm(deIso(v.ate))+'.</b>':'')+'</p>';
   var hoje=hojeISO();
-  if(dia) h+='<div class="fn-datas"><label>Dia<input type="date" id="fnDia" max="'+hoje+'" value="'+(v.de||fnOntem())+'" onchange="fnPrevia()"></label></div>';
+  if(dia) h+='<div class="fn-datas"><label>Dia<input type="date" id="fnDia" max="'+hoje+'" value="'+(v.de||((v.semData||(_lp.marcas.data&&/lp-falta/.test(_lp.marcas.data.cls)))?'':fnOntem()))+'" onchange="fnPrevia()"></label></div>';
   else h+='<div class="fn-datas"><label>De<input type="date" id="fnDe" max="'+hoje+'" value="'+(v.de||'')+'" onchange="fnPrevia()"></label><label>Até<input type="date" id="fnAte" max="'+hoje+'" value="'+(v.ate||'')+'" onchange="fnPrevia()"></label></div>';
   h+='<div class="fn-campos">'+FN_CAMPOS.map(function(c){
       var val=v.txt&&v.txt[c.k]!=null ? v.txt[c.k] : (v[c.k]!=null?String(v[c.k]).replace('.',','):'');
@@ -2324,8 +2344,252 @@ function renderFunil(pre){
     }).join('')+'</div>';
   }
   el.innerHTML=h;
+  lpAplicarMarcas();
   fnPrevia();
 }
+/* ===================== LER DO PRINT (conv. 17) =====================
+   A Mari arrasta/cola/escolhe 1 ou 2 prints do app (Dados › Visão geral e Comissões) e o sistema PREENCHE o formulário do
+   Funil — nunca salva sozinho. O leitor de texto (Tesseract.js, grátis, versão travada) roda no navegador: a imagem não é
+   guardada nem enviada. Só baixa o leitor na 1ª vez que ela usa (~5,5 MB; depois fica guardado no navegador).
+   Regra: rótulo do cartão + o número logo abaixo, na mesma coluna. Cálculo-fonte: testes/fonte_ler_print.py.
+   Proteções: número duvidoso ou 2 prints que não batem → campo VAZIO com o motivo; prints de dias diferentes → não preenche
+   nada; data sempre em destaque "confira"; filtro Ontem com data que não é ontem → aviso. */
+var LP_URL={
+  js:    'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js',
+  worker:'https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/worker.min.js',
+  core:  'https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0',
+  lang:  'https://cdn.jsdelivr.net/npm/@tesseract.js-data/por@1.0.0/4.0.0_best_int'
+};
+var LP_CONF_MIN=65;   // abaixo disso o leitor não tem certeza (prints de 28/09: certos ≥ 72; o "79K" errado veio com 61)
+var _lp={lendo:false, msg:'', cls:'', marcas:{}};
+var _lpWorker=null;
+var LP_ROTULOS=[   // campo, palavras do rótulo, palavra seguinte que NÃO pode vir (a faixa "Visualizações do produto…")
+  ['gmv',['gmv','atribuido']], ['itens',['itens','vendidos','atribuidos']], ['imp',['impressoes','do','produto']],
+  ['cli',['cliques','no','produto']], ['com',['comissoes','estimadas']], ['views',['visualizacoes'],'do'],
+  ['gmv_c',['gmv','da','comissao']], ['itens_c',['itens','vendidos','com','comissao']]
+];
+var LP_JUNTA={gmv:['gmv','gmv_c'], itens:['itens','itens_c'], imp:['imp'], cli:['cli'], com:['com'], views:['views']};
+var LP_MESES={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+function lpNorm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/^[.,:;!|]+|[.,:;!|]+$/g,''); }
+
+/* lê as palavras (com posição) de UM print → {campos:{k:{txt,conf}}, datas:[iso…], filtro:'ontem'|'hoje'|''} */
+function lpInterpretarPrint(words, W){
+  var ws=words.map(function(w){ return {t:w.t, c:w.c, x0:w.x0, y0:w.y0, x1:w.x1, y1:w.y1, n:lpNorm(w.t)}; });
+  function yTitulo(seq){
+    for(var i=0;i+seq.length<=ws.length;i++){ var ok=true; for(var j=0;j<seq.length;j++) if(ws[i+j].n!==seq[j]){ ok=false; break; } if(ok) return ws[i].y0; }
+    return null;
+  }
+  var yDados=yTitulo(['dados','principais']), yProd=yTitulo(['desempenho','dos','seus','produtos']), yCont=yTitulo(['desempenho','do','conteudo']);
+  var campos={};
+  LP_ROTULOS.forEach(function(r){
+    var k=r[0], lab=r[1], proib=r[2];
+    for(var i=0;i+lab.length<=ws.length;i++){
+      if(!(ws[i].n.slice(-lab[0].length)===lab[0])) continue;   // "GSGMV" também vale (sujeira do ícone antes do rótulo)
+      var bate=true; for(var j=1;j<lab.length;j++) if(ws[i+j].n!==lab[j]){ bate=false; break; }
+      if(!bate) continue;
+      if(proib && i+lab.length<ws.length && ws[i+lab.length].n===proib) continue;
+      if(k==='views'){ if(!(yCont!=null && ws[i].y0>yCont)) continue; }          // Visualizações: só a de "Desempenho do conteúdo"
+      else if(yDados==null || ws[i].y0<yDados || (yProd!=null && ws[i].y0>yProd)) continue;   // cartões: entre "Dados principais" e a lista de produtos (a tela "produtos" não tem cartões)
+      var a=ws[i], b=ws[i+lab.length-1], h=a.y1-a.y0;
+      var cx0=a.x0-3*h, cx1=Math.max(b.x1+3*h, a.x0+W*0.40);
+      var abaixo=ws.filter(function(w){ return w.y0>a.y1 && w.y0<a.y1+4*h && w.x0>=cx0 && w.x0<cx1; });
+      if(!abaixo.length) continue;
+      var y=Math.min.apply(null, abaixo.map(function(w){ return w.y0; }));
+      var linha=abaixo.filter(function(w){ return Math.abs(w.y0-y)<h; }).sort(function(p,q){ return p.x0-q.x0; });
+      var txt=linha.map(function(w){ return w.t; }).join(' ');
+      var m=txt.match(/(R\$\s*)?\d[\d.,]*\s*K?/i);
+      if(m) campos[k]={txt:m[0].trim(), conf:Math.min.apply(null, linha.map(function(w){ return w.c; }))};
+      break;
+    }
+  });
+  // filtro: o botão escolhido é branco no preto e o leitor NÃO lê ele (prints de 28/09) — "Ontem" some da linha dos filtros
+  var filtro='', pers=ws.filter(function(w){ return w.n==='personalizar'; })[0];
+  if(pers){
+    var hh=pers.y1-pers.y0, chips=ws.filter(function(w){ return Math.abs(w.y0-pers.y0)<hh; }).map(function(w){ return w.n; });
+    var temHoje=chips.indexOf('hoje')>=0, temOntem=chips.indexOf('ontem')>=0;
+    if(temHoje && !temOntem) filtro='ontem'; else if(!temHoje && temOntem) filtro='hoje';
+  }
+  // datas: "27 de set. de 2026" ou "20 de set. de 2026 - 26 de set. de 2026" (a linha embaixo dos filtros)
+  var texto=ws.map(function(w){ return w.t; }).join(' '), lidas=[], re=/(\d{1,2}) de ([A-Za-zçÇ]{3})[A-Za-zçÇ]*[.,]? de (\d{4})/g, m2;
+  while((m2=re.exec(texto)) && lidas.length<2){
+    var mes=LP_MESES[lpNorm(m2[2])]; if(!mes) continue;
+    lidas.push(m2[3]+'-'+String(mes).padStart(2,'0')+'-'+String(+m2[1]).padStart(2,'0'));
+  }
+  var faixa=/\d{4}\s*[-–—]\s*\d/.test(texto);          // tem "2026 - 26": é período
+  var tipo = lidas.length===2 ? 'per' : (lidas.length===1 ? (faixa ? 'per' : (filtro ? 'dia' : '')) : '');
+  // barra de cima do celular: "Segunda-feira, 28 de setembro" = o dia em que o print foi tirado (confere o dia da semana)
+  var barra=null, nt=lpNorm(texto).replace(/[^a-z0-9 ,-]/g,' '), mb=nt.match(/(domingo|segunda|terca|quarta|quinta|sexta|sabado)(?:-feira)?,? +(\d{1,2}) de ([a-z]{3})/);
+  if(mb && LP_MESES[mb[3]]){
+    var anoB=+(lidas[0]||hojeISO()).slice(0,4), db=new Date(anoB, LP_MESES[mb[3]]-1, +mb[2]);
+    if(db.getDate()===+mb[2] && db.getDay()===['domingo','segunda','terca','quarta','quinta','sexta','sabado'].indexOf(mb[1])) barra=isoD(db);
+  }
+  // a data lida só vale se fizer sentido; senão fica em branco pra Mari digitar (nunca vai data errada)
+  var anoHoje=+hojeISO().slice(0,4), suspeita='';
+  function real(iso){ var d=deIso(iso); return !!d && isoD(d)===iso && d.getFullYear()>=anoHoje-1 && d.getFullYear()<=anoHoje; }
+  if(!tipo || !lidas.length) suspeita='';
+  else if(lidas.some(function(x){ return !real(x); })) suspeita='data impossível';
+  else if(tipo==='per' && lidas.length<2) suspeita='só li uma das datas';
+  else if(tipo==='per' && lidas[0]>lidas[1]) suspeita='a 1ª data vem depois da 2ª';
+  else if(barra && lidas.some(function(x){ return x>barra; })) suspeita='data depois do dia em que o print foi tirado, '+lpDataBR(barra);
+  else if(barra && tipo==='dia' && filtro==='ontem' && lidas[0]!==isoMais(barra,-1)) suspeita='o print foi tirado em '+lpDataBR(barra)+', então "Ontem" é '+lpDataBR(isoMais(barra,-1));
+  else if(barra && tipo==='dia' && filtro==='hoje' && lidas[0]!==barra) suspeita='o print foi tirado em '+lpDataBR(barra);
+  var lidaTxt=lidas.map(function(x){ var p=x.split('-'); return p[2]+'/'+p[1]+(real(x)?'':'/'+p[0]); }).join(' a ');
+  var datas = (tipo && !suspeita && lidas.length) ? (tipo==='per' ? lidas.slice(0,2) : [lidas[0]]) : [];
+  return {campos:campos, datas:datas, filtro:filtro, tipo:tipo, suspeita:suspeita, lidaTxt:lidaTxt, barra:barra, temData:lidas.length>0};
+}
+function lpSuspeito(c){   // leitura em que o leitor não tem certeza
+  var s=String(c.txt||'').replace(/r\$/i,'').trim();
+  if(/^\d+\s*k$/i.test(s)) return 'o app sempre mostra 1 casa depois do ponto (ex.: 7.9K)';   // "79K": ponto perdido
+  if(c.conf<LP_CONF_MIN) return 'o leitor não teve certeza';
+  return '';
+}
+function lpDataBR(iso){ return dm(deIso(iso)); }
+/* junta 1 ou 2 prints → {erro} ou {tipo, de, ate, txt, marcas, avisos, nomes} */
+function lpJuntar(leituras){
+  if(!leituras.length) return {erro:'Nenhuma imagem pra ler.'};
+  if(leituras.length>2) return {erro:'Mande no máximo 2 prints: Visão geral e Comissões, do mesmo dia.'};
+  for(var i=0;i<leituras.length;i++){
+    var L=leituras[i], qual=leituras.length>1?'no '+(i+1)+'º print':'neste print';
+    if(!Object.keys(L.campos).length) return {erro:'Não achei os números '+qual+'. Use a tela Dados › Visão geral ou Comissões do app. Nada foi preenchido.'};
+    if(!L.temData) return {erro:'Não consegui ler a data '+qual+' (a linha embaixo dos filtros). Nada foi preenchido — digite os números.'};
+    if(!L.tipo) return {erro:'Não consegui ver '+qual+' se é de um dia (filtro Ontem) ou de um período (7D). Nada foi preenchido — digite os números.'};
+  }
+  var q=function(L){ return L.datas.length ? L.datas.map(lpDataBR).join(' a ') : L.lidaTxt; };
+  if(leituras.length===2 && (leituras[0].tipo!==leituras[1].tipo || (leituras[0].datas.length && leituras[1].datas.length && leituras[0].datas.join()!==leituras[1].datas.join())))
+    return {erro:'Os prints são de dias diferentes ('+q(leituras[0])+' × '+q(leituras[1])+'). Nada foi preenchido — mande os dois do mesmo dia.'};
+  var sus=leituras.filter(function(L){ return L.suspeita; })[0];
+  var ds=sus ? [] : leituras[0].datas, r={tipo:leituras[0].tipo, de:ds[0]||'', ate:ds[ds.length-1]||'', semData:!ds.length, txt:{}, marcas:{}, avisos:[], nomes:[]};
+  leituras.forEach(function(L){ var n=L.campos.imp||L.campos.cli ? 'Visão geral' : (L.campos.com ? 'Comissões' : 'Dados'); if(r.nomes.indexOf(n)<0) r.nomes.push(n); });
+  Object.keys(LP_JUNTA).forEach(function(k){
+    var vals=[];
+    leituras.forEach(function(L){ LP_JUNTA[k].forEach(function(kk){ if(L.campos[kk]) vals.push(L.campos[kk]); }); });
+    if(!vals.length){
+      if(k==='imp'||k==='cli') r.marcas[k]={cls:'lp-falta', msg:'Não veio no print — está na Visão geral.'};
+      else if(k==='gmv'||k==='itens') r.marcas[k]={cls:'lp-falta', msg:'Não achei no print — digite.'};
+      return;
+    }
+    for(var i=0;i<vals.length;i++){
+      var sus=lpSuspeito(vals[i]);
+      if(sus){ r.marcas[k]={cls:'lp-falta', msg:'Leitura duvidosa ("'+vals[i].txt+'": '+sus+'). Digite como está no app.'}; return; }
+    }
+    var nums=vals.map(function(c){ return numApp(c.txt).v; });
+    if(nums.some(function(v){ return v==null || isNaN(v); })){ r.marcas[k]={cls:'lp-falta', msg:'Não entendi o número ("'+vals[0].txt+'"). Digite como está no app.'}; return; }
+    if(nums.some(function(v){ return v!==nums[0]; })){ r.marcas[k]={cls:'lp-falta', msg:'Os prints não batem ('+vals.map(function(c){ return c.txt; }).join(' × ')+'). Digite como está no app.'}; return; }
+    r.txt[k]=vals[0].txt.replace(/^R\$\s*/i,'');
+    r.marcas[k]={cls:'lp-lido', msg:'lido do print — confira'};
+  });
+  if(r.semData) r.marcas.data={cls:'lp-falta lp-data', msg:'Não consegui ler a data com certeza (li '+sus.lidaTxt+': '+sus.suspeita+'). Digite '+(r.tipo==='dia'?'o dia que aparece':'as datas que aparecem')+' no print.'};
+  else r.marcas.data={cls:'lp-lido lp-data', msg:'lido do print — confira'+(r.tipo==='dia'?' o dia':' as datas')};
+  var filtros=leituras.map(function(L){ return L.filtro; });
+  if(r.semData){}
+  else if(r.tipo==='dia' && filtros.indexOf('hoje')>=0) r.avisos.push('O print é do filtro Hoje: o dia ainda não fechou. O certo é o filtro Ontem.');
+  else if(r.tipo==='dia' && filtros.indexOf('ontem')>=0 && r.de!==fnOntem()) r.avisos.push('A data do print não é ontem ('+lpDataBR(r.de)+'; ontem foi '+lpDataBR(fnOntem())+') — confira.');
+  return r;
+}
+
+/* ---- leitor (carrega só quando usa) ---- */
+function lpScript(){
+  return new Promise(function(ok, falha){
+    if(window.Tesseract) return ok();
+    var s=document.createElement('script'); s.src=LP_URL.js; s.onload=function(){ ok(); }; s.onerror=function(){ s.remove(); falha(new Error('script')); };
+    document.head.appendChild(s);
+  });
+}
+function lpComPrazo(p, ms){ return Promise.race([p, new Promise(function(_, falha){ setTimeout(function(){ falha(new Error('prazo')); }, ms); })]); }
+async function lpLeitor(){
+  if(_lpWorker) return _lpWorker;
+  var p=lpScript().then(function(){ return Tesseract.createWorker('por', 1, {workerPath:LP_URL.worker, corePath:LP_URL.core, langPath:LP_URL.lang, gzip:true}); });
+  try{ _lpWorker=await lpComPrazo(p, 120000); }
+  catch(e){ _lpWorker=null; p.then(function(w){ try{ w.terminate(); }catch(x){} }, function(){}); throw e; }
+  return _lpWorker;
+}
+function lpImagem(arq){   // ampliada 2× e em cinza (24/24 nos prints de 28/09; sem isso, 23/24 — o "79K")
+  return new Promise(function(ok, falha){
+    var u=URL.createObjectURL(arq), im=new Image();
+    im.onload=function(){
+      var e=Math.min(2, 2400/im.naturalWidth), c=document.createElement('canvas');
+      c.width=Math.round(im.naturalWidth*e); c.height=Math.round(im.naturalHeight*e);
+      var x=c.getContext('2d'); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high'; x.drawImage(im,0,0,c.width,c.height);
+      var d=x.getImageData(0,0,c.width,c.height), p=d.data;
+      for(var i=0;i<p.length;i+=4){ var g=Math.round(0.299*p[i]+0.587*p[i+1]+0.114*p[i+2]); p[i]=p[i+1]=p[i+2]=g; }
+      x.putImageData(d,0,0); URL.revokeObjectURL(u); ok(c);
+    };
+    im.onerror=function(){ URL.revokeObjectURL(u); falha(new Error('imagem')); };
+    im.src=u;
+  });
+}
+async function lpLerImagem(arq){   // → palavras com posição e largura da imagem lida
+  var c=await lpImagem(arq), w=await lpLeitor();
+  var r=await w.recognize(c, {}, {blocks:true, text:true}), words=[];
+  (r.data.blocks||[]).forEach(function(b){ b.paragraphs.forEach(function(p){ p.lines.forEach(function(l){ l.words.forEach(function(x){
+    words.push({t:x.text, c:x.confidence, x0:x.bbox.x0, y0:x.bbox.y0, x1:x.bbox.x1, y1:x.bbox.y1});
+  }); }); }); });
+  return {words:words, W:c.width};
+}
+function lpMsg(txt, cls){ _lp.msg=txt; _lp.cls=cls||''; var el=document.getElementById('lpMsg'); if(el){ el.innerHTML=txt; el.className='lp-msg '+(txt?'on ':'')+(cls||''); } }
+async function lpArquivos(lista){
+  var arqs=Array.prototype.slice.call(lista||[]).filter(function(f){ return f && /^image\//.test(f.type||''); });
+  if(_lp.lendo){ lpMsg('Ainda estou lendo o print anterior. Espere terminar.', 'lendo'); return; }
+  if(!arqs.length){ lpMsg('Isso não é uma imagem. Mande o print da tela Dados (Visão geral ou Comissões).', 'erro'); return; }
+  if(arqs.length>2){ lpMsg('Mande no máximo 2 prints: Visão geral e Comissões, do mesmo dia.', 'erro'); return; }
+  _lp.lendo=true; var leituras=[];
+  try{
+    for(var i=0;i<arqs.length;i++){
+      lpMsg('Lendo o print '+(i+1)+' de '+arqs.length+'…'+(_lpWorker?'':' (na 1ª vez o navegador baixa o leitor — pode levar alguns segundos)'), 'lendo');
+      var o;
+      try{ o=await lpLerImagem(arqs[i]); }
+      catch(e){
+        if(String(e&&e.message)==='imagem'){ lpMsg('Não consegui abrir essa imagem. Tire o print de novo e tente outra vez.', 'erro'); return; }
+        lpMsg('⚠ Não consegui carregar o leitor de print (precisa de internet na 1ª vez). Nada foi preenchido — digite os números normalmente no formulário.', 'erro'); return;
+      }
+      leituras.push(lpInterpretarPrint(o.words, o.W));
+    }
+  } finally { _lp.lendo=false; }
+  lpPreencher(lpJuntar(leituras));
+}
+function lpPreencher(r){
+  if(r.erro){ lpMsg('✕ '+escapar(r.erro), 'erro'); return r; }
+  _fn.tipo=r.tipo; _fn.edit=null; _fn.conf=null; _lp.marcas=r.marcas;
+  fnApagarRasc(r.tipo);
+  var quando = r.semData ? (r.tipo==='dia'?'de um dia':'de um período')+' (<b>a data ficou em branco</b>)' : r.tipo==='dia' ? 'do dia <b>'+lpDataBR(r.de)+'</b>' : 'de <b>'+lpDataBR(r.de)+' a '+lpDataBR(r.ate)+'</b>';
+  var falta=Object.keys(r.marcas).filter(function(k){ return r.marcas[k].cls==='lp-falta'; }).length;
+  var txt='✓ Li '+(r.nomes.length>1?'os prints':'o print')+' '+quando+' ('+r.nomes.join(' + ')+'). Confira os campos marcados'+(falta?' e digite '+(falta>1?'os '+falta+' que ficaram vazios':'o que ficou vazio'):'')+' antes de salvar.';
+  if(r.avisos.length) txt+='<div class="lp-aviso">⚠ '+r.avisos.map(escapar).join('<br>⚠ ')+'</div>';
+  _lp.msg=txt; _lp.cls='ok';
+  renderFunil({de:r.de, ate:r.ate, txt:r.txt, semData:r.semData});
+  var f=document.getElementById('lpCaixa'); if(f && f.scrollIntoView) f.scrollIntoView({block:'start'});
+  return r;
+}
+function lpLimpar(){ _lp.marcas={}; _lp.msg=''; _lp.cls=''; }
+function lpCaixaHTML(){
+  return '<div class="nv-card lp-caixa" id="lpCaixa" ondragover="event.preventDefault();this.classList.add(\'arrasto\')" ondragleave="this.classList.remove(\'arrasto\')" ondrop="event.preventDefault();this.classList.remove(\'arrasto\');lpArquivos(event.dataTransfer.files)">'+
+    '<div class="lp-tit"><b>Ler do print</b><label class="btn ghost mini lp-bt">Escolher prints<input type="file" id="lpArq" accept="image/*" multiple onchange="lpArquivos(this.files);this.value=\'\'"></label></div>'+
+    '<div class="lp-sub">Arraste aqui ou cole (Ctrl+V / ⌘V) o print da <b>Visão geral</b> — e o da <b>Comissões</b>, se quiser a comissão. Os dois do mesmo dia. O sistema preenche o formulário e <b>não salva sozinho</b>; o print não é guardado.</div>'+
+    '<div class="lp-msg '+(_lp.msg?'on ':'')+_lp.cls+'" id="lpMsg">'+_lp.msg+'</div></div>';
+}
+function lpAplicarMarcas(){
+  Object.keys(_lp.marcas||{}).forEach(function(k){
+    var m=_lp.marcas[k], ids= k==='data' ? (_fn.tipo==='dia'?['fnDia']:['fnDe','fnAte']) : ['fn_'+k];
+    ids.forEach(function(id, i){
+      var inp=document.getElementById(id); if(!inp) return;
+      m.cls.split(' ').forEach(function(c){ inp.classList.add(c); });
+      if(i===ids.length-1){ var s=document.createElement('small'); s.className='lp-nota '+m.cls.split(' ')[0]; s.setAttribute('data-lp',k); s.textContent=m.msg; inp.parentNode.appendChild(s); }
+      inp.addEventListener(k==='data'?'change':'input', function(){ lpTirarMarca(k); });
+    });
+  });
+}
+function lpTirarMarca(k){
+  if(!_lp.marcas[k]) return; delete _lp.marcas[k];
+  var ids= k==='data' ? ['fnDia','fnDe','fnAte'] : ['fn_'+k];
+  ids.forEach(function(id){ var inp=document.getElementById(id); if(inp) inp.classList.remove('lp-lido','lp-falta','lp-data'); });
+  var s=document.querySelector('.lp-nota[data-lp="'+k+'"]'); if(s) s.remove();
+}
+document.addEventListener('paste', function(e){   // Ctrl+V / ⌘V com o print copiado, na tela Funil
+  var mod=document.getElementById('mod-funil'); if(!mod || !mod.classList.contains('on') || !e.clipboardData) return;
+  var fs=Array.prototype.slice.call(e.clipboardData.files||[]).filter(function(f){ return /^image\//.test(f.type||''); });
+  if(!fs.length) return;
+  e.preventDefault(); lpArquivos(fs);
+});
 
 function renderVideos(){
   var box=document.getElementById('videosConteudo'); if(!box) return;
