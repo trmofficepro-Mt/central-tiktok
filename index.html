@@ -2379,7 +2379,7 @@ function lpInterpretarPrint(words, W){
     for(var i=0;i+seq.length<=ws.length;i++){ var ok=true; for(var j=0;j<seq.length;j++) if(ws[i+j].n!==seq[j]){ ok=false; break; } if(ok) return ws[i].y0; }
     return null;
   }
-  var yDados=yTitulo(['dados','principais']), yProd=yTitulo(['desempenho','dos','seus','produtos']), yCont=yTitulo(['desempenho','do','conteudo']);
+  var yDados=yTitulo(['dados','principais']), yProd=yTitulo(['desempenho','dos','seus']), yCont=yTitulo(['desempenho','do','conteudo']);
   var campos={};
   LP_ROTULOS.forEach(function(r){
     var k=r[0], lab=r[1], proib=r[2];
@@ -2390,15 +2390,16 @@ function lpInterpretarPrint(words, W){
       if(proib && i+lab.length<ws.length && ws[i+lab.length].n===proib) continue;
       if(k==='views'){ if(!(yCont!=null && ws[i].y0>yCont)) continue; }          // Visualizações: só a de "Desempenho do conteúdo"
       else if(yDados==null || ws[i].y0<yDados || (yProd!=null && ws[i].y0>yProd)) continue;   // cartões: entre "Dados principais" e a lista de produtos (a tela "produtos" não tem cartões)
-      var a=ws[i], b=ws[i+lab.length-1], h=a.y1-a.y0;
-      var cx0=a.x0-3*h, cx1=Math.max(b.x1+3*h, a.x0+W*0.40);
-      var abaixo=ws.filter(function(w){ return w.y0>a.y1 && w.y0<a.y1+4*h && w.x0>=cx0 && w.x0<cx1; });
-      if(!abaixo.length) continue;
+      var a=ws[i], b=ws[i+lab.length-1], h=a.y1-a.y0, fundo=Math.max(a.y1, b.y1);   // rótulo pode quebrar em 2 linhas: procura embaixo da última palavra
+      var cx0=Math.min(a.x0, b.x0)-3*h, cx1=Math.max(b.x1+3*h, a.x0+W*0.40);
+      var abaixo=ws.filter(function(w){ return w.y0>fundo && w.y0<fundo+4*h && w.x0>=cx0 && w.x0<cx1 && /\d/.test(w.t); });
+      if(!abaixo.length) continue;   // sem número embaixo (ex.: a faixa cinza "…cliques no produto referem-se…"): procura o próximo rótulo igual
       var y=Math.min.apply(null, abaixo.map(function(w){ return w.y0; }));
-      var linha=abaixo.filter(function(w){ return Math.abs(w.y0-y)<h; }).sort(function(p,q){ return p.x0-q.x0; });
+      var linha=ws.filter(function(w){ return Math.abs(w.y0-y)<h && w.x0>=cx0 && w.x0<cx1; }).sort(function(p,q){ return p.x0-q.x0; });
       var txt=linha.map(function(w){ return w.t; }).join(' ');
       var m=txt.match(/(R\$\s*)?\d[\d.,]*\s*K?/i);
-      if(m) campos[k]={txt:m[0].trim(), conf:Math.min.apply(null, linha.map(function(w){ return w.c; }))};
+      if(!m) continue;
+      campos[k]={txt:m[0].trim(), conf:Math.min.apply(null, linha.map(function(w){ return w.c; }))};
       break;
     }
   });
