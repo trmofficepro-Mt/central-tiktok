@@ -946,7 +946,19 @@ div.apl-t{cursor:default}
 .apl-t span{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:3px}
 .tg{font-size:10.5px;font-weight:700;border-radius:20px;padding:1px 7px;background:var(--bg2);color:var(--tinta2);white-space:nowrap}
 .tg.camp{background:#fce7f3;color:#be185d}.tg.apo{background:#dcfce7;color:#15803d}.tg.amo{background:#e0f2fe;color:#0369a1}.tg.urg{background:#fee2e2;color:#b91c1c}.tg.ag{background:#f3ecff;color:var(--uva)}.tg.mol{background:#ede9fe;color:#6d28d9}
-.apl-bts{display:flex;flex-direction:column;gap:6px;flex:none} .apl-rq{background:var(--uva);color:#fff}
+.apl-bts{display:flex;align-items:center;gap:6px;flex:none} .apl-rq{background:var(--uva);color:#fff}
+.apl-mais-bt{border:1.5px solid var(--linha2);background:var(--panel);color:var(--tinta2);border-radius:9px;width:36px;height:34px;font-family:inherit;font-size:16px;font-weight:800;line-height:1;cursor:pointer;flex:none}
+.apl-mais-bt:hover{border-color:var(--uva);color:var(--uva)}
+.tg.est{background:#ffedd5;color:#c2410c}
+.oq-info{font-size:13px;color:var(--tinta2);line-height:1.5;margin:0 0 8px}
+.oq-info b{color:var(--tinta)}
+.oq-motivo{font-size:12.5px;background:var(--bg2);border-radius:10px;padding:8px 10px;margin:0 0 10px;line-height:1.45;color:var(--tinta2)}
+.oq-est{font-size:12.5px;font-weight:700;color:#c2410c;margin:0 0 10px;line-height:1.45}
+.oq-bts{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.oq-bts .btn,.oq-bts a.btn{justify-content:center;text-align:center;text-decoration:none}
+.oq-nota{font-size:12px;color:var(--tinta3);margin:2px 0 0}
+.oq-sep{font-size:12.5px;font-weight:700;color:var(--tinta2);margin:16px 0 0;padding-top:12px;border-top:1px solid var(--linha)}
+.oq-top-bts{display:flex;gap:6px;align-items:center}
 .mp-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .mp-bt{padding:7px 12px;font-size:12.5px}
 .mp-lin{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
@@ -3624,7 +3636,7 @@ async function salvarGravar(rows){
   catch(e){
     rows.forEach(function(o){ if(antes[o.id]) S.gravar[o.id]=antes[o.id]; else delete S.gravar[o.id]; });
     atualizarTudoGravar();
-    alert('Sem conexão com a nuvem: a lista "Para gravar" não foi salva. Tente de novo quando tiver internet.');
+    erroTela(MSG_SEM_NUVEM);
     return false;
   }
 }
@@ -3688,6 +3700,7 @@ function atualizarTudoGravar(){
   });
   atualizarBotaoCampeoes();
   renderParaGravar();
+  var mp=document.getElementById('mod-planejar'); if(mp && mp.classList.contains('on') && typeof renderPlanejar==='function') renderPlanejar();
 }
 
 /* ----- a lista ----- */
@@ -3752,7 +3765,7 @@ function setProdVista(v){
   document.getElementById('prodGravar').style.display = v==='gravar'?'':'none';
   renderParaGravar();
 }
-function verParaGravar(){ irPara('produtos'); setProdVista('gravar'); }
+function verParaGravar(){ irPara('planejar'); setTimeout(verAmostrasPlanejar, 60); }   // (conv. 15) a lista agora é o O que gravar
 
 function renderParaGravar(){
   var box=document.getElementById('prodGravar'); if(!box || !S.idxProd) return;
@@ -3846,21 +3859,22 @@ function marcarCampeoesGravar(confirma){
     return ok;
   });
 }
-function adicionarGravarLink(){
-  var link=(document.getElementById('gvLink').value||'').trim(), nome=(document.getElementById('gvNome').value||'').trim(), loja=(document.getElementById('gvLoja').value||'').trim();
-  var msg=document.getElementById('gvLinkMsg'), id=idDoLink(link);
-  if(!link){ msg.innerHTML='<b style="color:var(--vermelho)">Cole o link do produto primeiro.</b>'; document.getElementById('gvLink').focus(); return; }
+function adicionarGravarLink(pref){
+  pref=pref||'gv'; var G=function(k){ return document.getElementById(pref+k); }, lista= pref==='oq' ? 'O que gravar' : 'Para gravar';
+  var link=(G('Link').value||'').trim(), nome=(G('Nome').value||'').trim(), loja=(G('Loja').value||'').trim();
+  var msg=G('LinkMsg'), id=idDoLink(link);
+  if(!link){ msg.innerHTML='<b style="color:var(--vermelho)">Cole o link do produto primeiro.</b>'; G('Link').focus(); return; }
   if(!id){ msg.innerHTML='<b style="color:var(--vermelho)">'+escapar(linkSemIdMsg(link))+'</b>'; return; }
   var ch=S.idxProd.porId[id];
   if(ch){
     if(naListaGravar(ch)){ msg.innerHTML='Esse produto já está na lista.'; return; }
-    _gravLink=false; marcarGravar(ch,'link').then(function(ok){ if(ok) aviso('✓ '+nomeCurto(S.idxProd.lista[ch].nome)+' entrou na lista (ele já vende na sua conta)'); }); return;
+    _gravLink=false; return marcarGravar(ch,'link').then(function(ok){ if(ok) aviso('✓ '+nomeCurto(S.idxProd.lista[ch].nome)+' entrou na lista (ele já vende na sua conta)'); return ok; });
   }
   var ja=S.gravar['id:'+id];
   if(ja){ msg.innerHTML='Esse produto já está na lista.'; return; }
-  if(nome.length<2){ msg.innerHTML='<b style="color:var(--vermelho)">Esse produto ainda não vendeu na sua conta</b>, então escreva o nome dele (o TikTok não deixa o sistema puxar pelo link).'; document.getElementById('gvNome').focus(); return; }
+  if(nome.length<2){ msg.innerHTML='<b style="color:var(--vermelho)">Esse produto ainda não vendeu na sua conta</b>, então escreva o nome dele (o TikTok não deixa o sistema puxar pelo link).'; G('Nome').focus(); return; }
   var d={idProduto:id, nome:nome, loja:loja, link:link, origem:'link', marcadoEm:hojeISO()};
-  _gravLink=false; salvarGravar([{id:idGravar(d), dados:d, excluido:false}]).then(function(ok){ if(ok) aviso('✓ '+nomeCurto(nome)+' entrou na lista Para gravar'); });
+  _gravLink=false; return salvarGravar([{id:idGravar(d), dados:d, excluido:false}]).then(function(ok){ if(ok) aviso('✓ '+nomeCurto(nome)+' entrou na lista '+lista); return ok; });
 }
 
 /* ----- alerta de amostras (faixa no topo, em qualquer tela) ----- */
@@ -5320,6 +5334,16 @@ function moldesPlanejar(){   // mesma regra da tela Vídeos (vdAnalise), janela 
   var v=vdAnalise(15).videos.filter(function(o){ return o.molde; });
   _moldeCache={base:S.todas, v:v}; return v;
 }
+/* (conv. 15) "Esconder até domingo": sugestão do sistema (campeão, aposta, molde) some da lista O que gravar até o fim da
+   semana (a do dia de hoje); na segunda volta, se a regra ainda valer. Guardado na nuvem (metas/_ocultas = {seg, chaves}). */
+function segHoje(){ return segundaDe(hojeISO()); }
+function ocultasSemana(){ var o=S.metas && S.metas._ocultas; return (o && o.seg===segHoje()) ? (o.chaves||{}) : {}; }
+async function salvarOcultas(ch, on){
+  var at=Object.assign({}, ocultasSemana()); if(on) at[ch]=1; else delete at[ch];
+  var reg={seg:segHoje(), chaves:at};
+  try{ await DB.salvar('metas',[{id:'_ocultas', dados:reg}]); }catch(e){ erroTela(MSG_SEM_NUVEM); return false; }
+  S.metas._ocultas=reg; renderPlanejar(); return true;
+}
 function listaOQueGravar(){   // UMA lista: o que a Mari marcou (Para gravar) + o que o sistema sugere pra semana
   var seg=semanaAtual(), base=listaParaGravar(), sug=sugestoesSemana(seg), idxC=indiceConteudos(), porCh={}, porAmo={}, out=[];
   S._sugPlano=sug;
@@ -5341,6 +5365,8 @@ function listaOQueGravar(){   // UMA lista: o que a Mari marcou (Para gravar) + 
     it.ult=ultimaGravacao(ch, null, idxC, it.idProduto); it.diasSem=it.ult?it.ult.dias:Infinity;
     out.push(it); porCh[ch]=it;
   });
+  var oc=ocultasSemana();   // escondidas até domingo (só sugestões do sistema; marcados e amostras nunca)
+  out=out.filter(function(it){ return !(it.ch && oc[it.ch] && (it.tipo==='sugestao' || it.tipo==='molde')); });
   var rk=function(it){ var r=2; if(it.urgente || (it.sug && it.sug.pri===0)) r=0; else if(it.sug && it.sug.pri===1) r=1; return (it.molde && r>0) ? 0.5 : r; };
   out.forEach(function(it,i){ it._o=i; it._rk=rk(it); });
   out.sort(function(a,b){ return a._rk-b._rk || a._o-b._o; });
@@ -5348,6 +5374,7 @@ function listaOQueGravar(){   // UMA lista: o que a Mari marcou (Para gravar) + 
 }
 function renderAPlanejar(){
   var rot=roteirosDisponiveis(), prods=listaOQueGravar(), hoje=hojeISO(), h='<div class="apl">';
+  var dvE=diasComVendaPorChave(), hojeE=S.dataMax? soDia(S.dataMax) : null;   // aviso de estoque (mesma regra do cartão Para gravar)
   S._apProd=prods;
   if(rot.length){
     h+='<div class="apl-bloco apl-esp"><div class="apl-tit">Esperando data <span class="cont">'+rot.length+'</span></div>';
@@ -5360,9 +5387,9 @@ function renderAPlanejar(){
     if(rot.length>4) h+='<button class="apl-mais" onclick="_apVer.rot=!_apVer.rot;renderPlanejar()">'+(_apVer.rot?'mostrar menos':'ver todos os '+rot.length)+'</button>';
     h+='</div>';
   }
-  h+='<div class="apl-bloco"><div class="apl-top mp-top"><span><b>O que gravar</b> <span class="cont">'+prods.length+'</span></span><button type="button" class="btn mini mp-bt" onclick="abrirProducao()">Montar produção</button></div>'+
-     '<p class="apl-sub">Sua lista Para gravar e o que o sistema sugere, com o mais urgente em cima.</p>';
-  if(!prods.length) h+='<p class="apl-vazio">Nada pendente. Marque produtos com <b>+ pra gravar</b> em Produtos ou Campeões.</p>';
+  h+='<div class="apl-bloco"><div class="apl-top mp-top"><span><b>O que gravar</b> <span class="cont">'+prods.length+'</span></span><span class="oq-top-bts"><button type="button" class="btn ghost mini" id="oqAdd" onclick="abrirAdicionarOQG()">+ adicionar</button><button type="button" class="btn mini mp-bt" onclick="abrirProducao()">Montar produção</button></span></div>'+
+     '<p class="apl-sub">O que você marcou e o que o sistema sugere, com o mais urgente em cima. Toque em ⋯ pra ver mais ou tirar da lista.</p>';
+  if(!prods.length) h+='<p class="apl-vazio">Nada pendente. Toque em <b>+ adicionar</b> ou marque <b>+ pra gravar</b> em Produtos ou Campeões.</p>';
   (_apVer.prod?prods:prods.slice(0,10)).forEach(function(it,i){
     var et;
     if(it.tipo==='amostra' && it.st==='gravando') et='<span class="gv-et grav">gravando agora</span>';
@@ -5373,15 +5400,115 @@ function renderAPlanejar(){
     var tags=[];
     if(it.tipo==='amostra' && it.nPrazo!=null) tags.push('<span class="tg'+(it.urgente?' urg':' amo')+'">Amostra · '+(it.nPrazo<0?'venceu':(it.nPrazo===0?'vence hoje':(it.nPrazo===1?'vence amanhã':'vence '+dmIso(it.prazo))))+'</span>');
     var rs=rotuloSug(it.sug); if(rs) tags.push('<span class="tg '+(it.sug.tipoSug==='aposta'?'apo':'camp')+'">'+rs+'</span>');
+    var est= it.ch && hojeE && dvE[it.ch] ? alertaEstoque(dvE[it.ch], hojeE) : null; it._est=est;
+    if(est && est.tipo==='sumiu') tags.push('<span class="tg est">⚠ confira o estoque</span>');
     if(it.sug && it.sug.semVenda) tags.push('<span class="tg semv">sem venda há '+it.sug.semVenda+' dias</span>');
     if(it.sug && it.sug.tipo==='live') tags.push('<span class="tg">vende mais em live</span>');
     if(it.molde) tags.push('<span class="tg mol">Molde · vendeu '+it.molde.ndias+' de 15 dias</span>');
     var pv=proximaVaga(it); if(pv) tags.push('<span class="tg ag">agendado '+(pv===hoje?'hoje':dmIso(pv))+'</span>');
     h+='<div class="apl-l"'+(it.ch?' data-ch="'+attr(it.ch)+'"':'')+'><div class="apl-t"><b>'+escapar(nomeCurto(it.nome))+'</b><span>'+et+' '+tags.join(' ')+'</span></div>'+
-       '<div class="apl-bts"><button type="button" class="apl-ag-bt" onclick="abrirAgendar('+i+')">Agendar</button></div></div>';
+       '<div class="apl-bts"><button type="button" class="apl-ag-bt" onclick="abrirAgendar('+i+')">Agendar</button>'+
+       '<button type="button" class="apl-mais-bt" aria-label="Mais opções" title="Mais opções" onclick="abrirMaisOQG('+i+')">⋯</button></div></div>';
   });
   if(prods.length>10) h+='<button class="apl-mais" onclick="_apVer.prod=!_apVer.prod;renderPlanejar()">'+(_apVer.prod?'mostrar menos':'ver todos os '+prods.length)+'</button>';
   return h+'</div></div>';
+}
+/* ---------- (conv. 15) ⋯ de cada linha do O que gravar: o que antes só existia no cartão da aba Para gravar ---------- */
+function abrirMaisOQG(i){
+  var it=(S._apProd||[])[i]; if(!it) return; _oq={it:it};
+  var q=it.ch && S.idxProd.lista[it.ch], M=S.dataMax? mesDaPlanilha() : null, mc=null;
+  if(M && it.ch) campeoesDoMes(M).lista.forEach(function(p){ if(p.chave===it.ch) mc=p; });
+  var nomeMes=M? MES_NOME[M.ini.getMonth()].toLowerCase() : '';
+  var h=cabPainel(escapar(nomeCurto(it.nome)), escapar(it.loja||'')+(it.loja?' · ':'')+'lista O que gravar');
+  h+='<p class="oq-info"><b>'+escapar(it.nome)+'</b><br>'+
+     (q ? (M? (mc? '<b>'+reais(mc.com)+' em '+nomeMes+'</b>' : 'sem venda em '+nomeMes)+' · ' : '')+reais(q.com)+' no total · '+inteiro(q.itens)+' '+plural(q.itens,'vendido','vendidos')
+        : (it.tipo==='amostra'?'Amostra · sem venda ainda':'Sem venda ainda'))+'<br>'+
+     (it.ult ? (it.ult.fonte==='planejar' ? 'Última gravação no Planejar: '+dmIso(it.ult.data) : 'Último conteúdo que vendeu começou em '+dmIso(it.ult.data))+' (há '+it.ult.dias+' '+plural(it.ult.dias,'dia','dias')+')' : 'Nunca gravado')+'</p>';
+  var mot=[];
+  if(it.sug && it.sug.motivo) mot.push(escapar(it.sug.motivo));
+  if(it.molde) mot.push('Molde: o vídeo '+vdCurto(it.molde.id)+' vendeu em '+it.molde.ndias+' dos últimos 15 dias');
+  if(mot.length) h+='<p class="oq-motivo">'+mot.join('<br>')+'</p>';
+  var est=it._est;
+  if(est) h+='<p class="oq-est">⚠ '+(est.tipo==='sumiu'?'Está há '+est.dias+' dias sem vender (vendia quase todo dia): confira o estoque na loja antes de gravar.':'Voltou a vender em '+dm(est.volta)+' depois de '+est.dias+' dias parado: parece reposição.')+'</p>';
+  var idL=it.idProduto || (q && q.id);
+  h+='<div class="oq-bts">';
+  if(it.ch) h+='<button type="button" class="btn ghost" onclick="fecharForm();abrirFichaGeral(\''+it.ch+'\')">Ficha do produto</button>';
+  if(idL) h+='<a class="btn ghost" href="https://shop.tiktok.com/view/product/'+idL+'?region=BR" target="_blank" rel="noopener">Ver no TikTok Shop ↗</a>';
+  if(it.tipo==='amostra'){
+    if(it.st==='chegou') h+='<button type="button" class="btn ghost" id="oqAmoGrav" onclick="amostraOQG(\'gravando\')">Comecei a gravar</button>';
+    h+='<button type="button" class="btn ghost" id="oqAmoPost" onclick="amostraOQG(\'postado\')">Postei hoje</button>';
+    h+='<p class="oq-nota">Amostra sai sozinha da lista quando for postada ou descartada (na tela Amostras).</p>';
+  } else if(it.tipo==='marcado'){
+    h+='<button type="button" class="btn ghost" id="oqTirar" onclick="tirarOQG()">Tirar da lista</button>';
+  } else {
+    h+='<button type="button" class="btn ghost" id="oqTirar" onclick="tirarOQG()">Esconder até domingo</button><p class="oq-nota">É uma sugestão do sistema. Na segunda ela volta, se a regra ainda valer.</p>';
+  }
+  h+='</div></div></div>';
+  abrirPainel(h);
+}
+var _oq=null, _oqToque=0;
+async function tirarOQG(){
+  if(!_oq || Date.now()-_oqToque<600) return; _oqToque=Date.now();
+  var it=_oq.it, nm=nomeCurto(it.nome);
+  if(it.tipo==='marcado'){
+    var esc=!!((it.sug || it.molde) && it.ch);   // tirou da lista: a sugestão do mesmo produto também some até domingo (senão ele voltaria na hora)
+    if(esc && !(await salvarOcultas(it.ch, true))) return;
+    fecharForm(); _oq=null;
+    var ok=await tirarGravar(it.id, false);
+    if(!ok){ if(esc) salvarOcultas(it.ch, false); return; }
+    var reg=it.reg;
+    renderPlanejar();
+    aviso('Tirei '+nm+' da lista.', 'Desfazer', function(){
+      salvarGravar([{id:reg.id, dados:reg.dados, excluido:false}]).then(function(ok2){ if(ok2 && esc) salvarOcultas(it.ch, false); if(ok2){ renderPlanejar(); aviso('✓ Voltou pra lista O que gravar'); } });
+    });
+    return;
+  }
+  if(!it.ch) return;
+  if(!(await salvarOcultas(it.ch, true))) return;
+  fecharForm(); _oq=null;
+  aviso('Escondido até domingo · '+nm, 'Desfazer', function(){ salvarOcultas(it.ch, false).then(function(ok2){ if(ok2) aviso('✓ Voltou pra lista O que gravar'); }); });
+}
+async function amostraOQG(st){
+  if(!_oq || Date.now()-_oqToque<600) return; _oqToque=Date.now();
+  var it=_oq.it, m= st==='postado' ? {status:'postado', postadoEm:hojeISO()} : {status:'gravando'};
+  var a=S.amostras[it.id]; if(!a) return;
+  var r=await salvarJunto([], [{id:it.id, dados:Object.assign({}, a.dados, m)}]);
+  if(r===null) return;
+  if(!r){ erroTela(MSG_SEM_NUVEM); return; }
+  fecharForm(); _oq=null;
+  aviso(st==='postado' ? '✓ '+nomeCurto(it.nome)+': postada hoje' : '✓ '+nomeCurto(it.nome)+': gravando');
+}
+/* + adicionar: buscar na base (produto que já vendeu) ou por link (produto que ainda não vendeu) */
+function abrirAdicionarOQG(){
+  var h=cabPainel('Colocar na lista O que gravar', 'Produto que já vendeu, ou um novo pelo link');
+  h+='<label>Buscar produto que já vendeu<input id="oqBusca" type="search" autocomplete="off" placeholder="nome, loja ou número do produto" oninput="sugerirOQG()"></label><div id="oqSug" class="gv-sug"></div>';
+  h+='<p class="oq-sep">Ainda não vendeu na sua conta? Adicione pelo link:</p>'+
+     '<label>Link do produto no TikTok Shop<input id="oqLink" placeholder="cole aqui o link" autocomplete="off"></label>'+
+     '<label>Nome do produto <small>(só se ele ainda não vendeu na sua conta)</small><input id="oqNome" autocomplete="off"></label>'+
+     '<label>Loja <small>(opcional)</small><input id="oqLoja" autocomplete="off"></label>'+
+     '<div class="nv-botoes"><button type="button" class="btn" id="oqLinkBt" onclick="adicionarLinkOQG()">Adicionar pelo link</button></div>'+
+     '<div class="gv-link-msg" id="oqLinkMsg">O sistema não consegue puxar o nome pelo link (o TikTok não deixa). Se o produto já vendeu na sua conta, ele é reconhecido sozinho.</div>';
+  h+='</div></div>';
+  abrirPainel(h);
+}
+function sugerirOQG(){
+  var box=document.getElementById('oqSug'), t=(document.getElementById('oqBusca')||{}).value||''; if(!box) return;
+  var r=buscarProdutos(t, 6);
+  if(!r.length){ box.innerHTML= t.trim().length>=2 ? '<div class="gv-sug-vazio">Nenhum produto vendido com esse nome. Se ele nunca vendeu, use o link aqui embaixo.</div>' : ''; return; }
+  box.innerHTML=r.map(function(p){
+    var na=naListaGravar(p.chave);
+    return '<div class="gv-sug-it'+(na?' na':'')+'" data-ch="'+attr(p.chave)+'" onclick="'+(na?'':'escolherOQG(\''+p.chave+'\')')+'"><b>'+escapar(nomeCurto(p.nome))+'</b><span>'+escapar(p.loja)+' · '+reais(p.com)+(na?' · já está na lista':'')+'</span></div>';
+  }).join('');
+}
+var _oqAdd=0;
+function escolherOQG(ch){
+  if(Date.now()-_oqAdd<600) return; _oqAdd=Date.now();
+  var p=S.idxProd.lista[ch];
+  marcarGravar(ch,'busca').then(function(ok){ if(!ok) return; fecharForm(); renderPlanejar(); if(p) aviso('✓ '+nomeCurto(p.nome)+' entrou na lista O que gravar'); });
+}
+function adicionarLinkOQG(){
+  if(Date.now()-_oqAdd<600) return; _oqAdd=Date.now();
+  var r=adicionarGravarLink('oq'); if(r && r.then) r.then(function(ok){ if(ok){ fecharForm(); renderPlanejar(); } });
 }
 /* ---------- tela ---------- */
 function renderPlanejar(){
