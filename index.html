@@ -2317,7 +2317,7 @@ function renderFunil(pre){
   renderFunilAtalho();
   var el=document.getElementById('funilConteudo'); if(!el) return;
   var dia=_fn.tipo==='dia', v=pre||{}, h='';
-  if(!pre){ var ra=fnRascTodos()[_fn.tipo]; if(ra && (ra.edit||null)===(_fn.edit||null)){ v={de:ra.de||'', ate:ra.ate||'', txt:ra.txt||{}}; if(_fn.edit && S.metas[_fn.edit]) v.tipo=_fn.tipo; } }
+  if(!pre){ var ra=fnRascTodos()[_fn.tipo]; if(ra && (ra.edit||null)===(_fn.edit||null)){ v={de:ra.de||'', ate:ra.ate||'', txt:ra.txt||{}, semData:!ra.de}; if(_fn.edit && S.metas[_fn.edit]) v.tipo=_fn.tipo; } }   // (conv. 17) dia apagado de propósito (ou em branco pelo Ler do print) continua em branco
   h+=flCardHTML();
   h+=lpCaixaHTML();
   h+='<div class="janelas" id="fnTipo"><button class="'+(dia?'on':'')+'" onclick="setFnTipo(\'dia\')">Dia a dia<small class="fn-filtro">filtro Ontem</small></button><button class="'+(!dia?'on':'')+'" onclick="setFnTipo(\'per\')">Resumo do período<small class="fn-filtro">filtro 7D ou Personalizar</small></button></div>';
@@ -2384,8 +2384,9 @@ function flLiveFracao(ini, fim){   // fração do GMV da planilha que veio de li
   return g>0 ? l/g : 0;
 }
 function fnLeitura(N){
-  var dias={}; fnRegistros('dia').forEach(function(x){ dias[x.d.de]=x.d; });
-  var ks=Object.keys(dias).sort(); if(!ks.length) return {modo:'vazio'};
+  var dias={}, hoje=hojeISO(), temHoje=false;
+  fnRegistros('dia').forEach(function(x){ if(x.d.de>=hoje){ temHoje=true; return; } dias[x.d.de]=x.d; });   // o dia de hoje ainda não fechou: fica fora
+  var ks=Object.keys(dias).sort(); if(!ks.length) return {modo:'vazio', temHoje:temHoje};
   var fim=ks[ks.length-1];
   function jan(desl){ var f=isoMais(fim,-desl), i=isoMais(f,-(N-1)); return {ini:i, fim:f, ks:ks.filter(function(k){ return k>=i && k<=f; })}; }
   var a=jan(0), atual;
@@ -2401,7 +2402,10 @@ function fnLeitura(N){
     cand.sort(function(p,q){ return p.ate<q.ate?1:(p.ate>q.ate?-1:(p.de<q.de?1:(p.de>q.de?-1:0))); });
     if(cand.length){ var r=cand[0], nd=diasEntre(r.de,r.ate)+1; base={tipo:'resumo', ini:r.de, fim:r.ate, n:nd, m:flMetricas(flSoma([r]),nd)}; }
   }
-  if(!base) return {modo:'sem_base', atual:atual, N:N, registrados:a.ks.length};
+  if(!base){
+    var enc=fnRegistros('per').map(function(x){ return x.d; }).filter(function(r){ return r.ate>=atual.prim && r.ate>=isoMais(atual.prim,-14); })[0] || null;
+    return {modo:'sem_base', atual:atual, N:N, registrados:a.ks.length, temHoje:temHoje, resumoEncosta:enc};
+  }
   var A=atual.m, B=base.m, st={};
   ['impDia','ctr','conv','ticket','gmvDia'].forEach(function(k){
     if(A[k]==null || !B[k]){ st[k]={delta:null, status:'sem'}; return; }
@@ -2414,7 +2418,7 @@ function fnLeitura(N){
   if(onde==='nada' && st.gmvDia.status==='caiu' && st.ticket.status==='caiu') onde='ticket';
   var la=flLiveFracao(atual.ini, atual.fim), lb=flLiveFracao(base.ini, base.fim);
   var live=((la!=null && la>=0.2) || (lb!=null && lb>=0.2)) ? {atual:la, base:lb} : null;
-  return {modo:'compara', atual:atual, base:base, st:st, onde:onde, live:live, N:N};
+  return {modo:'compara', atual:atual, base:base, st:st, onde:onde, live:live, N:N, temHoje:temHoje};
 }
 function flPct(dl){ return Math.round(Math.abs(dl))+'%'; }
 function flVerbo(nome, s){ return nome+' '+(s.status==='igual'?'igual':(s.status==='caiu'?'caiu ':'subiu ')+flPct(s.delta)); }
@@ -2447,11 +2451,14 @@ function flCardHTML(){
   var N=_fl.N, L=fnLeitura(N);
   var h='<div class="nv-card fl-card" id="flCard"><div class="fl-top"><b class="fl-tit">Leitura do funil</b><div class="janelas" id="flJanela" style="margin:0">'+
     [3,7,15].map(function(n){ return '<button type="button" data-n="'+n+'" class="'+(n===N?'on':'')+'" onclick="setFlN('+n+')">'+n+' dias</button>'; }).join('')+'</div></div>';
+  var notaHoje = L.temHoje ? '<p class="fl-velho" id="flHoje">O dia de hoje ('+dm(deIso(hojeISO()))+') ainda não fechou — fica fora da leitura.</p>' : '';
+  h+=notaHoje;
   if(L.modo==='vazio') return h+'<p class="fl-comp">Ainda não tem dia registrado. Registre o dia de ontem (Ler do print, logo abaixo) — a leitura aparece aqui.</p></div>';
   var ult=L.atual.fim, aviso= ult<fnOntem() ? '<p class="fl-velho">Os números vão até <b>'+dm(deIso(ult))+'</b> (último dia registrado) — registre os dias que faltam.</p>' : '';
   if(L.modo==='sem_base'){
     var falta=Math.max(0, FL_MINIMO[N]-L.registrados);
-    return h+aviso+'<p class="fl-comp">Ainda não dá pra comparar. '+(falta? 'A média de '+N+' dias precisa de '+FL_MINIMO[N]+' dias registrados em '+N+' (faltam '+falta+') e mais '+FL_MINIMO[N]+' nos '+N+' dias antes.' : 'Faltam dias registrados nos '+N+' dias antes pra comparar.')+' Enquanto isso, salve um <b>Resumo do período</b> (filtro 7D) — o dia de ontem é comparado com ele.</p></div>';
+    return h+aviso+'<p class="fl-comp">Ainda não dá pra comparar. '+(falta? 'A média de '+N+' dias precisa de '+FL_MINIMO[N]+' dias registrados em '+N+' (faltam '+falta+') e mais '+FL_MINIMO[N]+' nos '+N+' dias antes.' : 'Faltam dias registrados nos '+N+' dias antes pra comparar.')+' Enquanto isso, salve um <b>Resumo do período</b> (filtro 7D) — o dia de ontem é comparado com ele.</p>'+
+      (L.resumoEncosta ? '<p class="fl-comp" id="flEncosta">O Resumo de '+dm(deIso(L.resumoEncosta.de))+' a '+dm(deIso(L.resumoEncosta.ate))+' não serve de base porque inclui os dias da leitura. A base precisa terminar antes de '+dm(deIso(L.atual.prim))+' (o 7D do app já termina 2 dias antes).</p>' : '')+'</div>';
   }
   var comp = L.base.tipo==='janela'
     ? 'Média dos <b>últimos '+N+' dias</b> ('+flQuando(L.atual)+', '+L.atual.n+' '+plural(L.atual.n,'dia registrado','dias registrados')+') × <b>'+N+' dias antes</b> ('+flQuando(L.base)+', '+L.base.n+' '+plural(L.base.n,'dia','dias')+').'
