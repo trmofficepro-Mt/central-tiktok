@@ -598,10 +598,7 @@ body.tela-planejar .alerta-amo{display:none}
   .pitem .info .bt-grav{grid-row:4}
 }
 .pareto-resumo.sem-camp .txt p{margin-top:6px}
-.camp-ok{margin-top:10px;font-size:13px;font-weight:700;color:var(--verde)}
 .pitem .cb-leg .cl{flex-wrap:wrap;column-gap:5px;row-gap:0}.pitem .cb-leg .cl b,.pitem .cb-leg .cl .pctc{white-space:nowrap}
-.camp-ok a{color:var(--uva);font-weight:700}
-.gv-meta .nw{white-space:nowrap}
 /* Revisão R · topo: em telas bem estreitas (320 px) o botão da nuvem empurrava a página pro lado */
 .topo>div:not(.logo){min-width:0}
 @media(max-width:380px){
@@ -622,42 +619,17 @@ body.tela-planejar .alerta-amo{display:none}
 @media(max-width:899px){
   .ficha-cab .voltar,.ficha-cab .acoes a,.ficha-cab .acoes button,#evoMetricas button{min-height:36px}
 }
-/* Revisão R · Produtos: no celular o "+ pra gravar" tinha 26 px de altura — pequeno pro dedo */
-@media(max-width:560px){ .bt-grav{min-height:36px;padding:8px 14px;font-size:12.5px} .gv-card .gv-x{width:36px;height:36px;top:4px;right:4px} }
-.gv-ferr{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-bottom:12px}
-.gv-busca{flex:1 1 280px;position:relative;min-width:0}
-.gv-busca input{width:100%;box-sizing:border-box;font-family:inherit;font-size:14px;padding:9px 12px;border:1.5px solid var(--linha2);border-radius:10px;background:var(--panel)}
+/* Revisão R · Produtos: no celular o "+ pra gravar" tinha 26 px de altura — pequeno pro dedo (o × da antiga aba Para gravar saiu com ela, conv. 16) */
+@media(max-width:560px){ .bt-grav{min-height:36px;padding:8px 14px;font-size:12.5px} }
 .gv-sug{background:var(--panel);border-radius:10px;margin-top:4px;overflow:hidden}
 .gv-sug:not(:empty){border:1px solid var(--linha)}
 .gv-sug-it{padding:9px 12px;border-bottom:1px solid var(--linha);cursor:pointer;font-size:13px;display:flex;flex-direction:column;gap:1px}
 .gv-sug-it span{font-size:11.5px;color:var(--tinta3)}
 .gv-sug-it.na{cursor:default;opacity:.6}
 .gv-sug-vazio{padding:9px 12px;font-size:12.5px;color:var(--tinta2)}
-.gv-link{background:var(--bg2);border-radius:12px;padding:12px;margin-bottom:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;align-items:end;font-size:12px;color:var(--tinta2)}
-.gv-link label{display:flex;flex-direction:column;gap:4px}
-.gv-link input{font-family:inherit;font-size:14px;padding:8px 10px;border:1.5px solid var(--linha2);border-radius:8px;width:100%;box-sizing:border-box}
 .gv-link-msg{grid-column:1/-1;font-size:12px;line-height:1.4}
-.gv-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
-.gv-card{position:relative;background:var(--panel);border:1px solid var(--linha);border-radius:var(--raio);padding:14px 14px 12px;display:flex;flex-direction:column;gap:6px}
-.gv-card.urg{border-color:#f5c9b8;background:linear-gradient(135deg,#fff,#fff6f1)}
-.gv-x{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:8px;border:none;background:none;color:var(--tinta3);font-size:20px;line-height:1;cursor:pointer}
-.gv-x:hover{background:var(--bg2);color:var(--vermelho)}
-.gv-tags{display:flex;flex-wrap:wrap;gap:4px;padding-right:26px}
-.gv-tag{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:6px;background:var(--bg2);color:var(--tinta2)}
-.gv-tag.amo{background:#e0f2fe;color:#0369a1}.gv-tag.amo.urg{background:#fee2e2;color:#b91c1c}
-.gv-tag.camp{background:#f3ecff;color:var(--uva)}.gv-tag.perf{background:#dcfce7;color:#15803d}
-.gv-nome{font-size:14px;font-weight:800;line-height:1.3;padding-right:22px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.gv-meta{font-size:12px;color:var(--tinta3)}
-.gv-linha{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .gv-et{font-size:12px;font-weight:800;padding:3px 9px;border-radius:20px;white-space:nowrap}
 .gv-et.nunca{background:#fee2e2;color:#b91c1c}.gv-et.dias{background:#ffedd5;color:#c2410c}.gv-et.hoje{background:#dcfce7;color:#15803d}.gv-et.grav{background:#fef3c7;color:#b45309}
-.gv-fonte{font-size:11px;color:var(--tinta3)}
-.gv-est{font-size:11.5px;color:#b45309;background:#fff7ed;border-radius:8px;padding:6px 8px;line-height:1.35}
-.gv-nota{font-size:11px;color:var(--tinta3)}
-.gv-acoes{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:2px;font-size:12.5px;font-weight:700}
-.gv-acoes a{color:var(--uva)}
-#prodVista .cont{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:rgba(255,255,255,.3);font-size:11px;margin-left:4px}
-#prodVista button:not(.on) .cont{background:#f3ecff;color:var(--uva)}
 .amo-cfg + .amo-cfg{margin-left:10px}
 .alerta-amo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-radius:var(--raio);padding:12px 16px;margin-bottom:14px;border:1px solid;font-size:13px;line-height:1.45}
 .alerta-amo.venc{background:#fef2f2;border-color:#fecaca}
@@ -1193,12 +1165,7 @@ div.apl-t{cursor:default}
       <div class="sec" style="margin-top:22px">
         <h3>Produtos</h3>
         <button class="btn ghost mini lojas-atalho" onclick="irPara('lojas')">Negociação de Lojas ›</button>
-        <div class="janelas" id="prodVista">
-          <button class="on" data-v="todos" onclick="setProdVista('todos')">Todos</button>
-          <button data-v="gravar" onclick="setProdVista('gravar')">Para gravar</button>
-        </div>
-        <div id="prodGravar" style="display:none"></div>
-        <div id="prodTodos">
+        <div>
         <p class="desc">Todos os produtos que venderam. Toque em um pra ver a ficha completa: canais, vendas no tempo e quais conteúdos venderam.</p>
         <div class="busca">
           <div class="campo">
@@ -1529,7 +1496,7 @@ function irPara(mod){
   });
   if(typeof ajustarTopo==='function') ajustarTopo();
   if(mod==='planejar' && typeof renderPlanejar==='function') renderPlanejar();
-  if(mod==='funil' && typeof renderFunil==='function') renderFunil();   // A planejar usa a lista Para gravar, que pode ter mudado em outra tela
+  if(mod==='funil' && typeof renderFunil==='function') renderFunil();   // A planejar usa a lista de marcados (O que gravar), que pode ter mudado em outra tela
   if(typeof redesenharVisiveis==='function') redesenharVisiveis();
   try{ window.scrollTo({top:0, behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); }
 }
@@ -1582,7 +1549,7 @@ function renderCampeoes(){
       '<div class="big">'+nC+'</div>'+
       '<div class="txt"><b>'+plural(nC,'produto gera','produtos geram')+' '+(somaCamp/total*100).toFixed(0)+'% da sua comissão</b>'+
       '<p>De '+inteiro(prods.length)+' '+plural(prods.length,'produto vendido','produtos vendidos')+', '+plural(nC,'esse precisa','só esses precisam')+' estar sempre no seu conteúdo. Foque '+plural(nC,'nele','neles')+' primeiro.</p>'+
-      '<div id="campMarcar">'+botaoMarcarCampeoes()+'</div></div>'+
+      '</div>'+
     '</div>';
 
   // lista
@@ -1608,16 +1575,6 @@ function renderCampeoes(){
     elT.innerHTML='';
   }
 }
-/* botão "Marcar os N campeões": mostra o que falta e confirma na tela (usa os campeões do período, os mesmos da lista) */
-function botaoMarcarCampeoes(){
-  var camp=(S.produtos||[]).filter(function(p){ return p.campeao; }), n=camp.length;
-  if(!n) return '';
-  var falta=camp.filter(function(p){ return !naListaGravar(p.chave); }).length;
-  if(!falta) return '<div class="camp-ok">✓ '+(n===1?'O campeão já está':(n===2?'Os 2 campeões já estão':'Os '+n+' campeões já estão'))+' na lista Para gravar · <a href="#" onclick="event.preventDefault();verParaGravar()">ver lista</a></div>';
-  var txt= falta===n ? (n===1?'Marcar o campeão pra gravar':'Marcar os '+n+' campeões pra gravar') : (falta===1?'Marcar o 1 que falta':'Marcar os '+falta+' que faltam')+' (de '+n+' '+plural(n,'campeão','campeões')+')';
-  return '<button class="btn ghost mini" style="margin-top:8px" onclick="marcarCampeoesGravar(true)">'+txt+'</button>';
-}
-function atualizarBotaoCampeoes(){ var el=document.getElementById('campMarcar'); if(el) el.innerHTML=botaoMarcarCampeoes(); }
 
 function itemProduto(p,rank,fora){
   var ch=p.chave;
@@ -2542,7 +2499,6 @@ function render(){
   renderFunil();
   renderAmostras();
   renderPlanejar();
-  renderParaGravar();
 
   document.getElementById('painel').classList.remove('vazio');
   renderRitmoProduto();
@@ -3612,7 +3568,6 @@ function rpDia(d){
      1ª venda do conteúdo mais recente dele na planilha (o que for mais novo)
    - ordem: amostras urgentes primeiro; depois quem está há mais tempo sem gravar
    ===================================================================== */
-var _prodVista='todos', _gravBusca='', _gravLink=false;
 function alertaDias(){ var c=S.metas&&S.metas._config; return c&&c.alertaDias>0? c.alertaDias : 3; }
 function idGravar(d){ return d.idProduto ? 'id:'+d.idProduto : 'nome:'+semAcento((d.loja||'')+'|'+(d.nome||'')).trim(); }
 function marcadoPraGravar(ch){
@@ -3649,33 +3604,11 @@ function marcarGravar(ch, origem){
   if(naListaGravar(ch)) return Promise.resolve(true);
   var r=regDoProduto(ch, origem); return r? salvarGravar([r]) : Promise.resolve(false);
 }
-function marcarVariosGravar(chs, origem){
-  var rows=chs.filter(function(ch){ return !naListaGravar(ch); }).map(function(ch){ return regDoProduto(ch, origem); }).filter(Boolean);
-  if(!rows.length){ aviso('✓ Esses produtos já estão todos na lista Para gravar'); return Promise.resolve(true); }
-  return salvarGravar(rows);
-}
-/* toque duplo: o cartão de baixo sobe pro lugar do que saiu — um 2º toque no × logo em seguida apagaria OUTRO produto */
-var _ultimoX=0, _ultimoToggle={}, _loteDesfazer=null;
-function tirarGravar(id, comDesfazer){
-  if(comDesfazer){ if(Date.now()-_ultimoX<600) return Promise.resolve(false); _ultimoX=Date.now(); }
+var _ultimoToggle={};
+/* tira um marcado da lista (o Desfazer fica com quem chama: ⋯ › Tirar da lista do O que gravar) */
+function tirarGravar(id){
   var o=S.gravar[id]; if(!o) return Promise.resolve(false);
-  return salvarGravar([{id:id, dados:o.dados, excluido:true}]).then(function(ok){
-    if(ok && comDesfazer){
-      // vários × seguidos enquanto o aviso está na tela: o Desfazer devolve TODOS (antes só o último)
-      var el=document.getElementById('avisoRapido'), aberto=_loteDesfazer && el && el.classList.contains('on') && el.classList.contains('acao');
-      if(!aberto) _loteDesfazer=[];
-      _loteDesfazer.push({id:id, dados:o.dados});
-      var lote=_loteDesfazer, n=lote.length;
-      var ch=chaveDoItem(o.dados), p=ch && S.idxProd.lista[ch], nome=p? p.nome : (o.dados.nome||'Produto');
-      aviso(n===1? 'Tirei '+nomeCurto(nome)+' da lista.' : 'Tirei '+n+' produtos da lista.', 'Desfazer', function(){
-        _loteDesfazer=null;
-        var rows=lote.filter(function(x){ return !S.gravar[x.id]; }).map(function(x){ return {id:x.id, dados:x.dados, excluido:false}; });
-        if(!rows.length) return;
-        salvarGravar(rows).then(function(ok2){ if(ok2) aviso(rows.length===1? '✓ Voltou pra lista Para gravar' : '✓ '+rows.length+' produtos voltaram pra lista Para gravar'); });
-      });
-    }
-    return ok;
-  });
+  return salvarGravar([{id:id, dados:o.dados, excluido:true}]);
 }
 function toggleGravar(ch, origem, ev){
   if(ev) ev.stopPropagation();
@@ -3689,17 +3622,15 @@ function toggleGravar(ch, origem, ev){
 function btnGravar(ch, origem){
   if(!ch) return '';
   var am=!!amostraAbertaDe(ch), on=am || !!marcadoPraGravar(ch);
-  return '<button class="bt-grav'+(on?' on':'')+'" data-ch="'+ch+'" data-or="'+(origem||'')+'" onclick="toggleGravar(\''+ch+'\',\''+(origem||'')+'\',event)" title="'+(on?'Está na lista Para gravar (toque pra tirar)':'Colocar na lista Para gravar')+'">'+(on?'✓ pra gravar':'+ pra gravar')+'</button>';
+  return '<button class="bt-grav'+(on?' on':'')+'" data-ch="'+ch+'" data-or="'+(origem||'')+'" onclick="toggleGravar(\''+ch+'\',\''+(origem||'')+'\',event)" title="'+(on?'Está na lista O que gravar (toque pra tirar)':'Colocar na lista O que gravar')+'">'+(on?'✓ pra gravar':'+ pra gravar')+'</button>';
 }
 /* atualiza os botões espalhados pelo sistema + a lista, sem redesenhar as telas */
 function atualizarTudoGravar(){
   document.querySelectorAll('.bt-grav').forEach(function(b){
     var ch=b.getAttribute('data-ch'), on=naListaGravar(ch);
     b.classList.toggle('on',on); b.textContent= on?'✓ pra gravar':'+ pra gravar';
-    b.title= on?'Está na lista Para gravar (toque pra tirar)':'Colocar na lista Para gravar';
+    b.title= on?'Está na lista O que gravar (toque pra tirar)':'Colocar na lista O que gravar';
   });
-  atualizarBotaoCampeoes();
-  renderParaGravar();
   var mp=document.getElementById('mod-planejar'); if(mp && mp.classList.contains('on') && typeof renderPlanejar==='function') renderPlanejar();
 }
 
@@ -3758,109 +3689,10 @@ function listaParaGravar(){
   });
   return itens;
 }
-function setProdVista(v){
-  _prodVista=v;
-  document.querySelectorAll('#prodVista button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v')===v); });
-  document.getElementById('prodTodos').style.display = v==='todos'?'':'none';
-  document.getElementById('prodGravar').style.display = v==='gravar'?'':'none';
-  renderParaGravar();
-}
 function verParaGravar(){ irPara('planejar'); setTimeout(verAmostrasPlanejar, 60); }   // (conv. 15) a lista agora é o O que gravar
 
-function renderParaGravar(){
-  var box=document.getElementById('prodGravar'); if(!box || !S.idxProd) return;
-  var itens=listaParaGravar();
-  var bt=document.querySelector('#prodVista [data-v="gravar"]');
-  if(bt) bt.innerHTML='Para gravar'+(itens.length?' <span class="cont">'+itens.length+'</span>':'');
-  if(_prodVista!=='gravar') return;
-  var nunca=itens.filter(function(i){ return !i.ult; }).length, nAm=itens.filter(function(i){ return i.tipo==='amostra'; }).length;
-  var camp=(S.produtos||[]).filter(function(p){ return p.campeao; }), faltaCamp=camp.filter(function(p){ return !naListaGravar(p.chave); }).length;
-  var h='<p class="desc" style="margin:0 0 12px">A lista de trabalho da Mari: '+itens.length+' '+plural(itens.length,'produto','produtos')+
-      (nunca?' · <b>'+nunca+' '+plural(nunca,'nunca gravado','nunca gravados')+'</b>':'')+(nAm?' · '+nAm+' '+plural(nAm,'amostra','amostras'):'')+
-      '. Quem está há mais tempo sem gravar aparece primeiro; amostras perto do prazo vão pro topo. Confira o estoque na loja antes de gravar.</p>';
-  h+='<div class="gv-ferr">'+
-      '<div class="gv-busca"><input id="gvBusca" type="search" placeholder="Marcar da base: busque um produto que já vendeu" autocomplete="off" value="'+attr(_gravBusca)+'" oninput="_gravBusca=this.value;sugerirGravar()"><div id="gvSug" class="gv-sug"></div></div>'+
-      '<button class="btn ghost mini" onclick="_gravLink=!_gravLink;renderParaGravar()">+ Adicionar por link</button>'+
-      (faltaCamp?'<button class="btn ghost mini" onclick="marcarCampeoesGravar(true)">'+(faltaCamp===camp.length? (camp.length===1?'Marcar o campeão do período':'Marcar os '+camp.length+' campeões do período') : (faltaCamp===1?'Marcar o campeão que falta':'Marcar os '+faltaCamp+' campeões que faltam'))+'</button>':'')+
-    '</div>';
-  if(_gravLink) h+='<div class="gv-link">'+
-      '<label>Link do produto no TikTok Shop<input id="gvLink" placeholder="cole aqui o link" autocomplete="off"></label>'+
-      '<label>Nome do produto <small>(só se ele ainda não vendeu na sua conta)</small><input id="gvNome" autocomplete="off"></label>'+
-      '<label>Loja <small>(opcional)</small><input id="gvLoja" autocomplete="off"></label>'+
-      '<button class="btn mini" onclick="adicionarGravarLink()">Adicionar</button>'+
-      '<div class="gv-link-msg" id="gvLinkMsg">O sistema não consegue puxar o nome pelo link (o TikTok não deixa). Se o produto já vendeu na sua conta, ele é reconhecido sozinho.</div>'+
-    '</div>';
-  if(!itens.length){
-    h+='<div class="apostas-vazio"><b>A lista está vazia.</b><br>Marque os campeões, as apostas que escolher, ou toque em <b>+ pra gravar</b> em qualquer produto. Amostras que chegarem entram sozinhas.</div>';
-    box.innerHTML=h; return;
-  }
-  var M=S.dataMax? mesRef() : null, C=M? campeoesDoMes(M) : {lista:[]}, rk={};
-  var mc={}, nomeMes=M? ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][M.ini.getMonth()] : '';
-  C.lista.forEach(function(p){ mc[p.chave]=p; if(p.campeao) rk[p.chave]=p.rank; });
-  var dv=diasComVendaPorChave(), hojeP=S.dataMax? soDia(S.dataMax) : null;
-  h+='<div class="gv-grade">';
-  itens.forEach(function(it){
-    var tags=[];
-    if(it.tipo==='amostra'){
-      var n=it.nPrazo, tx= n==null ? 'sem prazo' : (n<0 ? 'venceu há '+(-n)+' '+plural(-n,'dia','dias') : (n===0?'vence hoje':(n===1?'vence amanhã':'vence '+dmIso(it.prazo))));
-      tags.push('<span class="gv-tag amo'+(it.urgente?' urg':'')+'">Amostra · '+tx+'</span>');
-    }
-    if(it.ch && rk[it.ch]) tags.push('<span class="gv-tag camp">Campeão #'+rk[it.ch]+'</span>');
-    if(it.ch && rk[it.ch] && M){ var sn=sinaisProduto(it.ch, M); if(sn.momento==='perfeito') tags.push('<span class="gv-tag perf">momento perfeito</span>'); }
-    if(it.origem==='link') tags.push('<span class="gv-tag">adicionado por link</span>');
-    var et;
-    if(it.tipo==='amostra' && it.st==='gravando') et='<span class="gv-et grav">gravando agora</span>';
-    else if(!it.ult) et='<span class="gv-et nunca">nunca gravado</span>';
-    else if(it.ult.dias===0) et='<span class="gv-et hoje">gravado hoje</span>';
-    else et='<span class="gv-et dias">há '+it.ult.dias+' '+plural(it.ult.dias,'dia','dias')+'</span>';
-    var fonte = it.ult ? (it.ult.fonte==='planejar' ? 'última gravação no Planejar: '+dmIso(it.ult.data) : 'último conteúdo que vendeu começou em '+dmIso(it.ult.data)) : '';
-    var est = it.ch && hojeP && dv[it.ch] ? alertaEstoque(dv[it.ch], hojeP) : null;
-    // mês (o mesmo do selo "Campeão #N") + total da planilha inteira
-    var meta = it.ch ? escapar(it.loja)+'<br>'+(M? (mc[it.ch]? '<b class="nw">'+reais(mc[it.ch].com)+' em '+nomeMes+'</b>' : '<span class="nw">sem venda em '+nomeMes+'</span>')+' · ' : '')+
-                       '<span class="nw">'+reais(it.com)+' no total</span> · <span class="nw">'+inteiro(it.itens)+' '+plural(it.itens,'vendido','vendidos')+'</span>'
-                     : (it.tipo==='amostra'?'Amostra · sem venda ainda':'Sem venda ainda')+(it.loja?' · '+escapar(it.loja):'');
-    var acoes=[];
-    if(it.ch) acoes.push('<a href="#" onclick="event.preventDefault();abrirFichaGeral(\''+it.ch+'\')">ficha</a>');
-    var idL=it.idProduto || (it.ch && S.idxProd.lista[it.ch] && S.idxProd.lista[it.ch].id);
-    if(idL) acoes.push('<a href="https://shop.tiktok.com/view/product/'+idL+'?region=BR" target="_blank" rel="noopener">ver no TikTok Shop</a>');
-    if(it.tipo==='amostra') acoes.push(it.st==='chegou'
-        ? '<button class="btn mini" onclick="atualizarDados(\'amostras\',\''+it.id+'\',{status:\'gravando\'})">Comecei a gravar</button>'
-        : '<button class="btn mini" onclick="atualizarDados(\'amostras\',\''+it.id+'\',{status:\'postado\',postadoEm:hojeISO()})">Postei hoje</button>');
-    h+='<div class="gv-card'+(it.urgente?' urg':'')+'">'+
-      (it.tipo==='marcado'?'<button class="gv-x" title="Tirar da lista" data-id="'+attr(it.id)+'" onclick="tirarGravar(this.getAttribute(\'data-id\'),true)">×</button>':'')+
-      (tags.length?'<div class="gv-tags">'+tags.join('')+'</div>':'')+
-      '<div class="gv-nome">'+escapar(it.nome)+'</div>'+
-      '<div class="gv-meta">'+meta+'</div>'+
-      '<div class="gv-linha">'+et+(fonte?'<span class="gv-fonte">'+fonte+'</span>':'')+'</div>'+
-      (est?'<div class="gv-est">⚠ '+(est.tipo==='sumiu'?'Está há '+est.dias+' dias sem vender (vendia quase todo dia): confira o estoque na loja antes de gravar.':'Voltou a vender em '+dm(est.volta)+' depois de '+est.dias+' dias parado: parece reposição.')+'</div>':'')+
-      (it.tipo==='amostra'?'<div class="gv-nota">Sai da lista sozinha quando for postada ou descartada.</div>':'')+
-      (acoes.length?'<div class="gv-acoes">'+acoes.join('')+'</div>':'')+
-    '</div>';
-  });
-  h+='</div>';
-  box.innerHTML=h;
-  if(_gravBusca) sugerirGravar();
-}
-function sugerirGravar(){
-  var box=document.getElementById('gvSug'); if(!box) return;
-  var r=buscarProdutos(_gravBusca, 6);
-  if(!r.length){ box.innerHTML= _gravBusca.trim().length>=2 ? '<div class="gv-sug-vazio">Nenhum produto vendido com esse nome. Se ele nunca vendeu, use "+ Adicionar por link".</div>' : ''; return; }
-  box.innerHTML=r.map(function(p){
-    var na=naListaGravar(p.chave);
-    return '<div class="gv-sug-it'+(na?' na':'')+'" onclick="'+(na?'':'escolherGravar(\''+p.chave+'\')')+'"><b>'+escapar(nomeCurto(p.nome))+'</b><span>'+escapar(p.loja)+' · '+reais(p.com)+(na?' · já está na lista':'')+'</span></div>';
-  }).join('');
-}
-function escolherGravar(ch){ _gravBusca=''; var p=S.idxProd.lista[ch]; marcarGravar(ch,'busca').then(function(ok){ if(ok && p) aviso('✓ '+nomeCurto(p.nome)+' entrou na lista Para gravar'); }); }
-function marcarCampeoesGravar(confirma){
-  var chs=(S.produtos||[]).filter(function(p){ return p.campeao; }).map(function(p){ return p.chave; });
-  var q=chs.filter(function(ch){ return !naListaGravar(ch); }).length;
-  return marcarVariosGravar(chs,'campeao').then(function(ok){
-    if(ok && q && confirma) aviso('✓ '+q+' '+plural(q,'campeão colocado','campeões colocados')+' na lista Para gravar');
-    return ok;
-  });
-}
-function adicionarGravarLink(pref){
-  pref=pref||'gv'; var G=function(k){ return document.getElementById(pref+k); }, lista= pref==='oq' ? 'O que gravar' : 'Para gravar';
+function adicionarGravarLink(pref){   // usado pelo "+ adicionar" do O que gravar (campos oqLink, oqNome, oqLoja, oqLinkMsg)
+  pref=pref||'oq'; var G=function(k){ return document.getElementById(pref+k); };
   var link=(G('Link').value||'').trim(), nome=(G('Nome').value||'').trim(), loja=(G('Loja').value||'').trim();
   var msg=G('LinkMsg'), id=idDoLink(link);
   if(!link){ msg.innerHTML='<b style="color:var(--vermelho)">Cole o link do produto primeiro.</b>'; G('Link').focus(); return; }
@@ -3868,13 +3700,13 @@ function adicionarGravarLink(pref){
   var ch=S.idxProd.porId[id];
   if(ch){
     if(naListaGravar(ch)){ msg.innerHTML='Esse produto já está na lista.'; return; }
-    _gravLink=false; return marcarGravar(ch,'link').then(function(ok){ if(ok) aviso('✓ '+nomeCurto(S.idxProd.lista[ch].nome)+' entrou na lista (ele já vende na sua conta)'); return ok; });
+    return marcarGravar(ch,'link').then(function(ok){ if(ok) aviso('✓ '+nomeCurto(S.idxProd.lista[ch].nome)+' entrou na lista (ele já vende na sua conta)'); return ok; });
   }
   var ja=S.gravar['id:'+id];
   if(ja){ msg.innerHTML='Esse produto já está na lista.'; return; }
   if(nome.length<2){ msg.innerHTML='<b style="color:var(--vermelho)">Esse produto ainda não vendeu na sua conta</b>, então escreva o nome dele (o TikTok não deixa o sistema puxar pelo link).'; G('Nome').focus(); return; }
   var d={idProduto:id, nome:nome, loja:loja, link:link, origem:'link', marcadoEm:hojeISO()};
-  _gravLink=false; return salvarGravar([{id:idGravar(d), dados:d, excluido:false}]).then(function(ok){ if(ok) aviso('✓ '+nomeCurto(nome)+' entrou na lista '+lista); return ok; });
+  return salvarGravar([{id:idGravar(d), dados:d, excluido:false}]).then(function(ok){ if(ok) aviso('✓ '+nomeCurto(nome)+' entrou na lista O que gravar'); return ok; });
 }
 
 /* ----- alerta de amostras (faixa no topo, em qualquer tela) ----- */
@@ -4461,7 +4293,7 @@ function conferirViradaDoDia(){
   if(h===_diaDaTela) return;
   var ontem=_diaDaTela; _diaDaTela=h;
   if(typeof _planDia!=='undefined' && ontem && (_planDia===ontem || _planDia===null)){ _planDia=h; _planSemana=segundaDe(h); }   // estava vendo "hoje": acompanha o dia novo
-  try{ renderPerInfo(); renderAlertaAmostras(); renderParaGravar();
+  try{ renderPerInfo(); renderAlertaAmostras();
        if(typeof renderAmostras==='function') renderAmostras();
        if(typeof renderPlanejar==='function' && document.getElementById('mod-planejar').classList.contains('on')) renderPlanejar(); }catch(e){}
 }
@@ -5344,7 +5176,7 @@ async function salvarOcultas(ch, on){
   try{ await DB.salvar('metas',[{id:'_ocultas', dados:reg}]); }catch(e){ erroTela(MSG_SEM_NUVEM); return false; }
   S.metas._ocultas=reg; renderPlanejar(); return true;
 }
-function listaOQueGravar(){   // UMA lista: o que a Mari marcou (Para gravar) + o que o sistema sugere pra semana
+function listaOQueGravar(){   // UMA lista: o que a Mari marcou (+ pra gravar) + o que o sistema sugere pra semana
   var seg=semanaAtual(), base=listaParaGravar(), sug=sugestoesSemana(seg), idxC=indiceConteudos(), porCh={}, porAmo={}, out=[];
   S._sugPlano=sug;
   base.forEach(function(it){ out.push(it); if(it.ch) porCh[it.ch]=it; if(it.tipo==='amostra') porAmo[it.id]=it; });
@@ -5374,7 +5206,7 @@ function listaOQueGravar(){   // UMA lista: o que a Mari marcou (Para gravar) + 
 }
 function renderAPlanejar(){
   var rot=roteirosDisponiveis(), prods=listaOQueGravar(), hoje=hojeISO(), h='<div class="apl">';
-  var dvE=diasComVendaPorChave(), hojeE=S.dataMax? soDia(S.dataMax) : null;   // aviso de estoque (mesma regra do cartão Para gravar)
+  var dvE=diasComVendaPorChave(), hojeE=S.dataMax? soDia(S.dataMax) : null;   // aviso de estoque (mesma regra do A1)
   S._apProd=prods;
   if(rot.length){
     h+='<div class="apl-bloco apl-esp"><div class="apl-tit">Esperando data <span class="cont">'+rot.length+'</span></div>';
@@ -5413,7 +5245,7 @@ function renderAPlanejar(){
   if(prods.length>10) h+='<button class="apl-mais" onclick="_apVer.prod=!_apVer.prod;renderPlanejar()">'+(_apVer.prod?'mostrar menos':'ver todos os '+prods.length)+'</button>';
   return h+'</div></div>';
 }
-/* ---------- (conv. 15) ⋯ de cada linha do O que gravar: o que antes só existia no cartão da aba Para gravar ---------- */
+/* ---------- (conv. 15) ⋯ de cada linha do O que gravar: o que antes só existia no cartão da antiga aba Para gravar (saiu na conv. 16) ---------- */
 function abrirMaisOQG(i){
   var it=(S._apProd||[])[i]; if(!it) return; _oq={it:it};
   var q=it.ch && S.idxProd.lista[it.ch], M=S.dataMax? mesDaPlanilha() : null, mc=null;
@@ -5454,7 +5286,7 @@ async function tirarOQG(){
     var esc=!!((it.sug || it.molde) && it.ch);   // tirou da lista: a sugestão do mesmo produto também some até domingo (senão ele voltaria na hora)
     if(esc && !(await salvarOcultas(it.ch, true))) return;
     fecharForm(); _oq=null;
-    var ok=await tirarGravar(it.id, false);
+    var ok=await tirarGravar(it.id);
     if(!ok){ if(esc) salvarOcultas(it.ch, false); return; }
     var reg=it.reg;
     renderPlanejar();
@@ -5541,7 +5373,7 @@ function itemPlano(x){
     (prox?'<button class="pi-btn" onclick="event.stopPropagation();avancarPlano(\''+x.id+'\',\''+prox.s+'\')">'+prox.t+'</button>':'')+
   '</div>';
 }
-/* status: Gravado/Postado valem pra hoje se a data era futura ou vazia (é o que alimenta o "há N dias" do Para gravar) */
+/* status: Gravado/Postado valem pra hoje se a data era futura ou vazia (é o que alimenta o "há N dias" do O que gravar) */
 var _ultToque={};
 async function mudarStatusPlano(id, st){
   var x=S.plano[id]; if(!x || x.dados.status===st) return;
@@ -5596,7 +5428,7 @@ async function salvarJunto(planos, amostras){
     limparErroTela();
   }
   _salvando=false;
-  if(ok){ renderPlanejar(); renderParaGravar(); if(amostras.length){ renderAmostras(); renderAlertaAmostras(); } }
+  if(ok){ renderPlanejar(); if(amostras.length){ renderAmostras(); renderAlertaAmostras(); } }
   return ok;
 }
 function erroTela(txt){
@@ -5736,7 +5568,7 @@ async function confirmarAgendar(semData){
   var doVid=_ag.origem==='videos', nm=String(_ag.prod.nome||''), nome= nm.length>30 ? nm.slice(0,30).trim()+'…' : nm;
   fecharForm(); _ag=null; _mv=null;
   if(nd && !doVid){ _planSemana=segundaDe(nd); _planDia=nd; _planVista='dia'; }
-  renderPlanejar(); renderParaGravar();
+  renderPlanejar();
   var txt='✓ '+q+' '+plural(q,'roteiro agendado','roteiros agendados')+(nd? ' pra '+(nd===hojeISO()?'hoje':dmIso(nd)) : ' em "Esperando data"')+
           (usar ? ' · réplica do vídeo '+vdCurto(vid) : ' · '+nome);
   if(!doVid){ aviso(txt); return; }   // já está no Planejar: a tela foi pro dia agendado
@@ -5828,7 +5660,7 @@ function mpMudou(){
     if(f.origem==='campeao') tg= f.momento==='perfeito' ? '<span class="mp-tg perfeito">Campeão #'+f.rank+' · momento perfeito</span>' : (f.momento==='baixa' ? '<span class="mp-tg baixa">Campeão #'+f.rank+' · em baixa</span>' : '<span class="mp-tg">Campeão #'+f.rank+(f.momento==='espera'?' · pouco dado no mês':'')+'</span>');
     else if(f.origem==='amostra') tg='<span class="mp-tg amo">Amostra'+(f.nPrazo==null?'':(f.nPrazo<0?' · venceu':(f.nPrazo===0?' · vence hoje':(f.nPrazo===1?' · vence amanhã':' · vence '+dmIso(f.prazo)))))+'</span>';
     else if(f.origem==='aposta') tg='<span class="mp-tg apo">Aposta</span>';
-    else tg='<span class="mp-tg">Para gravar</span>';
+    else tg='<span class="mp-tg">Marcado</span>';
     if(f.estoque) tg+='<span class="mp-tg est">⚠ confira o estoque</span>';
     var sub= f.ja ? (f.criar ? 'já tem '+f.ja+' no dia · agenda mais '+f.criar : 'já está agendado no dia') : '';
     h+='<div class="mp-it"><div class="mp-n"><b>'+escapar(nomeCurto(f.prod.nome))+'</b><span>'+tg+'</span></div><div class="mp-q">'+f.alvo+'<small>'+plural(f.alvo,'roteiro','roteiros')+(sub?'<br>'+sub:'')+'</small></div></div>';
