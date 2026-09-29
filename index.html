@@ -3785,7 +3785,7 @@ function mudarPrazoPadrao(){ abrirCfgAmo('prazo'); }
 function gravarAlertaDias(n){
   var antes=S.metas._config;
   S.metas._config=Object.assign({}, S.metas._config||{}, {alertaDias:n});
-  renderAmostras();
+  renderAmostras(); renderAlertaAmostras();   // (conv. 16) a faixa de amostras do topo usa o aviso de dias: acompanha na hora
   DB.salvar('metas',[{id:'_config', dados:S.metas._config}]).then(limparErroTela, function(){ S.metas._config=antes; renderAmostras(); renderAlertaAmostras(); erroTela('✕ Sem conexão com a nuvem: o aviso de dias das amostras não foi salvo. Nada mudou. Confira a internet e tente de novo.'); });
 }
 
