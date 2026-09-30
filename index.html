@@ -306,6 +306,8 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .vs-cedo{color:#b45309;font-weight:700}
 .vs-porview small{color:var(--tinta2)}
 .vs-dica{color:var(--tinta2);font-size:12px;align-self:center}
+.vs-conferi{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin:14px 0 4px;cursor:pointer}
+.vs-conferi input{width:18px;height:18px}
 .vd-link{margin:0 0 12px}
 .vd-link label{display:block;font-size:13px;font-weight:700;color:var(--tinta2);margin-bottom:6px}
 .vd-link-l{display:flex;gap:8px;max-width:640px}
@@ -2873,7 +2875,7 @@ var VS_ONDE={views:'em Métricas principais',tmedio:'em Métricas principais',co
 VS_FKEYS.forEach(function(k){ VS_ONDE[k]='em Fontes de tráfego'; });
 var VS_ROT={views:'Visualizações',tmedio:'Tempo médio',completo:'Assistiu completo',seg:'Novos seguidores',pct:'% médio assistido',parou:'Maioria parou em',dur:'Duração',pv:'Para você',pesq:'Pesquisar',perfil:'Perfil pessoal',outro:'Outro',fseg:'Seguindo',som:'Som'};
 var VS_EX={views:'ex: 220,7 mil',tmedio:'ex: 9.8',completo:'ex: 1.93',seg:'ex: 22',pct:'ex: 25',parou:'ex: 0:01',dur:'ex: 0:38',pv:'%',pesq:'%',perfil:'%',outro:'%',fseg:'%',som:'%'};
-var _vs={id:null, marcas:{}, msg:'', cls:'', lendo:false, edit:false, editSalvo:false, pre:null, salvando:false, conf:false};
+var _vs={id:null, marcas:{}, msg:'', cls:'', lendo:false, edit:false, editSalvo:false, pre:null, salvando:false, conf:false, ccf:true, conferi:false};   // ccf = o Assistiu completo foi digitado por ela (decisão 84)
 
 /* data e hora da postagem = os 32 bits de cima do número do vídeo (segundos desde 1970). Conferido nos 232 vídeos da
    planilha até 28/09: nenhum dá postagem depois da 1ª venda; os do Smartwatch com Chamadas de 27/08 batem com a Mari. */
@@ -3029,7 +3031,7 @@ function vsJuntar(leituras, postadoIso, hoje){
   }
   if(!('tmedio' in r.val) && 'pct' in r.val && 'dur' in r.val && r.marcas.tmedio.msg.indexOf('Não bate com a retenção')<0)
     r.marcas.tmedio.msg+=' Deve ser perto de '+vsVirg(r.val.pct/100*r.val.dur)+' s.';
-  for(var q=0;q<leituras.length;q++) if(leituras[q].temTer){ r.termos=leituras[q].termos; break; }
+  for(var q=0;q<leituras.length;q++) if(leituras[q].temTer && (r.termos==null || leituras[q].termos.length>r.termos.length)) r.termos=leituras[q].termos;   // o print com MAIS termos (o título pode aparecer no pé de outro print)
   r.marcas.termos = r.termos==null ? {cls:'lp-falta', msg:'Não está nos prints que você mandou. Fica embaixo das Fontes de tráfego.'} : {cls:'lp-lido', msg:'lido do print — confira as palavras (o leitor pode trocar letras)'};
   var A=leituras.filter(function(L){ return L.atual; }).map(function(L){ return L.atual; });
   if(!A.length) r.marcas.atual={cls:'lp-falta', msg:'Não está nos prints que você mandou. Fica no topo das Métricas principais ("Atualizado em").'};
@@ -3076,7 +3078,7 @@ async function vsArquivos(lista){
 }
 function vsPreencher(r){
   if(r.erro){ vsMsg('✕ '+escapar(r.erro), 'erro'); return r; }
-  _vs.marcas=r.marcas; _vs.edit=true; _vs.conf=false;
+  _vs.marcas=r.marcas; _vs.edit=true; _vs.conf=false; _vs.ccf=false; _vs.conferi=false;
   _vs.pre={txt:r.txt, atual:r.atual, termos:r.termos ? r.termos.map(function(t){ return t.t+(t.p?' — '+t.p:''); }).join('\n') : ''};
   lsGravar('ct_vs_rasc', null);
   var falta=Object.keys(r.marcas).filter(function(k){ return /lp-falta/.test(r.marcas[k].cls); }).length;
@@ -3094,7 +3096,7 @@ function vsRascDe(id){ var r=lsLer('ct_vs_rasc',null); return (r && r.id===id) ?
 function vsGuardarRasc(){
   var id=_videoAberto; if(!id || !document.getElementById('vs_views')) return;
   var t={}; VS_CAMPOS.forEach(function(k){ t[k]=(document.getElementById('vs_'+k)||{}).value||''; });
-  lsGravar('ct_vs_rasc', {id:id, txt:t, atual:(document.getElementById('vs_atual')||{}).value||'', termos:(document.getElementById('vs_termos')||{}).value||'', edit:!!vsDoVideo(id)});
+  lsGravar('ct_vs_rasc', {id:id, txt:t, atual:(document.getElementById('vs_atual')||{}).value||'', termos:(document.getElementById('vs_termos')||{}).value||'', edit:!!vsDoVideo(id), ccf:!!_vs.ccf});
 }
 function vsNumDig(t){   // o que a Mari digita: "2,96" "2.96%" "9,8 s" → número; "" → null; lixo → NaN
   var s=String(t==null?'':t).trim().toLowerCase().replace(/%|s$/g,'').trim();
@@ -3110,7 +3112,7 @@ function vsViewsDig(t){
 }
 function vsTempoDig(t){ var s=String(t==null?'':t).trim(); if(!s) return null; var m=s.match(/^(\d{1,2}):(\d{2})$/); if(m) return (+m[1])*60+(+m[2]); if(/^\d+$/.test(s)) return +s; return NaN; }
 function vsLerForm(){
-  var d={video:_videoAberto, txt:{}, aprox:{}}, erros=[], hoje=hojeISO();
+  var d={video:_videoAberto, txt:{}, aprox:{}}, erros=[], faltam=[], hoje=hojeISO();
   d.atual=(document.getElementById('vs_atual')||{}).value||'';
   if(!d.atual) erros.push('Escolha o dia do print ("Atualizado em", no topo das Métricas principais).');
   else if(d.atual>hoje) erros.push('O dia do print ainda não chegou.');
@@ -3120,11 +3122,13 @@ function vsLerForm(){
     else if(k==='parou'||k==='dur') v=vsTempoDig(raw);
     else if(k==='seg') v= raw==='' ? null : (/^\d{1,3}(\.\d{3})+$|^\d+$/.test(raw) ? parseInt(raw.replace(/\./g,''),10) : NaN);
     else v=vsNumDig(raw);
-    if(v===null){ d[k]=null; if(k==='views') erros.push('Falta preencher: Visualizações.'); return; }
+    if(v===null){ d[k]=null; faltam.push(VS_ROT[k]); return; }
     if(isNaN(v)){ erros.push(VS_ROT[k]+': não entendi "'+raw+'". Digite como está no print ('+VS_EX[k].replace('ex: ','ex.: ')+').'); d[k]=null; return; }
     if(['completo','pct'].concat(VS_FKEYS).indexOf(k)>=0 && v>100){ erros.push(VS_ROT[k]+' passa de 100% ('+raw+'): confira.'); d[k]=null; return; }
     d[k]=v; d.txt[k]=raw;
   });
+  if(faltam.length) erros.unshift('Falta preencher: '+faltam.join(', ')+'.');   // (decisão 84) tudo preenchido; termos são opcionais
+  if(d.completo!=null && !_vs.ccf) erros.push('Digite o Assistiu completo como está no print (o leitor costuma trocar 3 e 5).');
   if(d.views===0) erros.push('Visualizações: 0 não dá pra analisar.');
   if(d.parou!=null && d.dur!=null && d.parou>d.dur) erros.push('"Maioria parou em" ('+vsMSS(d.parou)+') passa da duração do vídeo ('+vsMSS(d.dur)+'): confira.');
   if(VS_FKEYS.every(function(k){ return d[k]!=null; })){
@@ -3141,6 +3145,7 @@ function vsErro(msg){ var e=document.getElementById('vsErro'); if(!e) return; e.
 async function vsSalvar(substituir){
   if(_vs.salvando) return false;
   var r=vsLerForm(); vsErro('');
+  if(!(document.getElementById('vs_conferi')||{}).checked) r.erros.push('Marque "Conferi todos os números com o print".');
   if(r.erros.length){ vsErro(r.erros.map(escapar).join('<br>')); return false; }
   var d=r.d, id='vstudio_'+d.video, velho=S.metas && S.metas[id];
   if(velho && !substituir && !_vs.editSalvo){
@@ -3153,15 +3158,15 @@ async function vsSalvar(substituir){
   try{ await DB.salvar('metas',[{id:id, dados:d, excluido:false}]); }
   catch(e){ if(antes) S.metas[id]=antes; else delete S.metas[id]; vsErro('Sem conexão com a nuvem: não salvei. Os números continuam aqui — tente de novo quando tiver internet.'); return false; }
   finally{ _vs.salvando=false; }
-  lsGravar('ct_vs_rasc', null); _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.cls=''; _vs.edit=false; _vs.editSalvo=false; _vs.conf=false;
+  lsGravar('ct_vs_rasc', null); _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.cls=''; _vs.edit=false; _vs.editSalvo=false; _vs.conf=false; _vs.ccf=true; _vs.conferi=false;
   vsRedesenhar(); renderVideos();
   aviso('✓ Análise do vídeo '+vdCurto(d.video)+' salva · '+vsViewsTxt(d)+' visualizações');
   return true;
 }
 function vsNaoSubstituir(){ _vs.conf=false; var c=document.getElementById('vsConf'); if(c){ c.classList.remove('on'); c.innerHTML=''; } }
-function vsEditar(){ var id=_videoAberto; if(!vsDoVideo(id)) return; _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.edit=true; _vs.editSalvo=true; _vs.conf=false; lsGravar('ct_vs_rasc', null); vsRedesenhar();
+function vsEditar(){ var id=_videoAberto; if(!vsDoVideo(id)) return; _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.edit=true; _vs.editSalvo=true; _vs.conf=false; _vs.ccf=true; _vs.conferi=false; lsGravar('ct_vs_rasc', null); vsRedesenhar();
   var f=document.getElementById('vsCaixa'); if(f && f.scrollIntoView) f.scrollIntoView({block:'start'}); }
-function vsCancelar(){ _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.cls=''; _vs.edit=false; _vs.editSalvo=false; _vs.conf=false; lsGravar('ct_vs_rasc', null); vsRedesenhar(); }
+function vsCancelar(){ _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.cls=''; _vs.edit=false; _vs.editSalvo=false; _vs.conf=false; _vs.ccf=true; _vs.conferi=false; lsGravar('ct_vs_rasc', null); vsRedesenhar(); }
 async function vsExcluir(){
   var vid=_videoAberto, id='vstudio_'+vid, d=vsDoVideo(vid); if(!d) return;
   delete S.metas[id];
@@ -3179,7 +3184,7 @@ function vsViewsTxt(d){ if(d.txt && d.txt.views) return d.txt.views; return inte
 function vsPctTxt(v,c){ return v==null ? '—' : v.toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c})+'%'; }
 function vsCardHTML(id, w){
   var d=vsDoVideo(id), ra=vsRascDe(id), pd=vdPostado(id);
-  if(_vs.id!==id){ _vs.id=id; _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.cls=''; _vs.conf=false; _vs.edit=!!ra; _vs.editSalvo=!!(ra && ra.edit && d); }
+  if(_vs.id!==id){ _vs.id=id; _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.cls=''; _vs.conf=false; _vs.edit=!!ra; _vs.editSalvo=!!(ra && ra.edit && d); _vs.ccf= ra ? ra.ccf===true : true; _vs.conferi=false; }
   var h='<div class="nv-card vs-card" id="vsCard"><h4 class="lv-h4">Análise do TikTok Studio <small>visualizações, retenção e de onde veio o público</small></h4>';
   if(d && !_vs.edit){
     var dias=pd? diasEntre(isoD(pd), d.atual) : null, ap=d.aprox&&d.aprox.views?'~':'';
@@ -3207,13 +3212,14 @@ function vsCardHTML(id, w){
   var v={}; if(ra){ v=ra.txt||{}; } else if(_vs.pre){ v=_vs.pre.txt; } else if(d){ VS_CAMPOS.forEach(function(k){ if(d.txt&&d.txt[k]!=null) v[k]=d.txt[k]; }); }
   var atual=ra ? ra.atual : _vs.pre ? _vs.pre.atual : d ? d.atual : '';
   var termos=ra ? ra.termos : _vs.pre ? _vs.pre.termos : d ? (d.termos||[]).map(function(t){ return t.t+(t.p!=null?' — '+String(t.p).replace('.',',')+'%':''); }).join('\n') : '';
-  function campo(k){ return '<label>'+VS_ROT[k]+(k==='views'?' *':'')+'<input id="vs_'+k+'" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="'+VS_EX[k]+'" value="'+attr(v[k]||'')+'" oninput="vsGuardarRasc()"></label>'; }
+  function campo(k){ return '<label>'+VS_ROT[k]+' *<input id="vs_'+k+'" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="'+VS_EX[k]+'" value="'+attr(v[k]||'')+'" oninput="'+(k==='completo'?'_vs.ccf=true;':'')+'vsGuardarRasc()"></label>'; }
   h+='<div class="vs-form" id="vsForm">'+(d&&_vs.editSalvo?'<p style="margin-top:0"><b>Editando a análise salva.</b></p>':'')+
     '<div class="vs-datas"><label>Dia do print <small>("Atualizado em")</small> *<input type="date" id="vs_atual" max="'+hojeISO()+'" value="'+attr(atual||'')+'" onchange="vsGuardarRasc()"></label></div>'+
     '<div class="vs-sub">Métricas principais</div><div class="vs-campos">'+['views','tmedio','completo','seg'].map(campo).join('')+'</div>'+
     '<div class="vs-sub">Taxa de retenção</div><div class="vs-campos">'+['pct','parou','dur'].map(campo).join('')+'</div>'+
     '<div class="vs-sub">Fontes de tráfego <small>(%)</small></div><div class="vs-campos vs-fontes">'+VS_FKEYS.map(campo).join('')+'</div>'+
     '<div class="vs-sub">Termos pesquisados <small>(um por linha)</small></div><label class="vs-termos-l"><textarea id="vs_termos" rows="5" placeholder="ex: relogio bettdow — 2.6%" oninput="vsGuardarRasc()">'+escapar(termos||'')+'</textarea></label>'+
+    '<label class="vs-conferi"><input type="checkbox" id="vs_conferi"'+(_vs.conferi?' checked':'')+' onchange="_vs.conferi=this.checked"> Conferi todos os números com o print</label>'+
     '<div class="f-erro" id="vsErro"></div><div class="fn-conf" id="vsConf"></div>'+
     '<div class="nv-botoes"><button class="btn" onclick="vsSalvar()">Salvar</button>'+((d&&_vs.edit)||_vs.pre||ra?'<button class="btn ghost mini" onclick="vsCancelar()">'+(d?'Cancelar edição':'Limpar')+'</button>':'')+'</div></div></div>';
   return h;
