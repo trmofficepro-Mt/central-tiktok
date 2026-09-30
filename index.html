@@ -306,6 +306,13 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .vs-cedo{color:#b45309;font-weight:700}
 .vs-porview small{color:var(--tinta2)}
 .vs-dica{color:var(--tinta2);font-size:12px;align-self:center}
+.vd-link{margin:0 0 12px}
+.vd-link label{display:block;font-size:13px;font-weight:700;color:var(--tinta2);margin-bottom:6px}
+.vd-link-l{display:flex;gap:8px;max-width:640px}
+.vd-link-l input{flex:1;min-width:0}
+.vs-semvenda{background:#f8fafc;font-size:14px;line-height:1.5}
+.vs-tab td small{display:block;color:var(--tinta2)}
+.vs-tab td.vs-nm small{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:900px){ .vs-form .vs-campos{grid-template-columns:repeat(2,minmax(0,1fr))} }
 /* ===== funil do dia (F1 — conv. 13) ===== */
 .fn-form .fn-campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
@@ -2744,7 +2751,7 @@ function renderVideos(){
   if(!S.todas || !S.todas.length || !S.dataMax){ box.innerHTML='<div class="apostas-vazio">Importe a planilha pra ver a análise dos vídeos.</div>'; return; }
   var r=vdAnalise(_vdN), N=_vdN;
   var h='<div class="vd-top"><div class="janelas" id="vdJanela" style="margin:0">'+[7,15,30].map(function(n){ return '<button type="button" data-n="'+n+'" class="'+(n===N?'on':'')+'" onclick="setVdN('+n+')">'+n+' dias</button>'; }).join('')+'</div>'+
-    '<p class="desc vd-per"><b>'+dm(r.ini)+' a '+dm(r.hoje)+'</b> (até o último dia da planilha) · comparado com <b>'+dm(r.aIni)+' a '+dm(r.aFim)+'</b>. Esta tela usa sempre os últimos dias da planilha, não o período lá de cima.</p></div>';
+    '<p class="desc vd-per"><b>'+dm(r.ini)+' a '+dm(r.hoje)+'</b> (até o último dia da planilha) · comparado com <b>'+dm(r.aIni)+' a '+dm(r.aFim)+'</b>. Esta tela usa sempre os últimos dias da planilha (escolha 7, 15 ou 30 dias aqui).</p></div>';
   // ---- 1. diagnóstico
   h+='<h4 class="vd-h4">1. Diagnóstico</h4><div class="cards vd-cards">'+
     '<div class="card"><div class="rot">GMV</div><div class="val">'+reais(r.gmv)+'</div><div class="sub">antes: '+reais(r.gmvA)+'</div>'+vdDelta(r.gmv,r.gmvA)+'</div>'+
@@ -2807,10 +2814,12 @@ function renderVideos(){
     });
     h+='</tbody></table></div>'+(!_vdTodosV && vs.length>15?'<button class="btn ghost mini vd-mais" onclick="vdVerTodos(\'v\')">Ver todos os '+vs.length+' vídeos</button>':'');
   }
+  h+=vdAnalisadosHTML();   // (conv. 18) 5. Vídeos analisados + abrir vídeo pelo link
   box.innerHTML=h;
 }
 function abrirVideo(id){
-  var w=vdVida()[id]; if(!w) return;
+  var w=vdVida()[id];
+  if(!w){ if(vdPostado(id) && S.dataMax) abrirVideoSemVenda(id); return; }   // (conv. 18) vídeo que não vendeu: aberto pelo link
   _videoAberto=id;
   var hoje=soDia(S.dataMax), g48=0, g7=0, dts=Object.keys(w.dias).map(Number).sort(function(a,b){ return a-b; });
   var p48=maisDias(w.pri,1).getTime(), p7=maisDias(w.pri,6).getTime();
@@ -3145,7 +3154,7 @@ async function vsSalvar(substituir){
   catch(e){ if(antes) S.metas[id]=antes; else delete S.metas[id]; vsErro('Sem conexão com a nuvem: não salvei. Os números continuam aqui — tente de novo quando tiver internet.'); return false; }
   finally{ _vs.salvando=false; }
   lsGravar('ct_vs_rasc', null); _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.cls=''; _vs.edit=false; _vs.editSalvo=false; _vs.conf=false;
-  vsRedesenhar();
+  vsRedesenhar(); renderVideos();
   aviso('✓ Análise do vídeo '+vdCurto(d.video)+' salva · '+vsViewsTxt(d)+' visualizações');
   return true;
 }
@@ -3158,11 +3167,11 @@ async function vsExcluir(){
   delete S.metas[id];
   try{ await DB.salvar('metas',[{id:id, dados:d, excluido:true}]); }
   catch(e){ S.metas[id]=d; vsRedesenhar(); vsErro('Sem conexão com a nuvem: não excluí.'); return; }
-  vsRedesenhar();
+  vsRedesenhar(); renderVideos();
   aviso('Excluí a análise do vídeo '+vdCurto(vid)+'.', 'Desfazer', async function(){
     S.metas[id]=d;
     try{ await DB.salvar('metas',[{id:id, dados:d, excluido:false}]); } catch(e){ delete S.metas[id]; aviso('Sem conexão com a nuvem: não consegui desfazer.'); }
-    if(_videoAberto===vid) vsRedesenhar();
+    if(_videoAberto===vid) vsRedesenhar(); renderVideos();
   });
 }
 function vsRedesenhar(){ if(!_videoAberto) return; var f=document.getElementById('formFundo'), st=f?f.scrollTop:0; abrirVideo(_videoAberto); if(f) f.scrollTop=st; }
@@ -3184,7 +3193,8 @@ function vsCardHTML(id, w){
     var fs=VS_FKEYS.filter(function(k){ return d[k]!=null; }).sort(function(a,b){ return d[b]-d[a]; });
     h+='<div class="vs-linha"><b>De onde veio:</b> '+(fs.length? fs.map(function(k){ return VS_ROT[k]+' '+vsPctTxt(d[k],1); }).join(' · ') : '—')+'</div>';
     h+='<div class="vs-linha"><b>Termos pesquisados:</b> '+((d.termos||[]).length? d.termos.map(function(t){ return '<span class="vs-termo">'+escapar(t.t)+(t.p!=null?' <small>'+vsPctTxt(t.p,1)+'</small>':'')+'</span>'; }).join(' ') : '—')+'</div>';
-    if(d.views>0) h+='<div class="vs-linha vs-porview"><b>A cada 1.000 visualizações:</b> '+ap+vsVirg2(w.itens/d.views*1000)+' '+(w.itens/d.views*1000>=2?'itens vendidos':'item vendido')+' · '+ap+reais(w.gmv/d.views*1000)+' de GMV <small>(vendas da planilha até '+dm(soDia(S.dataMax))+' · visualizações até '+lpDataBR(d.atual)+')</small></div>';
+    if(d.views>0 && !(w.itens>0)) h+='<div class="vs-linha vs-porview"><b>A cada 1.000 visualizações:</b> nenhuma venda <small>(vendas da planilha até '+dm(soDia(S.dataMax))+')</small></div>';
+    else if(d.views>0) h+='<div class="vs-linha vs-porview"><b>A cada 1.000 visualizações:</b> '+ap+vsVirg2(w.itens/d.views*1000)+' '+(w.itens/d.views*1000>=2?'itens vendidos':'item vendido')+' · '+ap+reais(w.gmv/d.views*1000)+' de GMV <small>(vendas da planilha até '+dm(soDia(S.dataMax))+' · visualizações até '+lpDataBR(d.atual)+')</small></div>';
     h+='<div class="nv-botoes"><button class="btn ghost mini" onclick="vsEditar()">Editar</button><button class="fn-lnk del" onclick="vsExcluir()">Excluir</button><small class="vs-dica">Pra trocar pelos prints de outro dia, toque em Editar.</small></div>';
     h+='<div class="f-erro" id="vsErro"></div></div>';
     return h;
@@ -3207,6 +3217,51 @@ function vsCardHTML(id, w){
     '<div class="f-erro" id="vsErro"></div><div class="fn-conf" id="vsConf"></div>'+
     '<div class="nv-botoes"><button class="btn" onclick="vsSalvar()">Salvar</button>'+((d&&_vs.edit)||_vs.pre||ra?'<button class="btn ghost mini" onclick="vsCancelar()">'+(d?'Cancelar edição':'Limpar')+'</button>':'')+'</div></div></div>';
   return h;
+}
+/* ---- (conv. 18, V3 etapa A) vídeo que NÃO vendeu: aberto pelo link; lista "5. Vídeos analisados" ---- */
+function abrirVideoSemVenda(id){
+  var pd=vdPostado(id), fim=soDia(S.dataMax); if(!pd) return;
+  _videoAberto=id;
+  var voltar='<button class="voltar" onclick="fecharVideo()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Voltar</button>';
+  var depois=isoD(pd)>isoD(fim);
+  var h='<div class="ficha-cab"><div class="barra">'+voltar+'</div><h2>Vídeo '+vdCurto(id)+' · sem venda</h2>'+
+    '<div class="loja">Postado em '+dm(pd)+' às '+vdHora(pd)+' · <a href="'+vdLink(id)+'" target="_blank" rel="noopener">abrir no TikTok ↗</a> · nº '+id+'</div></div><div class="ficha-corpo">';
+  h+='<div class="nv-card vs-semvenda">'+(depois ? 'Postado <b>depois do último dia da planilha</b> ('+dm(fim)+'): ainda não dá pra saber se vendeu. Importe a planilha nova.'
+       : '<b>Não vendeu nada até '+dm(fim)+'</b> (último dia da planilha). A planilha só traz vídeo que vendeu; a análise do TikTok Studio ajuda a ver por quê.')+'</div>';
+  h+=vsCardHTML(id, {itens:0, gmv:0})+'</div>';
+  document.getElementById('formConteudo').innerHTML=h;
+  vsAplicarMarcas();
+  var f=document.getElementById('formFundo'); f.classList.add('on'); f.scrollTop=0; document.body.classList.add('travado');
+}
+function vdAbrirLink(){
+  var inp=document.getElementById('vdLinkIn'), e=document.getElementById('vdLinkErro'), r=lerLinkVideo(inp?inp.value:'');
+  function erro(m){ if(e){ e.textContent=m; e.classList.add('on'); } }
+  if(e){ e.textContent=''; e.classList.remove('on'); }
+  if(r.curto) return erro('Esse é o link curto do celular (vt.tiktok.com): ele não traz o número do vídeo. Abra esse link no navegador do computador e copie o endereço que aparece na barra — ele tem /video/ e um número comprido.');
+  if(r.erro) return erro(r.erro);
+  if(!vdPostado(r.id)) return erro('Esse número não é de um vídeo do TikTok. Confira se copiou o link inteiro.');
+  if(inp) inp.value='';
+  abrirVideo(r.id);
+}
+function vdAnalisadosHTML(){
+  var vida=vdVida(), ids=Object.keys(S.metas||{}).filter(function(k){ return k.indexOf('vstudio_')===0 && S.metas[k]; }).map(function(k){ return k.slice(8); });
+  ids.sort(function(a,b){ var pa=vdPostado(a), pb=vdPostado(b); return (pb?pb.getTime():0)-(pa?pa.getTime():0) || (a<b?-1:1); });
+  var h='<h4 class="vd-h4">5. Vídeos analisados <small>TikTok Studio · toque abre o vídeo</small></h4>';
+  h+='<div class="vd-link"><label for="vdLinkIn">Analisar um vídeo que não está na lista <small>(que não vendeu, por exemplo)</small></label>'+
+     '<div class="vd-link-l"><input id="vdLinkIn" type="text" autocomplete="off" spellcheck="false" placeholder="cole aqui o link do vídeo (o do computador, com /video/)" onkeydown="if(event.key===\'Enter\')vdAbrirLink()"><button class="btn mini" onclick="vdAbrirLink()">Abrir</button></div>'+
+     '<div class="f-erro" id="vdLinkErro"></div></div>';
+  if(!ids.length) return h+'<div class="apostas-vazio">Nenhum vídeo analisado ainda. Abra um vídeo da lista acima (ou cole o link de um que não vendeu) e leia os prints do TikTok Studio.</div>';
+  h+='<div class="vd-tab-w"><table class="vd-tab vs-tab"><thead><tr><th>Vídeo</th><th>Postado</th><th>Views</th><th>Tempo médio</th><th>Completo</th><th>Viram em média</th><th>Para você</th><th>A cada mil views</th></tr></thead><tbody>';
+  ids.forEach(function(id){
+    var d=S.metas['vstudio_'+id], w=vida[id], pd=vdPostado(id), ap=d.aprox&&d.aprox.views?'~':'';
+    var mil = !(d.views>0) ? '—' : (w && w.itens>0 ? ap+vsVirg2(w.itens/d.views*1000)+' '+(w.itens/d.views*1000>=2?'itens':'item')+'<small>'+ap+reais(w.gmv/d.views*1000)+'</small>' : 'nenhuma venda');
+    h+='<tr class="vd-lin" data-vs="'+id+'" tabindex="0" onclick="abrirVideo(\''+id+'\')" onkeydown="if(event.key===\'Enter\')this.click()">'+
+      '<td class="vd-id vs-nm">'+vdCurto(id)+'<small title="'+(w?attr(nomeProdLive(w.prod)):'')+'">'+(w? escapar(nomeCurto(nomeProdLive(w.prod))) : 'sem venda')+'</small></td>'+
+      '<td>'+(pd?dm(pd):'—')+'<small>print de '+lpDataBR(d.atual)+'</small></td>'+
+      '<td><b>'+escapar(vsViewsTxt(d))+'</b></td><td>'+(d.tmedio!=null?vsVirg(d.tmedio)+' s':'—')+'</td><td>'+vsPctTxt(d.completo,2)+'</td>'+
+      '<td>'+(d.pct!=null?d.pct+'%':'—')+'</td><td>'+vsPctTxt(d.pv,1)+'</td><td>'+mil+'</td></tr>';
+  });
+  return h+'</tbody></table></div>';
 }
 function vsVirg2(n){ return (Math.round(n*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function vsAplicarMarcas(){
@@ -4977,7 +5032,7 @@ var _impAberto=false;
 function alternarDetImport(){ _impAberto=!_impAberto; renderImportBox(); }
 /* (conv. 15) telas do Dia a dia não usam o período (conferido: Planejar, Amostras, Funil) → sem os botões de período;
    no Planejar a faixa de amostras vira linha curta no celular e some no computador (a lista O que gravar já mostra) */
-var TELAS_SEM_PERIODO=['mod-planejar','mod-amostras','mod-funil'];
+var TELAS_SEM_PERIODO=['mod-planejar','mod-amostras','mod-funil','mod-videos'];   // (conv. 18, pendência 28) Vídeos tem a chave própria 7·15·30
 function ajustarTopo(){
   var m=document.querySelector('.modulo.on'), id=m?m.id:'';
   document.body.classList.toggle('sem-periodo', TELAS_SEM_PERIODO.indexOf(id)>=0);
