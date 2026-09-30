@@ -1379,12 +1379,16 @@ function reais(n){
 function inteiro(n){ return Math.round(n).toLocaleString('pt-BR'); }
 
 /* ---------- data no topo ---------- */
-(function(){
+/* (conv. 19) antes era escrita uma vez só ao abrir: com a página aberta de um dia pro outro o topo mostrava o dia antigo.
+   Agora é redesenhada a cada minuto e ao voltar pro sistema (o relógio fica junto do conferirViradaDoDia). */
+function atualizarDataTopo(){
+  var el=document.getElementById('dataTopo'); if(!el) return;
   var d=new Date();
   var dias=['dom','seg','ter','qua','qui','sex','sáb'];
   var meses=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-  document.getElementById('dataTopo').innerHTML = dias[d.getDay()]+', '+d.getDate()+' '+meses[d.getMonth()]+'<br>'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-})();
+  el.innerHTML = dias[d.getDay()]+', '+d.getDate()+' '+meses[d.getMonth()]+'<br>'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+atualizarDataTopo();
 
 /* ---------- importação ---------- */
 var _importando=false;
@@ -3263,14 +3267,19 @@ function abrirVideoSemVenda(id){
   vsAplicarMarcas();
   var f=document.getElementById('formFundo'); f.classList.add('on'); f.scrollTop=0; document.body.classList.add('travado');
 }
+/* (conv. 19) rascunho do campo do link: a sincronização (voltar de outra aba/app) redesenha a tela Vídeos e o campo voltava vazio (erro 42) */
+var _vdLinkRasc={v:'', erro:''};
 function vdAbrirLink(){
   var inp=document.getElementById('vdLinkIn'), e=document.getElementById('vdLinkErro'), r=lerLinkVideo(inp?inp.value:'');
-  function erro(m){ if(e){ e.textContent=m; e.classList.add('on'); } }
+  if(inp) _vdLinkRasc.v=inp.value;
+  function erro(m){ _vdLinkRasc.erro=m; if(e){ e.textContent=m; e.classList.add('on'); } }
+  _vdLinkRasc.erro='';
   if(e){ e.textContent=''; e.classList.remove('on'); }
   if(r.curto) return erro('Esse é o link curto do celular (vt.tiktok.com): ele não traz o número do vídeo. Abra esse link no navegador do computador e copie o endereço que aparece na barra — ele tem /video/ e um número comprido.');
   if(r.erro) return erro(r.erro);
   if(!vdPostado(r.id)) return erro('Esse número não é de um vídeo do TikTok. Confira se copiou o link inteiro.');
   if(inp) inp.value='';
+  _vdLinkRasc={v:'', erro:''};
   abrirVideo(r.id);
 }
 function vdAnalisadosHTML(){
@@ -3278,8 +3287,8 @@ function vdAnalisadosHTML(){
   ids.sort(function(a,b){ var pa=vdPostado(a), pb=vdPostado(b); return (pb?pb.getTime():0)-(pa?pa.getTime():0) || (a<b?-1:1); });
   var h='<h4 class="vd-h4">5. Vídeos analisados <small>TikTok Studio · toque abre o vídeo</small></h4>';
   h+='<div class="vd-link"><label for="vdLinkIn">Analisar um vídeo que não está na lista <small>(que não vendeu, por exemplo)</small></label>'+
-     '<div class="vd-link-l"><input id="vdLinkIn" type="text" autocomplete="off" spellcheck="false" placeholder="cole aqui o link do vídeo (o do computador, com /video/)" onkeydown="if(event.key===\'Enter\')vdAbrirLink()"><button class="btn mini" onclick="vdAbrirLink()">Abrir</button></div>'+
-     '<div class="f-erro" id="vdLinkErro"></div></div>';
+     '<div class="vd-link-l"><input id="vdLinkIn" type="text" autocomplete="off" spellcheck="false" placeholder="cole aqui o link do vídeo (o do computador, com /video/)" value="'+attr(_vdLinkRasc.v)+'" oninput="_vdLinkRasc.v=this.value" onkeydown="if(event.key===\'Enter\')vdAbrirLink()"><button class="btn mini" onclick="vdAbrirLink()">Abrir</button></div>'+
+     '<div class="f-erro'+(_vdLinkRasc.erro?' on':'')+'" id="vdLinkErro">'+escapar(_vdLinkRasc.erro)+'</div></div>';
   if(!ids.length) return h+'<div class="apostas-vazio">Nenhum vídeo analisado ainda. Abra um vídeo da lista acima (ou cole o link de um que não vendeu) e leia os prints do TikTok Studio.</div>';
   var an=vsAnalisados(), g=vsGeral(an);
   if(g.frase) h+='<div class="vs-geral">'+escapar(g.frase)+'</div>';
@@ -4118,6 +4127,7 @@ function renderRitmo(){
 
 /* ---------- 3. PROJEÇÃO DE META (Painel) ---------- */
 var _metaMet='gmv';
+var _metaRasc={};   // (conv. 19) o que foi digitado na meta, por mês e métrica: a sincronização redesenha o Painel e o campo voltava vazio (erro 42)
 
 function renderMeta(){
   var box=document.getElementById('metaBox'); if(!box || !S.todas) return;
@@ -4130,7 +4140,7 @@ function renderMeta(){
   else if(M.fechado || M.anteriorCompleto){ sug.push({t:'+10% sobre '+(M.anteriorCompleto?M.aNome:M.nome), v:base*1.1}); }
   var h='<div class="meta-top">'+
       '<div class="janelas" style="margin:0"><button class="'+(_metaMet==='gmv'?'on':'')+'" onclick="setMetaMet(\'gmv\')">GMV</button><button class="'+(_metaMet==='com'?'on':'')+'" onclick="setMetaMet(\'com\')">Comissão</button></div>'+
-      '<div class="meta-campo">Meta de '+nomeMet+': <input id="metaInput" inputmode="decimal" placeholder="ex: 150.000" value="'+(meta?Math.round(meta).toLocaleString('pt-BR'):'')+'" onkeydown="if(event.key===\'Enter\')salvarMetaCampo()"><button class="btn mini" onclick="salvarMetaCampo()">Salvar</button>'+(meta?'<button class="btn ghost mini" onclick="apagarMeta()">Apagar</button>':'')+'<span class="campo-erro" id="metaErro" role="alert"></span></div>'+
+      '<div class="meta-campo">Meta de '+nomeMet+': <input id="metaInput" inputmode="decimal" placeholder="ex: 150.000" value="'+attr(idMeta() in _metaRasc ? _metaRasc[idMeta()] : (meta?Math.round(meta).toLocaleString('pt-BR'):''))+'" oninput="_metaRasc[idMeta()]=this.value" onkeydown="if(event.key===\'Enter\')salvarMetaCampo()"><button class="btn mini" onclick="salvarMetaCampo()">Salvar</button>'+(meta?'<button class="btn ghost mini" onclick="apagarMeta()">Apagar</button>':'')+'<span class="campo-erro" id="metaErro" role="alert"></span></div>'+
     '</div>'+
     '<div class="meta-sug">Sugestões: '+(sug.length?'':'<span style="color:var(--tinta3)">a projeção e as sugestões aparecem a partir do dia 3 do mês</span>')+sug.map(function(s){ return '<button onclick="usarSugestao('+Math.round(s.v)+')">'+s.t+' <b>'+fmtCurto(s.v)+'</b></button>'; }).join('')+'</div>'+
     '<div class="evo-info" id="metaLeitura" style="margin:10px 0 6px"></div>'+
@@ -5125,12 +5135,14 @@ function setMetaMet(m){ _metaMet=m; renderMeta(); }
 function idMeta(){ var M=mesRef(); return _metaMet+'_'+M.ini.getFullYear()+'-'+String(M.ini.getMonth()+1).padStart(2,'0'); }
 function metaAtual(){ var m=S.metas&&S.metas[idMeta()]; return m&&m.valor>0 ? m.valor : 0; }
 async function gravarMeta(v){
-  var id=idMeta(); S.metas=S.metas||{}; var antes=S.metas[id];
+  var id=idMeta(); S.metas=S.metas||{}; var antes=S.metas[id], rasc=_metaRasc[id];
+  delete _metaRasc[id];
   if(v>0) S.metas[id]={valor:v}; else delete S.metas[id];
   renderMeta();
   try{ await DB.salvar('metas',[{id:id, dados:{valor:v>0?v:0}, excluido:!(v>0)}]); limparErroTela(); }
   catch(e){
     if(antes) S.metas[id]=antes; else delete S.metas[id];   // volta como estava: não finge que salvou
+    if(rasc!==undefined) _metaRasc[id]=rasc;   // o digitado continua no campo pra tentar de novo
     renderMeta();
     erroTela('✕ Sem conexão com a nuvem: a meta do mês não foi salva. Nada mudou. Confira a internet e tente de novo.');
   }
@@ -5275,9 +5287,9 @@ function conferirViradaDoDia(){
        if(typeof renderAmostras==='function') renderAmostras();
        if(typeof renderPlanejar==='function' && document.getElementById('mod-planejar').classList.contains('on')) renderPlanejar(); }catch(e){}
 }
-setInterval(function(){ if(document.visibilityState==='visible') conferirViradaDoDia(); }, 60000);
+setInterval(function(){ atualizarDataTopo(); if(document.visibilityState==='visible') conferirViradaDoDia(); }, 60000);
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible') conferirViradaDoDia();
+  if(document.visibilityState==='visible'){ atualizarDataTopo(); conferirViradaDoDia(); }
   if(document.visibilityState==='visible' && S.temDados) renderPerInfo();
   if(document.visibilityState==='visible' && DB.modo==='nuvem' && Date.now()-_ultimaVolta>60000){ _ultimaVolta=Date.now(); carregarTudo(); }
 });
