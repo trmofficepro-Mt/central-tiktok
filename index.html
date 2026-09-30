@@ -288,6 +288,25 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .fn-form small.lp-nota{display:block;margin:3px 0 0;font-size:12px;font-weight:700;line-height:1.35}
 .fn-form small.lp-nota.lp-lido{color:#b45309}
 .fn-form small.lp-nota.lp-falta{color:var(--vermelho)}
+/* ===== V3 — Análise do TikTok Studio (conv. 18) ===== */
+.vs-form input,.vs-form textarea{width:100%}
+.vs-form input.lp-lido,.vs-form textarea.lp-lido{background:#fffbeb;border-color:#f59e0b}
+.vs-form input.lp-falta,.vs-form textarea.lp-falta{background:#fef2f2;border-color:var(--vermelho)}
+.vs-form input.vs-confira{border-width:2px;border-color:#ea580c;background:#fff7ed}
+.vs-form small.lp-nota{display:block;margin:3px 0 0;font-size:12px;font-weight:700;line-height:1.35}
+.vs-form small.lp-nota.lp-lido{color:#b45309}
+.vs-form small.lp-nota.lp-falta{color:var(--vermelho)}
+.vs-form .vs-campos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 12px}
+.vs-form .vs-fontes{grid-template-columns:repeat(3,minmax(0,1fr))}
+.vs-form label{display:block;font-size:13px;font-weight:700;color:var(--tinta2);margin-bottom:8px}
+.vs-form .vs-datas{max-width:260px}
+.vs-sub{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--tinta2);margin:12px 0 6px}
+.vs-linha{font-size:14px;line-height:1.6;margin:8px 0}
+.vs-termo{display:inline-block;background:var(--bg2);border-radius:999px;padding:2px 10px;margin:2px 4px 2px 0;font-size:13px}
+.vs-cedo{color:#b45309;font-weight:700}
+.vs-porview small{color:var(--tinta2)}
+.vs-dica{color:var(--tinta2);font-size:12px;align-self:center}
+@media(max-width:900px){ .vs-form .vs-campos{grid-template-columns:repeat(2,minmax(0,1fr))} }
 /* ===== funil do dia (F1 — conv. 13) ===== */
 .fn-form .fn-campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
 .fn-form .fn-datas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
@@ -2714,7 +2733,7 @@ function lpTirarMarca(k){
   var s=document.querySelector('.lp-nota[data-lp="'+k+'"]'); if(s) s.remove();
 }
 document.addEventListener('paste', function(e){   // Ctrl+V / ⌘V com o print copiado, na tela Funil
-  var mod=document.getElementById('mod-funil'); if(!mod || !mod.classList.contains('on') || !e.clipboardData) return;
+  var mod=document.getElementById('mod-funil'); if(!mod || !mod.classList.contains('on') || !e.clipboardData || _videoAberto) return;
   var fs=Array.prototype.slice.call(e.clipboardData.files||[]).filter(function(f){ return /^image\//.test(f.type||''); });
   if(!fs.length) return;
   e.preventDefault(); lpArquivos(fs);
@@ -2773,7 +2792,7 @@ function renderVideos(){
   // ---- 3. vídeos
   var vs=r.videos, vsV=_vdTodosV? vs : vs.slice(0,15);
   h+='<h4 class="vd-h4">4. Vídeos que mais venderam <small>por comissão · toque abre o detalhe</small></h4>'+
-     '<p class="desc">A planilha só mostra vídeo que <b>vendeu</b> (não traz views nem texto). A data é a da <b>1ª venda</b> do vídeo (a planilha não traz a data de postagem). <span class="vd-selo molde">Molde</span> = entre os 5 que mais venderam e vendeu em pelo menos '+Math.ceil(N*0.4)+' dos '+N+' dias: é o vídeo pra replicar. <span class="vd-selo novo">Novo</span> = começou a vender nesses dias.</p>';
+     '<p class="desc">A planilha só mostra vídeo que <b>vendeu</b> (não traz views nem texto). A data é a da <b>1ª venda</b>; o dia da <b>postagem</b> vem do número do vídeo. <span class="vd-selo molde">Molde</span> = entre os 5 que mais venderam e vendeu em pelo menos '+Math.ceil(N*0.4)+' dos '+N+' dias: é o vídeo pra replicar. <span class="vd-selo novo">Novo</span> = começou a vender nesses dias.</p>';
   if(!vs.length) h+='<div class="apostas-vazio">Nenhum vídeo vendeu nesses dias.</div>';
   else {
     h+='<div class="vd-tab-w"><table class="vd-tab"><thead><tr><th>#</th><th>Vídeo</th><th>Produto</th><th>Comissão</th><th>GMV · itens</th><th>Dias com venda</th><th>Desde o começo</th><th>1ª venda</th></tr></thead><tbody>';
@@ -2784,7 +2803,7 @@ function renderVideos(){
         '<td class="vd-id"><a href="'+vdLink(o.id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+vdCurto(o.id)+' ↗</a>'+(o.molde?' <span class="vd-selo molde">Molde</span>':'')+(o.novo?' <span class="vd-selo novo">Novo</span>':'')+'</td>'+
         '<td class="vd-nome">'+escapar(nomeCurto(nomeProdLive(w.prod)))+(w.nprod>1?' <small>+'+(w.nprod-1)+' '+plural(w.nprod-1,'outro','outros')+'</small>':'')+'</td>'+
         '<td><b>'+reais(o.com)+'</b></td><td>'+reais(o.gmv)+'<small>'+inteiro(o.itens)+' '+plural(o.itens,'item','itens')+'</small></td><td>'+o.ndias+' de '+N+'</td>'+
-        '<td>'+reais(w.gmv)+'<small>'+reais(w.com)+' comissão</small></td><td>'+dm(w.pri)+'<small>há '+idade+' '+plural(idade,'dia','dias')+'</small></td></tr>';
+        '<td>'+reais(w.gmv)+'<small>'+reais(w.com)+' comissão</small></td><td>'+dm(w.pri)+'<small>há '+idade+' '+plural(idade,'dia','dias')+(vdPostado(o.id)?' · postado '+dm(vdPostado(o.id)):'')+'</small></td></tr>';
     });
     h+='</tbody></table></div>'+(!_vdTodosV && vs.length>15?'<button class="btn ghost mini vd-mais" onclick="vdVerTodos(\'v\')">Ver todos os '+vs.length+' vídeos</button>':'');
   }
@@ -2799,12 +2818,13 @@ function abrirVideo(id){
   var ini=maisDias(hoje,-(_vdN-1));
   var voltar='<button class="voltar" onclick="fecharVideo()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Voltar</button>';
   var h='<div class="ficha-cab"><div class="barra">'+voltar+'</div><h2>Vídeo '+vdCurto(id)+' · '+escapar(nomeCurto(nomeProdLive(w.prod)))+'</h2>'+
-    '<div class="loja">1ª venda em '+dm(w.pri)+' · <a href="'+vdLink(id)+'" target="_blank" rel="noopener">abrir no TikTok ↗</a> · nº '+id+rqBotao(id)+'</div></div><div class="ficha-corpo">';
+    '<div class="loja">'+(vdPostado(id)?'Postado em '+dm(vdPostado(id))+' às '+vdHora(vdPostado(id))+' · ':'')+'1ª venda em '+dm(w.pri)+' · <a href="'+vdLink(id)+'" target="_blank" rel="noopener">abrir no TikTok ↗</a> · nº '+id+rqBotao(id)+'</div></div><div class="ficha-corpo">';
   h+='<div class="cards lv-cards vd-cards">'+
     '<div class="card"><div class="rot">Desde o começo</div><div class="val">'+reais(w.gmv)+'</div><div class="sub">'+reais(w.com)+' de comissão · '+inteiro(w.itens)+' '+plural(w.itens,'item','itens')+'</div></div>'+
     '<div class="card"><div class="rot">Primeiras 48h</div><div class="val">'+reais(g48)+'</div><div class="sub">'+(w.gmv>0?Math.round(g48/w.gmv*100):0)+'% de tudo que ele vendeu (dia da 1ª venda + o seguinte)</div></div>'+
     '<div class="card"><div class="rot">Primeiros 7 dias</div><div class="val">'+reais(g7)+'</div><div class="sub">'+(w.gmv>0?Math.round(g7/w.gmv*100):0)+'% do total'+(w.gmv>0 && g7/w.gmv<0.5?' — vende mais DEPOIS da 1ª semana: vídeo de longa duração':'')+'</div></div>'+
   '</div>';
+  h+=vsCardHTML(id, w);   // V3 — Análise do TikTok Studio
   // barras por dia, da 1ª venda até hoje
   var nb=Math.round((hoje-w.pri)/86400000)+1, mx=0, arr=[];
   for(var i=0;i<nb;i++){ var k=maisDias(w.pri,i).getTime(), g=w.dias[k]||0; arr.push({d:maisDias(w.pri,i), g:g}); if(g>mx) mx=g; }
@@ -2816,9 +2836,399 @@ function abrirVideo(id){
   h+='<div class="nv-card"><h4 class="lv-h4">Produtos deste vídeo</h4><p class="desc" style="margin:0 0 8px">Quem entrou por este vídeo comprou também estes. Produto que vende aqui sem você ter gravado dele é pista de garimpo.</p><div class="lv-prods">'+prs.map(function(p){
     return '<button type="button" class="lv-prod" onclick="fecharVideo();abrirFichaGeral(\''+p.chave+'\')"><span><b>'+escapar(nomeCurto(nomeProdLive(p.chave)))+'</b><small>'+inteiro(p.itens)+' '+plural(p.itens,'item vendido','itens vendidos')+' · desde '+dm(p.desde)+'</small></span><em>'+reais(p.gmv)+'</em></button>'; }).join('')+'</div></div></div>';
   document.getElementById('formConteudo').innerHTML=h;
+  vsAplicarMarcas();
   var f=document.getElementById('formFundo'); f.classList.add('on'); f.scrollTop=0; document.body.classList.add('travado');
 }
 function fecharVideo(){ _videoAberto=null; fecharForm(); }
+/* ===================== V3 — ANÁLISE DO VÍDEO (TikTok Studio · conversa 18, 29/09) =====================
+   A Mari abre o vídeo (tela Vídeos › detalhe) e lê os prints do TikTok Studio › Análise de vídeo › Visão geral
+   (Métricas principais, Taxa de retenção, Fontes de tráfego, Termos pesquisados). Mesmo leitor do Funil; o sistema
+   PREENCHE e nunca salva sozinho. Cálculo-fonte: testes/fonte_v3.py (mesmas regras, mesmos limites).
+   Medido nos 6 prints da Mari (29/09): o leitor erra sempre igual em 1.93%→1.95%, 9.1%→91%, 9.8 s→98s — quem segura
+   são as proteções: formato, confiança, fontes somam 100%, tempo médio = % assistido × duração. Guardado em
+   S.metas id vstudio_<nº do vídeo> (sem mexer no SQL). */
+var VS_METRICAS=[['views',['visualizacoes','de','video']],['tmedio',['tempo','medio']],['completo',['ao','video','completo']],['seg',['novos','seguidores']]];
+var VS_EXTRAI={views:/\d[\d.,]*(\s*(mil|mi)\b)?/i, tmedio:/\d[\d.,]*(\s*s\b)?/i, completo:/\d[\d.,]*\s*%?/, seg:/\d[\d.,]*/};
+var VS_FONTES=[['pv',['para','voce']],['pesq',['pesquisar']],['perfil',['perfil','pessoal']],['outro',['outro']],['fseg',['seguindo']],['som',['som']]];
+var VS_FKEYS=VS_FONTES.map(function(f){ return f[0]; });
+var VS_CAMPOS=['views','tmedio','completo','seg','pct','parou','dur'].concat(VS_FKEYS);
+var VS_FORMATO={
+  views:[/^(\d{1,3}(\.\d{3})+|\d+|\d{1,3},\d\s*(mil|mi))$/i,'o app mostra assim: 774, 1.234 ou 220,7 mil'],
+  tmedio:[/^\d+\.\d\s*s$/i,'o app sempre mostra 1 casa depois do ponto (ex.: 9.8 s)'],
+  completo:[/^\d{1,3}\.\d{2}%$/,'o app sempre mostra 2 casas depois do ponto (ex.: 1.93%)'],
+  seg:[/^(\d{1,3}(\.\d{3})+|\d+)$/,'não entendi o número'],
+  pct:[/^\d{1,3}%$/,'não entendi o número'], parou:[/^\d{1,2}:\d{2}$/,'não entendi o tempo'], dur:[/^\d{1,2}:\d{2}$/,'não entendi o tempo']
+};
+VS_FKEYS.forEach(function(k){ VS_FORMATO[k]=[/^\d{1,3}\.\d%$/,'o app sempre mostra 1 casa depois do ponto (ex.: 9.1%)']; });
+var VS_ONDE={views:'Métricas principais',tmedio:'Métricas principais',completo:'Métricas principais',seg:'Métricas principais',pct:'Taxa de retenção',parou:'Taxa de retenção',dur:'embaixo do gráfico da Taxa de retenção'};
+VS_FKEYS.forEach(function(k){ VS_ONDE[k]='Fontes de tráfego'; });
+var VS_ROT={views:'Visualizações',tmedio:'Tempo médio',completo:'Assistiu completo',seg:'Novos seguidores',pct:'% médio assistido',parou:'Maioria parou em',dur:'Duração',pv:'Para você',pesq:'Pesquisar',perfil:'Perfil pessoal',outro:'Outro',fseg:'Seguindo',som:'Som'};
+var VS_EX={views:'ex: 220,7 mil',tmedio:'ex: 9.8',completo:'ex: 1.93',seg:'ex: 22',pct:'ex: 25',parou:'ex: 0:01',dur:'ex: 0:38',pv:'%',pesq:'%',perfil:'%',outro:'%',fseg:'%',som:'%'};
+var _vs={id:null, marcas:{}, msg:'', cls:'', lendo:false, edit:false, editSalvo:false, pre:null, salvando:false, conf:false};
+
+/* data e hora da postagem = os 32 bits de cima do número do vídeo (segundos desde 1970). Conferido nos 232 vídeos da
+   planilha até 28/09: nenhum dá postagem depois da 1ª venda; os do Smartwatch com Chamadas de 27/08 batem com a Mari. */
+function vdPostado(id){
+  try{ if(!/^\d{15,20}$/.test(String(id))) return null; var s=Number(BigInt(String(id))>>BigInt(32)), d=new Date(s*1000);
+       return (d.getFullYear()>=2016 && d<=new Date(Date.now()+86400000)) ? d : null; }catch(e){ return null; }
+}
+function vdHora(d){ return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function vsLimpo(t){ return String(t).trim().replace(/^[(\[]+|[.,;:)\]]+$/g,''); }
+
+/* lê as palavras (com posição) de UM print do Studio → {secoes, campos:{k:{txt,conf}}, vistos, termos, atual, temTer} */
+function vsInterpretar(words, W){
+  var ws=words.map(function(w){ return {t:w.t, c:w.c, x0:w.x0, y0:w.y0, x1:w.x1, y1:w.y1, n:lpNorm(w.t)}; });
+  function seqEm(i,seq){ if(i+seq.length>ws.length) return false; for(var j=0;j<seq.length;j++) if(ws[i+j].n!==seq[j]) return false; return true; }
+  function ytit(seq){ for(var i=0;i<ws.length;i++) if(seqEm(i,seq)) return ws[i].y0; return null; }
+  var yMet=ytit(['metricas','principais']), yRet=ytit(['taxa','de','retencao']), yFon=ytit(['fontes','de','trafego']), yTer=ytit(['termos','pesquisados']), yDes=ytit(['deseja','mais']);
+  var secoes=[['met',yMet],['ret',yRet],['fon',yFon],['ter',yTer]].filter(function(s){ return s[1]!=null; }).map(function(s){ return s[0]; });
+  var campos={}, vistos={};
+  function temNum(w){ return /\d/.test(w.t); }
+  if(yMet!=null) VS_METRICAS.forEach(function(r){
+    var k=r[0], lab=r[1];
+    for(var i=0;i<ws.length;i++){
+      if(!seqEm(i,lab)) continue;
+      if(ws[i].y0<yMet || (yRet!=null && ws[i].y0>yRet)) continue;
+      vistos[k]=1;
+      var a=ws[i], b=ws[i+lab.length-1], h=a.y1-a.y0, fundo=Math.max(a.y1,b.y1);
+      if(k==='completo' && i>0 && Math.abs(ws[i-1].y0-a.y0)<h && a.x0-ws[i-1].x1<2*h) a=ws[i-1];   // "Assistiu" (o leitor lê "Assistivu"): o número fica embaixo dele
+      var cx0=Math.min(a.x0,b.x0)-3*h, cx1=Math.max(b.x1+3*h, a.x0+W*0.40);
+      var abaixo=ws.filter(function(w){ return w.y0>fundo && w.y0<fundo+4*h && w.x0>=cx0 && w.x0<cx1 && temNum(w); });
+      if(!abaixo.length) continue;
+      var y=Math.min.apply(null, abaixo.map(function(w){ return w.y0; }));
+      var linha=ws.filter(function(w){ return Math.abs(w.y0-y)<h && w.x0>=cx0 && w.x0<cx1; }).sort(function(p,q){ return p.x0-q.x0; });
+      var m=linha.map(function(w){ return w.t; }).join(' ').match(VS_EXTRAI[k]);
+      if(!m) continue;
+      campos[k]={txt:m[0].trim(), conf:Math.min.apply(null, linha.map(function(w){ return w.c; }))};
+      break;
+    }
+  });
+  ws.forEach(function(w,i){
+    if(w.n==='assistiram' && !campos.pct){ for(var j=i+1;j<Math.min(i+4,ws.length);j++){ var t=vsLimpo(ws[j].t); if(/^\d[\d.,]*%$/.test(t)){ campos.pct={txt:t, conf:ws[j].c}; break; } } }
+    if(!campos.parou && seqEm(i,['parou','de','assistir','em']) && i+4<ws.length && /\d/.test(ws[i+4].t)) campos.parou={txt:vsLimpo(ws[i+4].t), conf:ws[i+4].c};
+    if(!campos.dur && w.t.trim()==='(100%)'){
+      var h=w.y1-w.y0, lin=ws.filter(function(x){ return Math.abs(x.y0-w.y0)<h && x.x0>w.x1 && temNum(x); }).sort(function(p,q){ return p.x0-q.x0; });
+      if(lin.length) campos.dur={txt:vsLimpo(lin[lin.length-1].t), conf:lin[lin.length-1].c};
+    }
+  });
+  if(yFon!=null) VS_FONTES.forEach(function(r){
+    var k=r[0], lab=r[1];
+    for(var i=0;i<ws.length;i++){
+      if(!seqEm(i,lab)) continue;
+      var a=ws[i], b=ws[i+lab.length-1];
+      if(a.y0<yFon || (yTer!=null && a.y0>yTer)) continue;
+      vistos[k]=1; var h=a.y1-a.y0;
+      var lin=ws.filter(function(x){ return Math.abs(x.y0-a.y0)<h && x.x0>b.x1 && temNum(x); }).sort(function(p,q){ return p.x0-q.x0; });
+      if(!lin.length) continue;
+      campos[k]={txt:vsLimpo(lin[lin.length-1].t), conf:lin[lin.length-1].c};
+      break;
+    }
+  });
+  var termos=[];
+  if(yTer!=null){
+    var reg=ws.filter(function(w){ return w.y0>yTer+1 && (yDes==null || w.y0<yDes); }).sort(function(p,q){ return (p.y0-q.y0)||(p.x0-q.x0); }), linhas=[];
+    reg.forEach(function(w){ var h=w.y1-w.y0, L=linhas[linhas.length-1]; if(L && Math.abs(w.y0-L[0].y0)<0.6*h) L.push(w); else linhas.push([w]); });
+    linhas.forEach(function(L){
+      L.sort(function(p,q){ return p.x0-q.x0; });
+      if(L.length<2 || !/%$/.test(vsLimpo(L[L.length-1].t))) return;
+      var t=L.slice(0,-1).map(function(w){ return w.t; }).join(' ').trim();
+      if(!/[a-zA-Z]/.test(t)) return;
+      var p=vsLimpo(L[L.length-1].t), pc=L[L.length-1].c;
+      termos.push({t:t, p:(/^\d{1,3}\.\d%$/.test(p) && pc>=LP_CONF_MIN) ? p : null});
+    });
+  }
+  var atual=null;
+  for(var i=0;i+2<ws.length;i++){
+    if(ws[i].n==='atualizado' && ws[i+1].n==='em'){
+      var md=vsLimpo(ws[i+2].t).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if(md) atual={txt:vsLimpo(ws[i+2].t), conf:ws[i+2].c, iso:md[3]+'-'+String(+md[2]).padStart(2,'0')+'-'+String(+md[1]).padStart(2,'0')};
+      break;
+    }
+  }
+  return {secoes:secoes, campos:campos, vistos:Object.keys(vistos).sort(), termos:termos, atual:atual, temTer:yTer!=null};
+}
+function vsSuspeito(k,c){
+  var f=VS_FORMATO[k]; if(!f[0].test(String(c.txt).trim())) return f[1];
+  if(c.conf<LP_CONF_MIN) return 'o leitor não teve certeza';
+  return '';
+}
+function vsSeg(t){ var m=String(t).trim().match(/^(\d{1,2}):(\d{2})$/); return m ? (+m[1])*60+(+m[2]) : null; }
+function vsMSS(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function vsValor(k,t){   // valor de uma leitura que já passou no formato
+  t=String(t).trim().toLowerCase();
+  if(k==='parou'||k==='dur') return vsSeg(t);
+  if(k==='views'){ var m=t.match(/^(\d{1,3}),(\d)\s*(mil|mi)$/); if(m) return (+m[1])*(m[3]==='mil'?1000:1000000)+(+m[2])*(m[3]==='mil'?100:100000); return parseInt(t.replace(/\./g,''),10); }
+  if(k==='seg') return parseInt(t.replace(/\./g,''),10);
+  if(k==='pct') return parseInt(t,10);
+  return parseFloat(t.replace(/[^\d.]/g,''));
+}
+function vsVirg(n){ return String(Math.round(n*10)/10).replace('.',','); }
+/* junta 1 a 4 prints do MESMO vídeo → {erro} ou {txt, val, marcas, termos, atual, avisos, nomes} */
+function vsJuntar(leituras, postadoIso, hoje){
+  hoje=hoje||hojeISO();
+  if(!leituras.length) return {erro:'Nenhuma imagem pra ler.'};
+  if(leituras.length>4) return {erro:'Mande no máximo 4 prints do mesmo vídeo.'};
+  for(var i=0;i<leituras.length;i++) if(!leituras[i].secoes.length)
+    return {erro:'Não achei a Análise de vídeo '+(leituras.length>1?'no '+(i+1)+'º print':'neste print')+'. Use o TikTok Studio › Análise de vídeo › Visão geral. Nada foi preenchido.'};
+  var chk=['pct','parou','dur'];
+  for(var a=0;a<chk.length;a++){
+    var k=chk[a], vs=[], vals={};
+    leituras.forEach(function(L){ var c=L.campos[k]; if(c && !vsSuspeito(k,c)){ vs.push(c.txt); vals[vsValor(k,c.txt)]=1; } });
+    if(Object.keys(vals).length>1) return {erro:'Os prints não são do mesmo vídeo ('+VS_ROT[k]+': '+vs.join(' × ')+'). Nada foi preenchido — mande só os prints de um vídeo.'};
+  }
+  var fdif=[];   // 2 ou mais fontes diferentes entre os prints = print de outro vídeo (1 só = erro de leitura: só aquele campo fica vazio)
+  VS_FKEYS.forEach(function(k){ var vs=[], vals={}; leituras.forEach(function(L){ var c=L.campos[k]; if(c && !vsSuspeito(k,c)){ vs.push(c.txt); vals[vsValor(k,c.txt)]=1; } });
+    if(Object.keys(vals).length>1) fdif.push(VS_ROT[k]+' '+vs.join(' × ')); });
+  if(fdif.length>=2) return {erro:'Os prints não são do mesmo vídeo (Fontes de tráfego: '+fdif.join(', ')+'). Nada foi preenchido — mande só os prints de um vídeo.'};
+  var ats=[]; leituras.forEach(function(L){ if(L.atual && ats.indexOf(L.atual.iso)<0) ats.push(L.atual.iso); });
+  if(ats.length>1) return {erro:'Os prints são de dias diferentes ('+ats.map(function(x){ return x.slice(8,10)+'/'+x.slice(5,7); }).join(' × ')+'). Nada foi preenchido — tire todos no mesmo dia.'};
+  var r={txt:{}, val:{}, marcas:{}, termos:null, atual:'', avisos:[], nomes:[]};
+  var NOMES={met:'Métricas',ret:'Retenção',fon:'Fontes',ter:'Termos'};
+  leituras.forEach(function(L){ L.secoes.forEach(function(s){ if(r.nomes.indexOf(NOMES[s])<0) r.nomes.push(NOMES[s]); }); });
+  VS_CAMPOS.forEach(function(k){
+    var vals=[]; leituras.forEach(function(L){ if(L.campos[k]) vals.push(L.campos[k]); });
+    if(!vals.length){
+      var viu=leituras.some(function(L){ return L.vistos.indexOf(k)>=0; });
+      r.marcas[k]={cls:'lp-falta', msg: viu ? 'Não consegui ler o número. Digite como está no print.' : 'Não veio nos prints — está em '+VS_ONDE[k]+'.'}; return;
+    }
+    var bons=vals.filter(function(c){ return !vsSuspeito(k,c); });   // leitura ilegível num print não apaga a leitura boa do outro
+    if(!bons.length){ r.marcas[k]={cls:'lp-falta', msg:'Leitura duvidosa ("'+vals[0].txt+'": '+vsSuspeito(k,vals[0])+'). Digite como está no print.'}; return; }
+    var nums=bons.map(function(c){ return vsValor(k,c.txt); });
+    if(nums.some(function(v){ return v!==nums[0]; })){ r.marcas[k]={cls:'lp-falta', msg:'Os prints não batem ('+bons.map(function(c){ return c.txt; }).join(' × ')+'). Digite como está no print.'}; return; }
+    r.txt[k]=bons[0].txt; r.val[k]=nums[0];
+    r.marcas[k]= k==='completo' ? {cls:'lp-lido vs-confira', msg:'confira no print: o leitor às vezes troca um número parecido (ex.: 3 × 5)'} : {cls:'lp-lido', msg:'lido do print — confira'};
+  });
+  // uma fonte diferente entre os prints: as 6 ficam vazias (pode ser print de outro vídeo com as outras ilegíveis — não mistura)
+  var fnb=VS_FKEYS.filter(function(k){ return /^Os prints não batem/.test(r.marcas[k].msg); });
+  if(fnb.length){ var qual=fnb.map(function(k){ return VS_ROT[k]+' '+r.marcas[k].msg.match(/\(([^)]*)\)/)[1]; }).join(', ');
+    VS_FKEYS.forEach(function(k){ delete r.txt[k]; delete r.val[k]; r.marcas[k]={cls:'lp-falta', msg:'Os prints não batem nas Fontes de tráfego ('+qual+'). Digite as fontes como estão no print.'}; }); }
+  // fontes somam 100% (cada uma vem arredondada em 1 casa)
+  if(VS_FKEYS.every(function(k){ return k in r.val; })){
+    var s=Math.round(VS_FKEYS.reduce(function(t,k){ return t+r.val[k]; },0)*10)/10;
+    if(s<99.5 || s>100.5) VS_FKEYS.forEach(function(k){ delete r.txt[k]; delete r.val[k]; r.marcas[k]={cls:'lp-falta', msg:'As fontes lidas somam '+vsVirg(s)+'% — no app elas sempre somam 100%. Digite como está no print.'}; });
+  }
+  // tempo médio = % médio assistido × duração (% arredondada: ±0,5; duração sem os décimos: +1 s)
+  if(['tmedio','pct','dur'].every(function(k){ return k in r.val; })){
+    var p=r.val.pct, d=r.val.dur, t=r.val.tmedio, lo=(p-0.5)/100*d-0.05, hi=(p+0.5)/100*(d+1)+0.05;
+    if(t<lo || t>hi){ delete r.txt.tmedio; delete r.val.tmedio; r.marcas.tmedio={cls:'lp-falta', msg:'Não fecha com a retenção ('+p+'% de '+vsMSS(d)+' dá cerca de '+vsVirg(p/100*d)+' s). Digite como está no print.'}; }
+  }
+  // dicas: o campo continua VAZIO — a Mari confere no print e digita
+  var faltaF=VS_FKEYS.filter(function(k){ return !(k in r.val); });
+  if(faltaF.length===1){
+    var f=Math.round((100-VS_FKEYS.reduce(function(t,k){ return t+(k in r.val?r.val[k]:0); },0))*10)/10;
+    if(f>=0 && f<=100) r.marcas[faltaF[0]].msg+=' Pelas outras fontes, deve ser '+vsVirg(f)+'%.';
+  }
+  if(!('tmedio' in r.val) && 'pct' in r.val && 'dur' in r.val && r.marcas.tmedio.msg.indexOf('Não fecha')<0)
+    r.marcas.tmedio.msg+=' Pela retenção ('+r.val.pct+'% de '+vsMSS(r.val.dur)+') dá cerca de '+vsVirg(r.val.pct/100*r.val.dur)+' s.';
+  for(var q=0;q<leituras.length;q++) if(leituras[q].temTer){ r.termos=leituras[q].termos; break; }
+  r.marcas.termos = r.termos==null ? {cls:'lp-falta', msg:'Não veio nos prints — está embaixo das Fontes de tráfego.'} : {cls:'lp-lido', msg:'lido do print — confira as palavras (o leitor pode trocar letras)'};
+  var A=leituras.filter(function(L){ return L.atual; }).map(function(L){ return L.atual; });
+  if(!A.length) r.marcas.atual={cls:'lp-falta', msg:'Não veio nos prints — está no topo das Métricas principais ("Atualizado em…").'};
+  else{
+    var at=A[0], dd=deIso(at.iso), ano=+hoje.slice(0,4), motivo='';
+    if(!dd || isoD(dd)!==at.iso || dd.getFullYear()<ano-1 || dd.getFullYear()>ano) motivo='data impossível';
+    else if(at.iso>hoje) motivo='depois de hoje';
+    else if(at.conf<LP_CONF_MIN) motivo='o leitor não teve certeza';
+    if(motivo) r.marcas.atual={cls:'lp-falta', msg:'Não consegui ler o dia com certeza (li '+at.txt+': '+motivo+'). Digite o dia do "Atualizado em".'};
+    else{
+      r.atual=at.iso; r.marcas.atual={cls:'lp-lido', msg:'lido do print — confira o dia'};
+      if(postadoIso){ var n=diasEntre(postadoIso, at.iso);
+        if(n<0) return {erro:'O dia do print ('+lpDataBR(at.iso)+') é antes do dia em que este vídeo foi postado ('+lpDataBR(postadoIso)+'): esses prints são de outro vídeo. Nada foi preenchido — abra o vídeo certo na lista.'};
+        if(n<7) r.avisos.push('O vídeo tinha só '+n+' '+plural(n,'dia','dias')+' no dia do print (postado em '+lpDataBR(postadoIso)+'). A aula manda analisar com 7 dias ou mais — tire os prints de novo a partir de '+lpDataBR(isoMais(postadoIso,7))+'.'); }
+    }
+  }
+  return r;
+}
+
+/* ---- leitura dos arquivos (arrastar, colar, escolher) ---- */
+function vsMsg(txt, cls){ _vs.msg=txt; _vs.cls=cls||''; var el=document.getElementById('vsMsg'); if(el){ el.innerHTML=txt; el.className='lp-msg '+(txt?'on ':'')+(cls||''); } }
+async function vsArquivos(lista){
+  var id=_videoAberto; if(!id) return;
+  var arqs=Array.prototype.slice.call(lista||[]).filter(function(f){ return f && /^image\//.test(f.type||''); });
+  if(_vs.lendo){ vsMsg('Ainda estou lendo os prints anteriores. Espere terminar.', 'lendo'); return; }
+  if(!arqs.length){ vsMsg('Isso não é uma imagem. Mande os prints da Análise de vídeo (TikTok Studio).', 'erro'); return; }
+  if(arqs.length>4){ vsMsg('Mande no máximo 4 prints do mesmo vídeo.', 'erro'); return; }
+  _vs.lendo=true; var leituras=[];
+  try{
+    for(var i=0;i<arqs.length;i++){
+      vsMsg('Lendo o print '+(i+1)+' de '+arqs.length+'…'+(_lpWorker?'':' (na 1ª vez o navegador baixa o leitor — pode levar alguns segundos)'), 'lendo');
+      var o;
+      try{ o=await lpLerImagem(arqs[i]); }
+      catch(e){
+        if(String(e&&e.message)==='imagem'){ vsMsg('Não consegui abrir essa imagem. Tire o print de novo e tente outra vez.', 'erro'); return; }
+        vsMsg('⚠ Não consegui carregar o leitor de print (precisa de internet na 1ª vez). Nada foi preenchido — digite os números normalmente no formulário.', 'erro'); return;
+      }
+      leituras.push(vsInterpretar(o.words, o.W));
+    }
+  } finally { _vs.lendo=false; }
+  if(_videoAberto!==id){ if(_vs.id===id){ _vs.msg=''; _vs.cls=''; } return; }   // ela fechou/trocou de vídeo enquanto lia: não preenche outro vídeo (e não deixa "Lendo…" preso)
+  var pd=vdPostado(id);
+  vsPreencher(vsJuntar(leituras, pd?isoD(pd):'', hojeISO()));
+}
+function vsPreencher(r){
+  if(r.erro){ vsMsg('✕ '+escapar(r.erro), 'erro'); return r; }
+  _vs.marcas=r.marcas; _vs.edit=true; _vs.conf=false;
+  _vs.pre={txt:r.txt, atual:r.atual, termos:r.termos ? r.termos.map(function(t){ return t.t+(t.p?' — '+t.p:''); }).join('\n') : ''};
+  lsGravar('ct_vs_rasc', null);
+  var falta=Object.keys(r.marcas).filter(function(k){ return /lp-falta/.test(r.marcas[k].cls); }).length;
+  var txt='✓ Li '+(r.nomes.length>1?'os prints':'o print')+' ('+r.nomes.join(' + ')+'). Confira os campos marcados'+(falta?' e digite '+(falta>1?'os '+falta+' que ficaram vazios':'o que ficou vazio'):'')+' antes de salvar.';
+  if(r.avisos.length) txt+='<div class="lp-aviso">⚠ '+r.avisos.map(escapar).join('<br>⚠ ')+'</div>';
+  _vs.msg=txt; _vs.cls='ok';
+  vsRedesenhar(); vsGuardarRasc();   // o lido fica guardado no aparelho (recarregar a página não perde), igual ao Funil
+  var c=document.getElementById('vsCaixa'); if(c && c.scrollIntoView) c.scrollIntoView({block:'start'});
+  return r;
+}
+
+/* ---- formulário ---- */
+function vsDoVideo(id){ return S.metas && S.metas['vstudio_'+id]; }
+function vsRascDe(id){ var r=lsLer('ct_vs_rasc',null); return (r && r.id===id) ? r : null; }
+function vsGuardarRasc(){
+  var id=_videoAberto; if(!id || !document.getElementById('vs_views')) return;
+  var t={}; VS_CAMPOS.forEach(function(k){ t[k]=(document.getElementById('vs_'+k)||{}).value||''; });
+  lsGravar('ct_vs_rasc', {id:id, txt:t, atual:(document.getElementById('vs_atual')||{}).value||'', termos:(document.getElementById('vs_termos')||{}).value||'', edit:!!vsDoVideo(id)});
+}
+function vsNumDig(t){   // o que a Mari digita: "2,96" "2.96%" "9,8 s" → número; "" → null; lixo → NaN
+  var s=String(t==null?'':t).trim().toLowerCase().replace(/%|s$/g,'').trim();
+  if(!s) return null; if(!/^\d+([.,]\d+)?$/.test(s)) return NaN;
+  return parseFloat(s.replace(',','.'));
+}
+function vsViewsDig(t){
+  var s=String(t==null?'':t).trim().toLowerCase().replace(/\s+/g,' ');
+  if(!s) return {v:null}; var m=s.match(/^(\d{1,3}(?:[.,]\d{1,3})?)\s*(mil|mi|k)$/);
+  if(m){ var b=parseFloat(m[1].replace(',','.')); return {v:Math.round(b*(m[2]==='mi'?1000000:1000)), aprox:true}; }
+  if(/^\d{1,3}(\.\d{3})+$|^\d+$/.test(s)) return {v:parseInt(s.replace(/\./g,''),10)};
+  return {v:NaN};
+}
+function vsTempoDig(t){ var s=String(t==null?'':t).trim(); if(!s) return null; var m=s.match(/^(\d{1,2}):(\d{2})$/); if(m) return (+m[1])*60+(+m[2]); if(/^\d+$/.test(s)) return +s; return NaN; }
+function vsLerForm(){
+  var d={video:_videoAberto, txt:{}, aprox:{}}, erros=[], hoje=hojeISO();
+  d.atual=(document.getElementById('vs_atual')||{}).value||'';
+  if(!d.atual) erros.push('Escolha o dia do print ("Atualizado em", no topo das Métricas principais).');
+  else if(d.atual>hoje) erros.push('O dia do print ainda não chegou.');
+  VS_CAMPOS.forEach(function(k){
+    var raw=((document.getElementById('vs_'+k)||{}).value||'').trim(), v;
+    if(k==='views'){ var o=vsViewsDig(raw); v=o.v; if(o.aprox) d.aprox.views=true; }
+    else if(k==='parou'||k==='dur') v=vsTempoDig(raw);
+    else if(k==='seg') v= raw==='' ? null : (/^\d{1,3}(\.\d{3})+$|^\d+$/.test(raw) ? parseInt(raw.replace(/\./g,''),10) : NaN);
+    else v=vsNumDig(raw);
+    if(v===null){ d[k]=null; if(k==='views') erros.push('Falta preencher: Visualizações.'); return; }
+    if(isNaN(v)){ erros.push(VS_ROT[k]+': não entendi "'+raw+'". Digite como está no print ('+VS_EX[k].replace('ex: ','ex.: ')+').'); d[k]=null; return; }
+    if(['completo','pct'].concat(VS_FKEYS).indexOf(k)>=0 && v>100){ erros.push(VS_ROT[k]+' passa de 100% ('+raw+'): confira.'); d[k]=null; return; }
+    d[k]=v; d.txt[k]=raw;
+  });
+  if(d.views===0) erros.push('Visualizações: 0 não dá pra analisar.');
+  if(d.parou!=null && d.dur!=null && d.parou>d.dur) erros.push('"Maioria parou em" ('+vsMSS(d.parou)+') passa da duração do vídeo ('+vsMSS(d.dur)+'): confira.');
+  if(VS_FKEYS.every(function(k){ return d[k]!=null; })){
+    var s=Math.round(VS_FKEYS.reduce(function(t,k){ return t+d[k]; },0)*10)/10;
+    if(s<99.5 || s>100.5) erros.push('As fontes de tráfego somam '+vsVirg(s)+'% — no app elas sempre somam 100%. Confira os números.');
+  }
+  d.termos=((document.getElementById('vs_termos')||{}).value||'').split('\n').map(function(l){
+    l=l.trim(); if(!l) return null; var m=l.match(/^(.*?)[\s—–-]*(\d{1,3}(?:[.,]\d)?)\s*%$/);
+    return m && m[1].trim() ? {t:m[1].trim(), p:parseFloat(m[2].replace(',','.'))} : {t:l.replace(/[\s—–-]+$/,''), p:null};
+  }).filter(function(x){ return x && x.t; }).slice(0,10);
+  return {d:d, erros:erros};
+}
+function vsErro(msg){ var e=document.getElementById('vsErro'); if(!e) return; e.innerHTML=msg; e.classList.toggle('on', !!msg); }
+async function vsSalvar(substituir){
+  if(_vs.salvando) return false;
+  var r=vsLerForm(); vsErro('');
+  if(r.erros.length){ vsErro(r.erros.map(escapar).join('<br>')); return false; }
+  var d=r.d, id='vstudio_'+d.video, velho=S.metas && S.metas[id];
+  if(velho && !substituir && !_vs.editSalvo){
+    _vs.conf=true; var c=document.getElementById('vsConf');
+    if(c){ c.innerHTML='<span>Este vídeo já tem análise (print de '+lpDataBR(velho.atual)+'). Substituir pelos números novos?</span><button class="btn mini" onclick="vsSalvar(true)">Substituir</button><button class="btn ghost mini" onclick="vsNaoSubstituir()">Não</button>'; c.classList.add('on'); }
+    return false;
+  }
+  d.salvoEm=new Date().toISOString();
+  S.metas=S.metas||{}; var antes=S.metas[id]; S.metas[id]=d; _vs.salvando=true;
+  try{ await DB.salvar('metas',[{id:id, dados:d, excluido:false}]); }
+  catch(e){ if(antes) S.metas[id]=antes; else delete S.metas[id]; vsErro('Sem conexão com a nuvem: não salvei. Os números continuam aqui — tente de novo quando tiver internet.'); return false; }
+  finally{ _vs.salvando=false; }
+  lsGravar('ct_vs_rasc', null); _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.cls=''; _vs.edit=false; _vs.editSalvo=false; _vs.conf=false;
+  vsRedesenhar();
+  aviso('✓ Análise do vídeo '+vdCurto(d.video)+' salva · '+vsViewsTxt(d)+' visualizações');
+  return true;
+}
+function vsNaoSubstituir(){ _vs.conf=false; var c=document.getElementById('vsConf'); if(c){ c.classList.remove('on'); c.innerHTML=''; } }
+function vsEditar(){ var id=_videoAberto; if(!vsDoVideo(id)) return; _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.edit=true; _vs.editSalvo=true; _vs.conf=false; lsGravar('ct_vs_rasc', null); vsRedesenhar();
+  var f=document.getElementById('vsCaixa'); if(f && f.scrollIntoView) f.scrollIntoView({block:'start'}); }
+function vsCancelar(){ _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.cls=''; _vs.edit=false; _vs.editSalvo=false; _vs.conf=false; lsGravar('ct_vs_rasc', null); vsRedesenhar(); }
+async function vsExcluir(){
+  var vid=_videoAberto, id='vstudio_'+vid, d=vsDoVideo(vid); if(!d) return;
+  delete S.metas[id];
+  try{ await DB.salvar('metas',[{id:id, dados:d, excluido:true}]); }
+  catch(e){ S.metas[id]=d; vsRedesenhar(); vsErro('Sem conexão com a nuvem: não excluí.'); return; }
+  vsRedesenhar();
+  aviso('Excluí a análise do vídeo '+vdCurto(vid)+'.', 'Desfazer', async function(){
+    S.metas[id]=d;
+    try{ await DB.salvar('metas',[{id:id, dados:d, excluido:false}]); } catch(e){ delete S.metas[id]; aviso('Sem conexão com a nuvem: não consegui desfazer.'); }
+    if(_videoAberto===vid) vsRedesenhar();
+  });
+}
+function vsRedesenhar(){ if(!_videoAberto) return; var f=document.getElementById('formFundo'), st=f?f.scrollTop:0; abrirVideo(_videoAberto); if(f) f.scrollTop=st; }
+function vsViewsTxt(d){ if(d.txt && d.txt.views) return d.txt.views; return inteiro(d.views); }
+function vsPctTxt(v,c){ return v==null ? '—' : v.toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c})+'%'; }
+function vsCardHTML(id, w){
+  var d=vsDoVideo(id), ra=vsRascDe(id), pd=vdPostado(id);
+  if(_vs.id!==id){ _vs.id=id; _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.cls=''; _vs.conf=false; _vs.edit=!!ra; _vs.editSalvo=!!(ra && ra.edit && d); }
+  var h='<div class="nv-card vs-card" id="vsCard"><h4 class="lv-h4">Análise do TikTok Studio <small>visualizações, retenção e de onde veio o público</small></h4>';
+  if(d && !_vs.edit){
+    var dias=pd? diasEntre(isoD(pd), d.atual) : null, ap=d.aprox&&d.aprox.views?'~':'';
+    h+='<p class="desc vs-quando">Print de <b>'+lpDataBR(d.atual)+'</b>'+(dias!=null?' · o vídeo tinha <b>'+dias+' '+plural(dias,'dia','dias')+'</b>'+(dias<7?' <span class="vs-cedo">⚠ cedo: a aula manda analisar com 7 dias ou mais</span>':''):'')+'</p>';
+    h+='<div class="cards lv-cards vd-cards vs-nums">'+
+      '<div class="card"><div class="rot">Visualizações</div><div class="val">'+escapar(vsViewsTxt(d))+'</div><div class="sub">'+(d.seg!=null?inteiro(d.seg)+' '+plural(d.seg,'seguidor novo','seguidores novos'):'seguidores: —')+'</div></div>'+
+      '<div class="card"><div class="rot">Tempo médio</div><div class="val">'+(d.tmedio!=null?vsVirg(d.tmedio)+' s':'—')+'</div><div class="sub">'+(d.dur!=null?'vídeo de '+vsMSS(d.dur):'duração: —')+'</div></div>'+
+      '<div class="card"><div class="rot">Assistiu completo</div><div class="val">'+vsPctTxt(d.completo,2)+'</div><div class="sub">'+(d.pct!=null?'em média viram '+d.pct+'% do vídeo':'—')+'</div></div>'+
+      '<div class="card"><div class="rot">Maioria parou em</div><div class="val">'+(d.parou!=null?vsMSS(d.parou):'—')+'</div><div class="sub">'+(d.parou!=null&&d.dur?'de '+vsMSS(d.dur):'')+'</div></div>'+
+    '</div>';
+    var fs=VS_FKEYS.filter(function(k){ return d[k]!=null; }).sort(function(a,b){ return d[b]-d[a]; });
+    h+='<div class="vs-linha"><b>De onde veio:</b> '+(fs.length? fs.map(function(k){ return VS_ROT[k]+' '+vsPctTxt(d[k],1); }).join(' · ') : '—')+'</div>';
+    h+='<div class="vs-linha"><b>Termos pesquisados:</b> '+((d.termos||[]).length? d.termos.map(function(t){ return '<span class="vs-termo">'+escapar(t.t)+(t.p!=null?' <small>'+vsPctTxt(t.p,1)+'</small>':'')+'</span>'; }).join(' ') : '—')+'</div>';
+    if(d.views>0) h+='<div class="vs-linha vs-porview"><b>A cada 1.000 visualizações:</b> '+ap+vsVirg2(w.itens/d.views*1000)+' '+(w.itens/d.views*1000>=2?'itens vendidos':'item vendido')+' · '+ap+reais(w.gmv/d.views*1000)+' de GMV <small>(vendas da planilha até '+dm(soDia(S.dataMax))+' · visualizações até '+lpDataBR(d.atual)+')</small></div>';
+    h+='<div class="nv-botoes"><button class="btn ghost mini" onclick="vsEditar()">Editar</button><button class="fn-lnk del" onclick="vsExcluir()">Excluir</button><small class="vs-dica">Pra trocar pelos prints de outro dia, toque em Editar.</small></div>';
+    h+='<div class="f-erro" id="vsErro"></div></div>';
+    return h;
+  }
+  h+='<div class="lp-caixa vs-caixa" id="vsCaixa" ondragover="event.preventDefault();this.classList.add(\'arrasto\')" ondragleave="this.classList.remove(\'arrasto\')" ondrop="event.preventDefault();this.classList.remove(\'arrasto\');vsArquivos(event.dataTransfer.files)">'+
+    '<div class="lp-tit"><b>Ler do print</b><label class="btn ghost mini lp-bt">Escolher prints<input type="file" id="vsArq" accept="image/*" multiple onchange="vsArquivos(this.files);this.value=\'\'"></label></div>'+
+    '<div class="lp-sub">No TikTok: abra este vídeo › <b>···</b> › <b>Análise</b> › aba <b>Visão geral</b>. Arraste aqui ou cole (Ctrl+V / ⌘V) até 4 prints <b>deste vídeo</b>: Métricas principais, Taxa de retenção, Fontes de tráfego e Termos pesquisados. O sistema preenche e <b>não salva sozinho</b>; o print não é guardado.</div>'+
+    '<div class="lp-msg '+(_vs.msg?'on ':'')+_vs.cls+'" id="vsMsg">'+_vs.msg+'</div></div>';
+  // o que ela digitou (rascunho) vale mais que a leitura; a leitura vale mais que o salvo
+  var v={}; if(ra){ v=ra.txt||{}; } else if(_vs.pre){ v=_vs.pre.txt; } else if(d){ VS_CAMPOS.forEach(function(k){ if(d.txt&&d.txt[k]!=null) v[k]=d.txt[k]; }); }
+  var atual=ra ? ra.atual : _vs.pre ? _vs.pre.atual : d ? d.atual : '';
+  var termos=ra ? ra.termos : _vs.pre ? _vs.pre.termos : d ? (d.termos||[]).map(function(t){ return t.t+(t.p!=null?' — '+String(t.p).replace('.',',')+'%':''); }).join('\n') : '';
+  function campo(k){ return '<label>'+VS_ROT[k]+(k==='views'?' *':'')+'<input id="vs_'+k+'" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="'+VS_EX[k]+'" value="'+attr(v[k]||'')+'" oninput="vsGuardarRasc()"></label>'; }
+  h+='<div class="vs-form" id="vsForm">'+(d&&_vs.editSalvo?'<p style="margin-top:0"><b>Editando a análise salva.</b></p>':'')+
+    '<div class="vs-datas"><label>Dia do print <small>("Atualizado em")</small> *<input type="date" id="vs_atual" max="'+hojeISO()+'" value="'+attr(atual||'')+'" onchange="vsGuardarRasc()"></label></div>'+
+    '<div class="vs-sub">Métricas principais</div><div class="vs-campos">'+['views','tmedio','completo','seg'].map(campo).join('')+'</div>'+
+    '<div class="vs-sub">Taxa de retenção</div><div class="vs-campos">'+['pct','parou','dur'].map(campo).join('')+'</div>'+
+    '<div class="vs-sub">Fontes de tráfego <small>(%)</small></div><div class="vs-campos vs-fontes">'+VS_FKEYS.map(campo).join('')+'</div>'+
+    '<div class="vs-sub">Termos pesquisados <small>(um por linha)</small></div><label class="vs-termos-l"><textarea id="vs_termos" rows="5" placeholder="ex: relogio bettdow — 2.6%" oninput="vsGuardarRasc()">'+escapar(termos||'')+'</textarea></label>'+
+    '<div class="f-erro" id="vsErro"></div><div class="fn-conf" id="vsConf"></div>'+
+    '<div class="nv-botoes"><button class="btn" onclick="vsSalvar()">Salvar</button>'+((d&&_vs.edit)||_vs.pre||ra?'<button class="btn ghost mini" onclick="vsCancelar()">'+(d?'Cancelar edição':'Limpar')+'</button>':'')+'</div></div></div>';
+  return h;
+}
+function vsVirg2(n){ return (Math.round(n*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function vsAplicarMarcas(){
+  Object.keys(_vs.marcas||{}).forEach(function(k){
+    var m=_vs.marcas[k], inp=document.getElementById('vs_'+k); if(!inp) return;
+    m.cls.split(' ').forEach(function(c){ inp.classList.add(c); });
+    var s=document.createElement('small'); s.className='lp-nota '+m.cls.split(' ')[0]; s.setAttribute('data-vs',k); s.textContent=m.msg; inp.parentNode.appendChild(s);
+    inp.addEventListener(k==='atual'?'change':'input', function(){ vsTirarMarca(k); });
+  });
+}
+function vsTirarMarca(k){
+  if(!_vs.marcas[k]) return; delete _vs.marcas[k];
+  var inp=document.getElementById('vs_'+k); if(inp) inp.classList.remove('lp-lido','lp-falta','vs-confira');
+  var s=document.querySelector('.lp-nota[data-vs="'+k+'"]'); if(s) s.remove();
+}
+document.addEventListener('paste', function(e){   // Ctrl+V / ⌘V com o print copiado, no detalhe do vídeo
+  if(!_videoAberto || !document.getElementById('vsCaixa') || !e.clipboardData) return;
+  var ff=document.getElementById('formFundo'); if(!ff || !ff.classList.contains('on')) return;
+  var fs=Array.prototype.slice.call(e.clipboardData.files||[]).filter(function(f){ return /^image\//.test(f.type||''); });
+  if(!fs.length) return;
+  e.preventDefault(); vsArquivos(fs);
+});
 
 function cardAlertaLoja(l){
   var desde=l.hist.desde? ' desde '+fmtD(l.hist.desde) : '';
