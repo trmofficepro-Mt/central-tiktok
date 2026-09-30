@@ -3284,7 +3284,7 @@ function vdAnalisadosHTML(){
   var an=vsAnalisados(), g=vsGeral(an);
   if(g.frase) h+='<div class="vs-geral">'+escapar(g.frase)+'</div>';
   h+='<div class="vd-tab-w"><table class="vd-tab vs-tab"><thead><tr><th>Vídeo</th><th>Postado</th><th>Views</th><th>Tempo médio</th><th>Completo</th><th>Viram em média</th><th>Para você</th><th>A cada mil views</th></tr></thead><tbody>'+
-    (g.n>=3 ? '<tr class="vs-meio"><td><b>O do meio</b><small>'+g.n+' vídeos</small></td><td>—</td><td><b>'+vsFViews(g.med.views)+'</b></td><td>'+(g.med.tmedio!=null?vsSeg1(g.med.tmedio):'—')+'</td><td>'+vsPct2(g.med.completo)+'</td><td>'+(g.med.pct!=null?vsVirg(g.med.pct)+'%':'—')+'</td><td>—</td><td>—</td></tr>' : '');
+    (g.n>=3 ? '<tr class="vs-meio"><td><b>Régua de desempenho</b><small>o típico dos seus '+g.n+' vídeos</small></td><td>—</td><td><b>'+vsFViews(g.med.views)+'</b></td><td>'+(g.med.tmedio!=null?vsSeg1(g.med.tmedio):'—')+'</td><td>'+vsPct2(g.med.completo)+'</td><td>'+(g.med.pct!=null?vsVirg(g.med.pct)+'%':'—')+'</td><td>—</td><td>—</td></tr>' : '');
   ids.forEach(function(id){
     var d=S.metas['vstudio_'+id], w=vida[id], pd=vdPostado(id), ap=d.aprox&&d.aprox.views?'~':'';
     var mil = !(d.views>0) ? '—' : (w && w.itens>0 ? ap+vsVirg2(w.itens/d.views*1000)+' '+(w.itens/d.views*1000>=2?'itens':'item')+'<small>'+ap+reais(w.gmv/d.views*1000)+'</small>' : 'nenhuma venda');
@@ -3332,17 +3332,17 @@ function vsFViews(x){ if(x==null) return '—'; x=Math.floor(x+0.5); return x>=1
 function vsPct2(x){ return x==null ? '—' : vsR(x,2).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%'; }
 function vsCompHTML(id, d, w){
   var c=vsComparar(vsAnalisados(), id);
-  if(c.faltam!=null) return '<div class="vs-comp vs-falta">Com 3 vídeos analisados ou mais, aqui aparece a comparação com o normal dos seus vídeos. '+(c.faltam===1?'Falta 1.':'Faltam '+c.faltam+'.')+'</div>';
+  if(c.faltam!=null) return '<div class="vs-comp vs-falta">Com 3 vídeos analisados ou mais, aqui aparece a régua de desempenho: o típico dos seus vídeos, pra medir cada um. '+(c.faltam===1?'Falta 1.':'Faltam '+c.faltam+'.')+'</div>';
   var SS={'↑':'<span class="vs-s up">↑ acima</span>','↓':'<span class="vs-s down">↓ abaixo</span>','=':'<span class="vs-s eq">= igual</span>'};
   function sx(s){ return s ? ' '+SS[s] : ''; }
   var s=c.setas, m=c.med, v=c.venda, L=[];
-  L.push('Views: <b>'+escapar(vsViewsTxt(d))+'</b> × '+vsFViews(m.views)+sx(s.views));
-  L.push('Tempo médio: <b>'+(d.tmedio!=null?vsSeg1(d.tmedio):'—')+'</b> × '+(m.tmedio!=null?vsSeg1(m.tmedio):'—')+sx(s.tmedio));
-  L.push('Assistiu completo: <b>'+vsPct2(d.completo)+'</b> × '+vsPct2(m.completo)+sx(s.completo));
-  L.push('Viram em média: <b>'+(d.pct!=null?d.pct+'%':'—')+'</b> × '+(m.pct!=null?vsVirg(m.pct)+'%':'—')+sx(s.pct));
-  L.push('Vendas por mil views: <b>'+(v.eu==null?'—':(w.itens>0?vsVirg2(v.eu)+' '+(v.eu>=2?'itens':'item'):'nenhuma'))+'</b> × '+(v.med==null?'—':vsVirg2(v.med))+(v.conclui?sx(v.s):' <small>pouco pra concluir (precisa de 20 itens ou mais dos dois lados)</small>'));
+  L.push('Views: <b>'+escapar(vsViewsTxt(d))+'</b> × régua '+vsFViews(m.views)+sx(s.views));
+  L.push('Tempo médio: <b>'+(d.tmedio!=null?vsSeg1(d.tmedio):'—')+'</b> × régua '+(m.tmedio!=null?vsSeg1(m.tmedio):'—')+sx(s.tmedio));
+  L.push('Assistiu completo: <b>'+vsPct2(d.completo)+'</b> × régua '+vsPct2(m.completo)+sx(s.completo));
+  L.push('Viram em média: <b>'+(d.pct!=null?d.pct+'%':'—')+'</b> × régua '+(m.pct!=null?vsVirg(m.pct)+'%':'—')+sx(s.pct));
+  L.push('Vendas por mil views: <b>'+(v.eu==null?'—':(w.itens>0?vsVirg2(v.eu)+' '+(v.eu>=2?'itens':'item'):'nenhuma'))+'</b> × régua '+(v.med==null?'—':vsVirg2(v.med))+(v.conclui?sx(v.s):' <small>pouco pra concluir (precisa de 20 itens ou mais dos dois lados)</small>'));
   var rep= /^(Esse funcionou|Segurou)/.test(c.frase) && vdVida()[id] ? rqBotao(id) : '';
-  return '<div class="vs-comp"><div class="vs-comp-t"><b>Comparado com os seus outros '+c.nOu+' vídeos analisados</b> <small>(o do meio deles)</small></div><ul>'+L.map(function(x){ return '<li>'+x+'</li>'; }).join('')+'</ul><div class="vs-frase">'+escapar(c.frase)+rep+'</div></div>';
+  return '<div class="vs-comp"><div class="vs-comp-t"><b>Medido pela régua de desempenho</b> <small>(o típico dos seus outros '+c.nOu+' vídeos analisados)</small></div><ul>'+L.map(function(x){ return '<li>'+x+'</li>'; }).join('')+'</ul><div class="vs-frase">'+escapar(c.frase)+rep+'</div></div>';
 }
 function vsVirg2(n){ return (Math.round(n*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function vsAplicarMarcas(){
