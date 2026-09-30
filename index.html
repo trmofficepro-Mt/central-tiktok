@@ -306,6 +306,14 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .vs-cedo{color:#b45309;font-weight:700}
 .vs-porview small{color:var(--tinta2)}
 .vs-dica{color:var(--tinta2);font-size:12px;align-self:center}
+.vs-comp{margin:12px 0;padding:12px 14px;border-radius:12px;background:var(--bg2);font-size:14px;line-height:1.6}
+.vs-comp ul{margin:6px 0;padding-left:18px}
+.vs-comp.vs-falta{color:var(--tinta2)}
+.vs-s{font-weight:800;font-size:12px;border-radius:999px;padding:1px 8px;margin-left:4px}
+.vs-s.up{background:#dcfce7;color:#166534}.vs-s.down{background:#fee2e2;color:#b91c1c}.vs-s.eq{background:#e5e7eb;color:#374151}
+.vs-frase{font-weight:800;margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.vs-geral{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;font-weight:700;font-size:14px}
+.vs-tab tr.vs-meio td{background:var(--bg2)}
 .vs-conferi{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin:14px 0 4px;cursor:pointer}
 .vs-conferi input{width:18px;height:18px}
 .vd-link{margin:0 0 12px}
@@ -2956,7 +2964,16 @@ function vsInterpretar(words, W){
       break;
     }
   }
-  return {secoes:secoes, campos:campos, vistos:Object.keys(vistos).sort(), termos:termos, atual:atual, temTer:yTer!=null};
+  var pub=null;   // "Publicado em 27 de ago de 2026, 16:35" (aparece em alguns aparelhos, no topo do print 1)
+  for(var q=0;q+7<ws.length;q++){
+    if(ws[q].n==='publicado' && ws[q+1].n==='em'){
+      var tk=ws.slice(q+2,q+8), tt=tk.map(function(w){ return vsLimpo(w.t); }), mes=LP_MESES[lpNorm(tt[2]||'').slice(0,3)];
+      if(tt.length===6 && /^\d{1,2}$/.test(tt[0]) && mes && /^\d{4}$/.test(tt[4]) && /^\d{1,2}:\d{2}$/.test(tt[5]))
+        pub={iso:tt[4]+'-'+String(mes).padStart(2,'0')+'-'+String(+tt[0]).padStart(2,'0'), hm:String(+tt[5].split(':')[0]).padStart(2,'0')+':'+tt[5].split(':')[1], conf:Math.min.apply(null, tk.map(function(w){ return w.c; }))};
+      break;
+    }
+  }
+  return {secoes:secoes, campos:campos, vistos:Object.keys(vistos).sort(), termos:termos, atual:atual, temTer:yTer!=null, pub:pub};
 }
 function vsSuspeito(k,c){
   var f=VS_FORMATO[k]; if(!f[0].test(String(c.txt).trim())) return f[1];
@@ -2973,9 +2990,11 @@ function vsValor(k,t){   // valor de uma leitura que já passou no formato
   if(k==='pct') return parseInt(t,10);
   return parseFloat(t.replace(/[^\d.]/g,''));
 }
-function vsVirg(n){ return String(Math.round(n*10)/10).replace('.',','); }
+function vsR(x,c){ var f=Math.pow(10,c); return Math.floor(Number((x*f).toFixed(6))+0.5)/f; }   // arredonda sem erro de conta do computador (2,445 → 2,45)
+function vsVirg(n){ return String(vsR(n,1)).replace('.',','); }
+function vsSeg1(n){ return vsR(n,1).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' s'; }   // tempo médio sempre com 1 casa, igual ao app (7,0 s)
 /* junta 1 a 4 prints do MESMO vídeo → {erro} ou {txt, val, marcas, termos, atual, avisos, nomes} */
-function vsJuntar(leituras, postadoIso, hoje){
+function vsJuntar(leituras, postadoIso, hoje, postadoHM){
   hoje=hoje||hojeISO();
   if(!leituras.length) return {erro:'Nenhuma imagem pra ler.'};
   if(leituras.length>4) return {erro:'Mande no máximo 4 prints do mesmo vídeo.'};
@@ -2991,6 +3010,10 @@ function vsJuntar(leituras, postadoIso, hoje){
   VS_FKEYS.forEach(function(k){ var vs=[], vals={}; leituras.forEach(function(L){ var c=L.campos[k]; if(c && !vsSuspeito(k,c)){ vs.push(c.txt); vals[vsValor(k,c.txt)]=1; } });
     if(Object.keys(vals).length>1) fdif.push(VS_ROT[k]+' '+vs.join(' e ')); });
   if(fdif.length>=2) return {erro:'Esses prints são de vídeos diferentes (Fontes: '+fdif.join('; ')+'). Nada foi preenchido. Mande só os prints de um vídeo.'};
+  if(postadoIso && postadoHM) for(var pq=0;pq<leituras.length;pq++){   // "Publicado em …" do print × número do vídeo aberto (só com leitura segura)
+    var pb=leituras[pq].pub;
+    if(pb && pb.conf>=80 && (pb.iso!==postadoIso || pb.hm!==postadoHM)) return {erro:'Esses prints são do vídeo publicado em '+lpDataBR(pb.iso)+' às '+pb.hm+', mas o vídeo aberto foi postado em '+lpDataBR(postadoIso)+' às '+postadoHM+'. Nada foi preenchido. Abra o vídeo certo na lista.'};
+  }
   var ats=[]; leituras.forEach(function(L){ if(L.atual && ats.indexOf(L.atual.iso)<0) ats.push(L.atual.iso); });
   if(ats.length>1) return {erro:'Os prints são de dias diferentes ('+ats.map(function(x){ return x.slice(8,10)+'/'+x.slice(5,7); }).join(' e ')+'). Nada foi preenchido. Tire todos no mesmo dia.'};
   var r={txt:{}, val:{}, marcas:{}, termos:null, atual:'', avisos:[], nomes:[]};
@@ -3074,7 +3097,7 @@ async function vsArquivos(lista){
   } finally { _vs.lendo=false; }
   if(_videoAberto!==id){ if(_vs.id===id){ _vs.msg=''; _vs.cls=''; } return; }   // ela fechou/trocou de vídeo enquanto lia: não preenche outro vídeo (e não deixa "Lendo…" preso)
   var pd=vdPostado(id);
-  vsPreencher(vsJuntar(leituras, pd?isoD(pd):'', hojeISO()));
+  vsPreencher(vsJuntar(leituras, pd?isoD(pd):'', hojeISO(), pd?vdHora(pd):''));
 }
 function vsPreencher(r){
   if(r.erro){ vsMsg('✕ '+escapar(r.erro), 'erro'); return r; }
@@ -3191,7 +3214,7 @@ function vsCardHTML(id, w){
     h+='<p class="desc vs-quando">Print de <b>'+lpDataBR(d.atual)+'</b>'+(dias!=null?' · o vídeo tinha <b>'+dias+' '+plural(dias,'dia','dias')+'</b>'+(dias<7?' <span class="vs-cedo">⚠ cedo: a aula manda analisar com 7 dias ou mais</span>':''):'')+'</p>';
     h+='<div class="cards lv-cards vd-cards vs-nums">'+
       '<div class="card"><div class="rot">Visualizações</div><div class="val">'+escapar(vsViewsTxt(d))+'</div><div class="sub">'+(d.seg!=null?inteiro(d.seg)+' '+plural(d.seg,'seguidor novo','seguidores novos'):'seguidores: —')+'</div></div>'+
-      '<div class="card"><div class="rot">Tempo médio</div><div class="val">'+(d.tmedio!=null?vsVirg(d.tmedio)+' s':'—')+'</div><div class="sub">'+(d.dur!=null?'vídeo de '+vsMSS(d.dur):'duração: —')+'</div></div>'+
+      '<div class="card"><div class="rot">Tempo médio</div><div class="val">'+(d.tmedio!=null?vsSeg1(d.tmedio):'—')+'</div><div class="sub">'+(d.dur!=null?'vídeo de '+vsMSS(d.dur):'duração: —')+'</div></div>'+
       '<div class="card"><div class="rot">Assistiu completo</div><div class="val">'+vsPctTxt(d.completo,2)+'</div><div class="sub">'+(d.pct!=null?'em média viram '+d.pct+'% do vídeo':'—')+'</div></div>'+
       '<div class="card"><div class="rot">Maioria parou em</div><div class="val">'+(d.parou!=null?vsMSS(d.parou):'—')+'</div><div class="sub">'+(d.parou!=null&&d.dur?'de '+vsMSS(d.dur):'')+'</div></div>'+
     '</div>';
@@ -3200,6 +3223,7 @@ function vsCardHTML(id, w){
     h+='<div class="vs-linha"><b>Termos pesquisados:</b> '+((d.termos||[]).length? d.termos.map(function(t){ return '<span class="vs-termo">'+escapar(t.t)+(t.p!=null?' <small>'+vsPctTxt(t.p,1)+'</small>':'')+'</span>'; }).join(' ') : '—')+'</div>';
     if(d.views>0 && !(w.itens>0)) h+='<div class="vs-linha vs-porview"><b>A cada 1.000 visualizações:</b> nenhuma venda <small>(vendas da planilha até '+dm(soDia(S.dataMax))+')</small></div>';
     else if(d.views>0) h+='<div class="vs-linha vs-porview"><b>A cada 1.000 visualizações:</b> '+ap+vsVirg2(w.itens/d.views*1000)+' '+(w.itens/d.views*1000>=2?'itens vendidos':'item vendido')+' · '+ap+reais(w.gmv/d.views*1000)+' de GMV <small>(vendas da planilha até '+dm(soDia(S.dataMax))+' · visualizações até '+lpDataBR(d.atual)+')</small></div>';
+    h+=vsCompHTML(id, d, w);   // etapa B
     h+='<div class="nv-botoes"><button class="btn ghost mini" onclick="vsEditar()">Editar</button><button class="fn-lnk del" onclick="vsExcluir()">Excluir</button><small class="vs-dica">Pra trocar pelos prints de outro dia, toque em Editar.</small></div>';
     h+='<div class="f-erro" id="vsErro"></div></div>';
     return h;
@@ -3257,17 +3281,68 @@ function vdAnalisadosHTML(){
      '<div class="vd-link-l"><input id="vdLinkIn" type="text" autocomplete="off" spellcheck="false" placeholder="cole aqui o link do vídeo (o do computador, com /video/)" onkeydown="if(event.key===\'Enter\')vdAbrirLink()"><button class="btn mini" onclick="vdAbrirLink()">Abrir</button></div>'+
      '<div class="f-erro" id="vdLinkErro"></div></div>';
   if(!ids.length) return h+'<div class="apostas-vazio">Nenhum vídeo analisado ainda. Abra um vídeo da lista acima (ou cole o link de um que não vendeu) e leia os prints do TikTok Studio.</div>';
-  h+='<div class="vd-tab-w"><table class="vd-tab vs-tab"><thead><tr><th>Vídeo</th><th>Postado</th><th>Views</th><th>Tempo médio</th><th>Completo</th><th>Viram em média</th><th>Para você</th><th>A cada mil views</th></tr></thead><tbody>';
+  var an=vsAnalisados(), g=vsGeral(an);
+  if(g.frase) h+='<div class="vs-geral">'+escapar(g.frase)+'</div>';
+  h+='<div class="vd-tab-w"><table class="vd-tab vs-tab"><thead><tr><th>Vídeo</th><th>Postado</th><th>Views</th><th>Tempo médio</th><th>Completo</th><th>Viram em média</th><th>Para você</th><th>A cada mil views</th></tr></thead><tbody>'+
+    (g.n>=3 ? '<tr class="vs-meio"><td><b>O do meio</b><small>'+g.n+' vídeos</small></td><td>—</td><td><b>'+vsFViews(g.med.views)+'</b></td><td>'+(g.med.tmedio!=null?vsSeg1(g.med.tmedio):'—')+'</td><td>'+vsPct2(g.med.completo)+'</td><td>'+(g.med.pct!=null?vsVirg(g.med.pct)+'%':'—')+'</td><td>—</td><td>—</td></tr>' : '');
   ids.forEach(function(id){
     var d=S.metas['vstudio_'+id], w=vida[id], pd=vdPostado(id), ap=d.aprox&&d.aprox.views?'~':'';
     var mil = !(d.views>0) ? '—' : (w && w.itens>0 ? ap+vsVirg2(w.itens/d.views*1000)+' '+(w.itens/d.views*1000>=2?'itens':'item')+'<small>'+ap+reais(w.gmv/d.views*1000)+'</small>' : 'nenhuma venda');
     h+='<tr class="vd-lin" data-vs="'+id+'" tabindex="0" onclick="abrirVideo(\''+id+'\')" onkeydown="if(event.key===\'Enter\')this.click()">'+
       '<td class="vd-id vs-nm">'+vdCurto(id)+'<small title="'+(w?attr(nomeProdLive(w.prod)):'')+'">'+(w? escapar(nomeCurto(nomeProdLive(w.prod))) : 'sem venda')+'</small></td>'+
       '<td>'+(pd?dm(pd):'—')+'<small>print de '+lpDataBR(d.atual)+'</small></td>'+
-      '<td><b>'+escapar(vsViewsTxt(d))+'</b></td><td>'+(d.tmedio!=null?vsVirg(d.tmedio)+' s':'—')+'</td><td>'+vsPctTxt(d.completo,2)+'</td>'+
+      '<td><b>'+escapar(vsViewsTxt(d))+'</b></td><td>'+(d.tmedio!=null?vsSeg1(d.tmedio):'—')+'</td><td>'+vsPctTxt(d.completo,2)+'</td>'+
       '<td>'+(d.pct!=null?d.pct+'%':'—')+'</td><td>'+vsPctTxt(d.pv,1)+'</td><td>'+mil+'</td></tr>';
   });
   return h+'</tbody></table></div>';
+}
+/* ===== V3 etapa B (conv. 18, 30/09): cada vídeo × o normal dos OUTROS vídeos analisados dela. Cálculo-fonte: testes/fonte_v3.py (comparar, geral).
+   "O normal" = o vídeo do meio (mediana): a média das views dos 4 primeiros dá 56 mil, puxada pelo bom; o do meio, 1,3 mil.
+   Só com 3+ analisados. Igual = menos de 15% (regra do Funil). Vendas por mil: só conclui com 20+ itens dos dois lados. ===== */
+var VS_COMP=['views','tmedio','completo','pct'];
+function vsMed(xs){ xs=xs.filter(function(x){ return x!=null && !isNaN(x); }).sort(function(a,b){ return a-b; }); if(!xs.length) return null; var m=Math.floor(xs.length/2); return xs.length%2 ? xs[m] : (xs[m-1]+xs[m])/2; }
+function vsSeta(a,b){ if(a==null || b==null) return null; if(b===0) return a>0?'↑':'='; var d=(a-b)/b; return Math.abs(d)<0.15 ? '=' : (d>0?'↑':'↓'); }
+function vsAnalisados(){
+  var vida=vdVida(), an={};
+  Object.keys(S.metas||{}).forEach(function(k){ if(k.indexOf('vstudio_')!==0 || !S.metas[k]) return; var d=S.metas[k], id=k.slice(8), w=vida[id];
+    an[id]={views:d.views, tmedio:d.tmedio, completo:d.completo, pct:d.pct, parou:d.parou, itens:w?w.itens:0, gmv:w?w.gmv:0}; });
+  return an;
+}
+function vsComparar(an, vid){
+  var ids=Object.keys(an); if(ids.length<3 || !an[vid]) return {faltam:Math.max(0,3-ids.length)};
+  var me=an[vid], ou=ids.filter(function(k){ return k!==vid; }).map(function(k){ return an[k]; }), med={}, st={};
+  VS_COMP.concat(['parou']).forEach(function(k){ med[k]=vsMed(ou.map(function(v){ return v[k]; })); });
+  VS_COMP.forEach(function(k){ st[k]=vsSeta(me[k], med[k]); });
+  function mil(v){ return v.views ? v.itens/v.views*1000 : null; }
+  var vm={eu:mil(me), med:vsMed(ou.map(mil)), itens:me.itens, itensOu:ou.reduce(function(t,v){ return t+v.itens; },0)};
+  vm.conclui= vm.itens>=20 && vm.itensOu>=20; vm.s= vm.conclui ? vsSeta(vm.eu, vm.med) : null;
+  var baixo= st.pct==='↓' || st.completo==='↓', subiu= st.pct==='↑' || st.completo==='↑', fr;
+  if(baixo) fr= me.parou!=null ? 'Onde melhorar: o começo. A maioria saiu em '+vsMSS(me.parou)+'. Teste outro gancho.' : 'Onde melhorar: o começo do vídeo. Teste outro gancho.';
+  else if(st.views==='↑' && subiu) fr='Esse funcionou: replique.';
+  else if(subiu) fr='Segurou mais que o normal: replique o gancho.';
+  else fr='Na média dos seus vídeos.';
+  return {nOu:ou.length, med:med, setas:st, venda:vm, frase:fr};
+}
+function vsGeral(an){
+  var vs=Object.keys(an).map(function(k){ return an[k]; }), n=vs.length, k=vs.filter(function(v){ return v.parou!=null && v.parou<=2; }).length, med={};
+  VS_COMP.concat(['parou']).forEach(function(x){ med[x]=vsMed(vs.map(function(v){ return v[x]; })); });
+  return {n:n, med:med, frase: (n>=3 && 4*k>=3*n) ? 'Em '+k+' de '+n+' vídeos a maioria saiu até 0:02: o gancho (os 2 primeiros segundos) é o ponto nº 1 pra melhorar.' : ''};
+}
+function vsFViews(x){ if(x==null) return '—'; x=Math.floor(x+0.5); return x>=10000 ? vsVirg(x/1000)+' mil' : inteiro(x); }
+function vsPct2(x){ return x==null ? '—' : vsR(x,2).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%'; }
+function vsCompHTML(id, d, w){
+  var c=vsComparar(vsAnalisados(), id);
+  if(c.faltam!=null) return '<div class="vs-comp vs-falta">Com 3 vídeos analisados ou mais, aqui aparece a comparação com o normal dos seus vídeos. '+(c.faltam===1?'Falta 1.':'Faltam '+c.faltam+'.')+'</div>';
+  var SS={'↑':'<span class="vs-s up">↑ acima</span>','↓':'<span class="vs-s down">↓ abaixo</span>','=':'<span class="vs-s eq">= igual</span>'};
+  function sx(s){ return s ? ' '+SS[s] : ''; }
+  var s=c.setas, m=c.med, v=c.venda, L=[];
+  L.push('Views: <b>'+escapar(vsViewsTxt(d))+'</b> × '+vsFViews(m.views)+sx(s.views));
+  L.push('Tempo médio: <b>'+(d.tmedio!=null?vsSeg1(d.tmedio):'—')+'</b> × '+(m.tmedio!=null?vsSeg1(m.tmedio):'—')+sx(s.tmedio));
+  L.push('Assistiu completo: <b>'+vsPct2(d.completo)+'</b> × '+vsPct2(m.completo)+sx(s.completo));
+  L.push('Viram em média: <b>'+(d.pct!=null?d.pct+'%':'—')+'</b> × '+(m.pct!=null?vsVirg(m.pct)+'%':'—')+sx(s.pct));
+  L.push('Vendas por mil views: <b>'+(v.eu==null?'—':(w.itens>0?vsVirg2(v.eu)+' '+(v.eu>=2?'itens':'item'):'nenhuma'))+'</b> × '+(v.med==null?'—':vsVirg2(v.med))+(v.conclui?sx(v.s):' <small>pouco pra concluir (precisa de 20 itens ou mais dos dois lados)</small>'));
+  var rep= /^(Esse funcionou|Segurou)/.test(c.frase) && vdVida()[id] ? rqBotao(id) : '';
+  return '<div class="vs-comp"><div class="vs-comp-t"><b>Comparado com os seus outros '+c.nOu+' vídeos analisados</b> <small>(o do meio deles)</small></div><ul>'+L.map(function(x){ return '<li>'+x+'</li>'; }).join('')+'</ul><div class="vs-frase">'+escapar(c.frase)+rep+'</div></div>';
 }
 function vsVirg2(n){ return (Math.round(n*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function vsAplicarMarcas(){
