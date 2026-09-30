@@ -2860,8 +2860,8 @@ var VS_FORMATO={
   pct:[/^\d{1,3}%$/,'não entendi o número'], parou:[/^\d{1,2}:\d{2}$/,'não entendi o tempo'], dur:[/^\d{1,2}:\d{2}$/,'não entendi o tempo']
 };
 VS_FKEYS.forEach(function(k){ VS_FORMATO[k]=[/^\d{1,3}\.\d%$/,'o app sempre mostra 1 casa depois do ponto (ex.: 9.1%)']; });
-var VS_ONDE={views:'Métricas principais',tmedio:'Métricas principais',completo:'Métricas principais',seg:'Métricas principais',pct:'Taxa de retenção',parou:'Taxa de retenção',dur:'embaixo do gráfico da Taxa de retenção'};
-VS_FKEYS.forEach(function(k){ VS_ONDE[k]='Fontes de tráfego'; });
+var VS_ONDE={views:'em Métricas principais',tmedio:'em Métricas principais',completo:'em Métricas principais',seg:'em Métricas principais',pct:'na Taxa de retenção',parou:'na Taxa de retenção',dur:'embaixo do gráfico da Taxa de retenção'};
+VS_FKEYS.forEach(function(k){ VS_ONDE[k]='em Fontes de tráfego'; });
 var VS_ROT={views:'Visualizações',tmedio:'Tempo médio',completo:'Assistiu completo',seg:'Novos seguidores',pct:'% médio assistido',parou:'Maioria parou em',dur:'Duração',pv:'Para você',pesq:'Pesquisar',perfil:'Perfil pessoal',outro:'Outro',fseg:'Seguindo',som:'Som'};
 var VS_EX={views:'ex: 220,7 mil',tmedio:'ex: 9.8',completo:'ex: 1.93',seg:'ex: 22',pct:'ex: 25',parou:'ex: 0:01',dur:'ex: 0:38',pv:'%',pesq:'%',perfil:'%',outro:'%',fseg:'%',som:'%'};
 var _vs={id:null, marcas:{}, msg:'', cls:'', lendo:false, edit:false, editSalvo:false, pre:null, salvando:false, conf:false};
@@ -2969,19 +2969,19 @@ function vsJuntar(leituras, postadoIso, hoje){
   if(!leituras.length) return {erro:'Nenhuma imagem pra ler.'};
   if(leituras.length>4) return {erro:'Mande no máximo 4 prints do mesmo vídeo.'};
   for(var i=0;i<leituras.length;i++) if(!leituras[i].secoes.length)
-    return {erro:'Não achei a Análise de vídeo '+(leituras.length>1?'no '+(i+1)+'º print':'neste print')+'. Use o TikTok Studio › Análise de vídeo › Visão geral. Nada foi preenchido.'};
+    return {erro:'Não achei a Análise de vídeo '+(leituras.length>1?'no '+(i+1)+'º print':'neste print')+'. Use: TikTok › o vídeo › ··· › Análise › Visão geral. Nada foi preenchido.'};
   var chk=['pct','parou','dur'];
   for(var a=0;a<chk.length;a++){
     var k=chk[a], vs=[], vals={};
     leituras.forEach(function(L){ var c=L.campos[k]; if(c && !vsSuspeito(k,c)){ vs.push(c.txt); vals[vsValor(k,c.txt)]=1; } });
-    if(Object.keys(vals).length>1) return {erro:'Os prints não são do mesmo vídeo ('+VS_ROT[k]+': '+vs.join(' × ')+'). Nada foi preenchido — mande só os prints de um vídeo.'};
+    if(Object.keys(vals).length>1) return {erro:'Esses prints são de vídeos diferentes ('+VS_ROT[k]+': '+vs.join(' e ')+'). Nada foi preenchido. Mande só os prints de um vídeo.'};
   }
   var fdif=[];   // 2 ou mais fontes diferentes entre os prints = print de outro vídeo (1 só = erro de leitura: só aquele campo fica vazio)
   VS_FKEYS.forEach(function(k){ var vs=[], vals={}; leituras.forEach(function(L){ var c=L.campos[k]; if(c && !vsSuspeito(k,c)){ vs.push(c.txt); vals[vsValor(k,c.txt)]=1; } });
-    if(Object.keys(vals).length>1) fdif.push(VS_ROT[k]+' '+vs.join(' × ')); });
-  if(fdif.length>=2) return {erro:'Os prints não são do mesmo vídeo (Fontes de tráfego: '+fdif.join(', ')+'). Nada foi preenchido — mande só os prints de um vídeo.'};
+    if(Object.keys(vals).length>1) fdif.push(VS_ROT[k]+' '+vs.join(' e ')); });
+  if(fdif.length>=2) return {erro:'Esses prints são de vídeos diferentes (Fontes: '+fdif.join('; ')+'). Nada foi preenchido. Mande só os prints de um vídeo.'};
   var ats=[]; leituras.forEach(function(L){ if(L.atual && ats.indexOf(L.atual.iso)<0) ats.push(L.atual.iso); });
-  if(ats.length>1) return {erro:'Os prints são de dias diferentes ('+ats.map(function(x){ return x.slice(8,10)+'/'+x.slice(5,7); }).join(' × ')+'). Nada foi preenchido — tire todos no mesmo dia.'};
+  if(ats.length>1) return {erro:'Os prints são de dias diferentes ('+ats.map(function(x){ return x.slice(8,10)+'/'+x.slice(5,7); }).join(' e ')+'). Nada foi preenchido. Tire todos no mesmo dia.'};
   var r={txt:{}, val:{}, marcas:{}, termos:null, atual:'', avisos:[], nomes:[]};
   var NOMES={met:'Métricas',ret:'Retenção',fon:'Fontes',ter:'Termos'};
   leituras.forEach(function(L){ L.secoes.forEach(function(s){ if(r.nomes.indexOf(NOMES[s])<0) r.nomes.push(NOMES[s]); }); });
@@ -2989,52 +2989,52 @@ function vsJuntar(leituras, postadoIso, hoje){
     var vals=[]; leituras.forEach(function(L){ if(L.campos[k]) vals.push(L.campos[k]); });
     if(!vals.length){
       var viu=leituras.some(function(L){ return L.vistos.indexOf(k)>=0; });
-      r.marcas[k]={cls:'lp-falta', msg: viu ? 'Não consegui ler o número. Digite como está no print.' : 'Não veio nos prints — está em '+VS_ONDE[k]+'.'}; return;
+      r.marcas[k]={cls:'lp-falta', msg: viu ? 'Não consegui ler. Olhe no print e digite.' : 'Não está nos prints que você mandou. Fica '+VS_ONDE[k]+'.'}; return;
     }
     var bons=vals.filter(function(c){ return !vsSuspeito(k,c); });   // leitura ilegível num print não apaga a leitura boa do outro
-    if(!bons.length){ r.marcas[k]={cls:'lp-falta', msg:'Leitura duvidosa ("'+vals[0].txt+'": '+vsSuspeito(k,vals[0])+'). Digite como está no print.'}; return; }
+    if(!bons.length){ r.marcas[k]={cls:'lp-falta', msg:'Não consegui ler com certeza. Olhe no print e digite.'}; return; }
     var nums=bons.map(function(c){ return vsValor(k,c.txt); });
-    if(nums.some(function(v){ return v!==nums[0]; })){ r.marcas[k]={cls:'lp-falta', msg:'Os prints não batem ('+bons.map(function(c){ return c.txt; }).join(' × ')+'). Digite como está no print.'}; return; }
+    if(nums.some(function(v){ return v!==nums[0]; })){ r.marcas[k]={cls:'lp-falta', msg:'Os prints mostram números diferentes ('+bons.map(function(c){ return c.txt; }).join(' e ')+'). Olhe no print e digite.'}; return; }
     r.txt[k]=bons[0].txt; r.val[k]=nums[0];
-    r.marcas[k]= k==='completo' ? {cls:'lp-lido vs-confira', msg:'confira no print: o leitor às vezes troca um número parecido (ex.: 3 × 5)'} : {cls:'lp-lido', msg:'lido do print — confira'};
+    r.marcas[k]= k==='completo' ? {cls:'lp-lido vs-confira', msg:'confira no print: o leitor às vezes troca um número parecido (3 e 5)'} : {cls:'lp-lido', msg:'lido do print — confira'};
   });
   // uma fonte diferente entre os prints: as 6 ficam vazias (pode ser print de outro vídeo com as outras ilegíveis — não mistura)
-  var fnb=VS_FKEYS.filter(function(k){ return /^Os prints não batem/.test(r.marcas[k].msg); });
+  var fnb=VS_FKEYS.filter(function(k){ return /^Os prints mostram números diferentes/.test(r.marcas[k].msg); });
   if(fnb.length){ var qual=fnb.map(function(k){ return VS_ROT[k]+' '+r.marcas[k].msg.match(/\(([^)]*)\)/)[1]; }).join(', ');
-    VS_FKEYS.forEach(function(k){ delete r.txt[k]; delete r.val[k]; r.marcas[k]={cls:'lp-falta', msg:'Os prints não batem nas Fontes de tráfego ('+qual+'). Digite as fontes como estão no print.'}; }); }
+    VS_FKEYS.forEach(function(k){ delete r.txt[k]; delete r.val[k]; r.marcas[k]={cls:'lp-falta', msg:'Os prints mostram fontes diferentes ('+qual+'). Olhe no print e digite as 6.'}; }); }
   // fontes somam 100% (cada uma vem arredondada em 1 casa)
   if(VS_FKEYS.every(function(k){ return k in r.val; })){
     var s=Math.round(VS_FKEYS.reduce(function(t,k){ return t+r.val[k]; },0)*10)/10;
-    if(s<99.5 || s>100.5) VS_FKEYS.forEach(function(k){ delete r.txt[k]; delete r.val[k]; r.marcas[k]={cls:'lp-falta', msg:'As fontes lidas somam '+vsVirg(s)+'% — no app elas sempre somam 100%. Digite como está no print.'}; });
+    if(s<99.5 || s>100.5) VS_FKEYS.forEach(function(k){ delete r.txt[k]; delete r.val[k]; r.marcas[k]={cls:'lp-falta', msg:'As fontes lidas não fecham 100% (deram '+vsVirg(s)+'%). Olhe no print e digite as 6.'}; });
   }
   // tempo médio = % médio assistido × duração (% arredondada: ±0,5; duração sem os décimos: +1 s)
   if(['tmedio','pct','dur'].every(function(k){ return k in r.val; })){
     var p=r.val.pct, d=r.val.dur, t=r.val.tmedio, lo=(p-0.5)/100*d-0.05, hi=(p+0.5)/100*(d+1)+0.05;
-    if(t<lo || t>hi){ delete r.txt.tmedio; delete r.val.tmedio; r.marcas.tmedio={cls:'lp-falta', msg:'Não fecha com a retenção ('+p+'% de '+vsMSS(d)+' dá cerca de '+vsVirg(p/100*d)+' s). Digite como está no print.'}; }
+    if(t<lo || t>hi){ delete r.txt.tmedio; delete r.val.tmedio; r.marcas.tmedio={cls:'lp-falta', msg:'Não bate com a retenção (deve ser perto de '+vsVirg(p/100*d)+' s). Olhe no print e digite.'}; }
   }
   // dicas: o campo continua VAZIO — a Mari confere no print e digita
   var faltaF=VS_FKEYS.filter(function(k){ return !(k in r.val); });
   if(faltaF.length===1){
     var f=Math.round((100-VS_FKEYS.reduce(function(t,k){ return t+(k in r.val?r.val[k]:0); },0))*10)/10;
-    if(f>=0 && f<=100) r.marcas[faltaF[0]].msg+=' Pelas outras fontes, deve ser '+vsVirg(f)+'%.';
+    if(f>=0 && f<=100) r.marcas[faltaF[0]].msg+=' Deve ser '+vsVirg(f)+'%.';
   }
-  if(!('tmedio' in r.val) && 'pct' in r.val && 'dur' in r.val && r.marcas.tmedio.msg.indexOf('Não fecha')<0)
-    r.marcas.tmedio.msg+=' Pela retenção ('+r.val.pct+'% de '+vsMSS(r.val.dur)+') dá cerca de '+vsVirg(r.val.pct/100*r.val.dur)+' s.';
+  if(!('tmedio' in r.val) && 'pct' in r.val && 'dur' in r.val && r.marcas.tmedio.msg.indexOf('Não bate com a retenção')<0)
+    r.marcas.tmedio.msg+=' Deve ser perto de '+vsVirg(r.val.pct/100*r.val.dur)+' s.';
   for(var q=0;q<leituras.length;q++) if(leituras[q].temTer){ r.termos=leituras[q].termos; break; }
-  r.marcas.termos = r.termos==null ? {cls:'lp-falta', msg:'Não veio nos prints — está embaixo das Fontes de tráfego.'} : {cls:'lp-lido', msg:'lido do print — confira as palavras (o leitor pode trocar letras)'};
+  r.marcas.termos = r.termos==null ? {cls:'lp-falta', msg:'Não está nos prints que você mandou. Fica embaixo das Fontes de tráfego.'} : {cls:'lp-lido', msg:'lido do print — confira as palavras (o leitor pode trocar letras)'};
   var A=leituras.filter(function(L){ return L.atual; }).map(function(L){ return L.atual; });
-  if(!A.length) r.marcas.atual={cls:'lp-falta', msg:'Não veio nos prints — está no topo das Métricas principais ("Atualizado em…").'};
+  if(!A.length) r.marcas.atual={cls:'lp-falta', msg:'Não está nos prints que você mandou. Fica no topo das Métricas principais ("Atualizado em").'};
   else{
     var at=A[0], dd=deIso(at.iso), ano=+hoje.slice(0,4), motivo='';
     if(!dd || isoD(dd)!==at.iso || dd.getFullYear()<ano-1 || dd.getFullYear()>ano) motivo='data impossível';
     else if(at.iso>hoje) motivo='depois de hoje';
     else if(at.conf<LP_CONF_MIN) motivo='o leitor não teve certeza';
-    if(motivo) r.marcas.atual={cls:'lp-falta', msg:'Não consegui ler o dia com certeza (li '+at.txt+': '+motivo+'). Digite o dia do "Atualizado em".'};
+    if(motivo) r.marcas.atual={cls:'lp-falta', msg:'Não consegui ler o dia com certeza. Digite o dia que aparece em "Atualizado em".'};
     else{
       r.atual=at.iso; r.marcas.atual={cls:'lp-lido', msg:'lido do print — confira o dia'};
       if(postadoIso){ var n=diasEntre(postadoIso, at.iso);
-        if(n<0) return {erro:'O dia do print ('+lpDataBR(at.iso)+') é antes do dia em que este vídeo foi postado ('+lpDataBR(postadoIso)+'): esses prints são de outro vídeo. Nada foi preenchido — abra o vídeo certo na lista.'};
-        if(n<7) r.avisos.push('O vídeo tinha só '+n+' '+plural(n,'dia','dias')+' no dia do print (postado em '+lpDataBR(postadoIso)+'). A aula manda analisar com 7 dias ou mais — tire os prints de novo a partir de '+lpDataBR(isoMais(postadoIso,7))+'.'); }
+        if(n<0) return {erro:'O print é de '+lpDataBR(at.iso)+', antes deste vídeo ser postado ('+lpDataBR(postadoIso)+'): é de outro vídeo. Nada foi preenchido. Abra o vídeo certo na lista.'};
+        if(n<7) r.avisos.push('O vídeo tinha só '+n+' '+plural(n,'dia','dias')+' no dia do print (postado em '+lpDataBR(postadoIso)+'). A aula manda analisar com 7 dias ou mais: tire os prints de novo a partir de '+lpDataBR(isoMais(postadoIso,7))+'.'); }
     }
   }
   return r;
@@ -3120,7 +3120,7 @@ function vsLerForm(){
   if(d.parou!=null && d.dur!=null && d.parou>d.dur) erros.push('"Maioria parou em" ('+vsMSS(d.parou)+') passa da duração do vídeo ('+vsMSS(d.dur)+'): confira.');
   if(VS_FKEYS.every(function(k){ return d[k]!=null; })){
     var s=Math.round(VS_FKEYS.reduce(function(t,k){ return t+d[k]; },0)*10)/10;
-    if(s<99.5 || s>100.5) erros.push('As fontes de tráfego somam '+vsVirg(s)+'% — no app elas sempre somam 100%. Confira os números.');
+    if(s<99.5 || s>100.5) erros.push('As fontes somam '+vsVirg(s)+'%, mas no app elas sempre somam 100%. Confira.');
   }
   d.termos=((document.getElementById('vs_termos')||{}).value||'').split('\n').map(function(l){
     l=l.trim(); if(!l) return null; var m=l.match(/^(.*?)[\s—–-]*(\d{1,3}(?:[.,]\d)?)\s*%$/);
