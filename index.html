@@ -345,6 +345,7 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 /* (conv. 14) cartão "Funil de ontem" no topo do Planejar, no computador e no celular (tarefa do dia) */
 @media(max-width:899px){
   .lateral .abas button[data-mod="funil"]{display:none}   /* celular: entra pelo cartão do Planejar (barra de baixo já está cheia) */
+  .lateral .abas button[data-mod="resumo"]{display:none}   /* (conv. 19) Resumo da semana: computador primeiro, igual Vídeos e Funil (decisão 57) */
 }
 @media all{
   .fn-atalho{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin:0 0 12px;padding:12px 14px;border:1px solid var(--linha);border-radius:var(--raio);background:var(--panel);font-family:inherit;font-size:13px;color:var(--tinta2);cursor:pointer}
@@ -374,6 +375,7 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .rq-info{font-size:13px;color:var(--tinta2);margin:0 0 6px;line-height:1.45} .rq-info a{color:var(--uva);font-weight:700}
 .vg-molde{color:var(--tinta3)} .vg-molde a{color:var(--uva);font-weight:700;text-decoration:none}
 .vd-acao.nada{border-left:4px solid var(--verde)}
+.rs-tab td small{display:block;font-size:11.5px;color:var(--tinta3);font-weight:500} .rs-tab td:first-child{font-weight:700;color:var(--tinta)} .rs-aviso{color:#b45309}
 .vd-selo{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:1px 6px;vertical-align:1px}
 .vd-selo.molde{background:#dcfce7;color:#15803d} .vd-selo.novo{background:#fef3c7;color:#b45309}
 .vd-mais{margin-top:10px}
@@ -730,7 +732,7 @@ body.sem-dados .lateral{display:none}
   .lat-tit{display:block;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--tinta3);padding:0 6px 8px}
   .lat-grupo{display:block;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--tinta3);padding:4px 6px 2px} .lat-grupo.g2{margin-top:12px;padding-top:12px;border-top:1px solid var(--linha)}
   .lateral .abas{flex-direction:column;margin:0;gap:4px;padding:8px;overflow:visible}
-  .lateral .abas button{flex:none;width:100%;justify-content:flex-start;padding:12px 14px;font-size:14px;gap:10px}
+  .lateral .abas button{flex:none;width:100%;justify-content:flex-start;padding:12px 14px;font-size:14px;gap:10px;min-width:0;white-space:normal;text-align:left}   /* (conv. 19) nome comprido (Resumo da semana) quebra linha em vez de sair da coluna */
   .lateral .abas button svg{width:18px;height:18px}
   .principal .wrap{max-width:1100px}
 }
@@ -1091,6 +1093,10 @@ div.apl-t{cursor:default}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg>
         Funil
       </button>
+      <button data-mod="resumo" onclick="irPara('resumo')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"/><path d="M8 13l3 3 9-9"/></svg>
+        Resumo da semana
+      </button>
       <div class="lat-grupo g2">Pra entender os números</div>
       <button data-mod="vendas" onclick="irPara('vendas')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg>
@@ -1219,6 +1225,14 @@ div.apl-t{cursor:default}
         <h3>Vídeos</h3>
         <p class="desc">O que mais vendeu nos últimos dias — produtos e vídeos — pra saber o que replicar e escalar. Toque num vídeo pra ver o detalhe.</p>
         <div id="videosConteudo"></div>
+      </div>
+    </div>
+
+    <div class="modulo" id="mod-resumo">
+      <div class="sec" style="margin-top:22px">
+        <h3>Resumo da semana</h3>
+        <p class="desc">Uma vez por semana: como foi a semana, o que fazer na próxima e o que vale replicar. Junta a planilha, os vídeos e a régua de desempenho numa leitura só.</p>
+        <div id="resumoConteudo"></div>
       </div>
     </div>
 
@@ -1599,7 +1613,8 @@ function irPara(mod){
   });
   if(typeof ajustarTopo==='function') ajustarTopo();
   if(mod==='planejar' && typeof renderPlanejar==='function') renderPlanejar();
-  if(mod==='funil' && typeof renderFunil==='function') renderFunil();   // A planejar usa a lista de marcados (O que gravar), que pode ter mudado em outra tela
+  if(mod==='funil' && typeof renderFunil==='function') renderFunil();
+  if(mod==='resumo' && typeof renderResumo==='function') renderResumo();   // (conv. 19) Postei e análises de vídeo mudam em outras telas   // A planejar usa a lista de marcados (O que gravar), que pode ter mudado em outra tela
   if(typeof redesenharVisiveis==='function') redesenharVisiveis();
   try{ window.scrollTo({top:0, behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); }
 }
@@ -2117,8 +2132,8 @@ function vdCampeoes30(hoje){
   l.forEach(function(k){ if(tot>0 && ac/tot<0.8) c[k]=1; ac+=m[k]; });
   return {set:c, n:Object.keys(c).length, m:m};
 }
-function vdAnalise(N){
-  var hoje=soDia(S.dataMax), ini=maisDias(hoje,-(N-1)), aIni=maisDias(ini,-N), aFim=maisDias(ini,-1);
+function vdAnalise(N, hojeArg){   // (conv. 19) hojeArg = domingo da semana fechada (Resumo da semana); padrão = último dia da planilha
+  var hoje=soDia(hojeArg||S.dataMax), ini=maisDias(hoje,-(N-1)), aIni=maisDias(ini,-N), aFim=maisDias(ini,-1);
   var r={N:N, hoje:hoje, ini:ini, aIni:aIni, aFim:aFim, gmv:0, com:0, gmvA:0, comA:0, vid:0, vidA:0, live:0, liveA:0, lv:{}, lvA:{}}, P={}, V={}, lvAg={}, lvP={};
   S.todas.forEach(function(x){
     if(!x.data) return; var d=soDia(x.data), dent=d>=ini&&d<=hoje, ant=d>=aIni&&d<=aFim;
@@ -2166,7 +2181,7 @@ function vdAnalise(N){
   r.pegou=r.videos.filter(function(o,i){ return o.novo && i<10; }).slice(0,3);
   return r;
 }
-function vdHtmlAcoes(r){
+function vdItensAcoes(r){   // (conv. 19) as ações do "O que fazer" numa lista (k = lives | parados | moldes | pegou): a tela Vídeos e o Resumo da semana usam a mesma
   var N=r.N, A=[];
   if(r.nLiveA>0 && r.nLive<r.nLiveA/2){
     var lp=r.lvProdA;
@@ -2189,10 +2204,63 @@ function vdHtmlAcoes(r){
     A.push({t:'Vídeo novo que já pegou', c:'Começou a vender nesses '+N+' dias e já está entre os 10 que mais deram comissão: grave mais um enquanto está quente.'+
       '<ul>'+r.pegou.map(function(o){ return '<li class="vd-cl" onclick="abrirVideo(\''+o.id+'\')">'+rqBotao(o.id)+'<a href="'+vdLink(o.id)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+vdCurto(o.id)+' ↗</a> <b>'+escapar(nomeCurto(nomeProdLive(o.vida.prod)))+'</b><br>1ª venda '+dm(o.vida.pri)+' · '+reais(o.com)+' de comissão</li>'; }).join('')+'</ul>', k:'pegou'});
   }
+  return A;
+}
+function vdAcaoHTML(a,i){ return '<div class="vd-acao" data-acao="'+a.k+'"><span class="vd-an">'+(i+1)+'</span><div class="vd-ac"><div class="vd-at">'+a.t+'</div>'+a.c+'</div></div>'; }
+function vdHtmlAcoes(r){
+  var N=r.N, A=vdItensAcoes(r);
   var h='<h4 class="vd-h4">2. O que fazer <small>com o número que justifica cada ação</small></h4><div class="vd-acoes" id="vdAcoes">';
   if(!A.length) h+='<div class="vd-acao nada"><div class="vd-ac"><div class="vd-at">Nada urgente nesses '+N+' dias</div>Nenhum campeão parado, lives no ritmo e nenhum vídeo pra replicar agora. Siga o plano.</div></div>';
-  A.forEach(function(a,i){ h+='<div class="vd-acao" data-acao="'+a.k+'"><span class="vd-an">'+(i+1)+'</span><div class="vd-ac"><div class="vd-at">'+a.t+'</div>'+a.c+'</div></div>'; });
+  A.forEach(function(a,i){ h+=vdAcaoHTML(a,i); });
   return h+'</div>';
+}
+/* ===================== RESUMO DA SEMANA (conv. 19, entrega 1) — o "gestor" (decisão 78) =====================
+   A última semana FECHADA (segunda a domingo) até o último dia completo da planilha × a semana anterior.
+   Cálculo-fonte: testes/fonte_semana.py. Foco da semana que vem = as ações do "O que fazer" de 7 dias com hoje = domingo
+   (lives, campeões parados — mesma função) + a frase do gancho da Régua (V3). O que funcionou = moldes + vídeo novo que pegou. */
+function rsSemana(){
+  if(!S.dataMax || !S.dataMin) return null;
+  var ult=soDia(S.dataMax), dom=maisDias(ult,-ult.getDay()), ini=maisDias(dom,-6);   // getDay: domingo=0 … sábado=6
+  if(ini<soDia(S.dataMin)) return null;
+  var aIni=maisDias(ini,-7), aFim=maisDias(ini,-1), comp=aIni>=soDia(S.dataMin);
+  return {ini:ini, dom:dom, aIni:comp?aIni:null, aFim:comp?aFim:null};
+}
+function rsNumeros(ini, fim){
+  var v=S.todas.filter(function(x){ return x.data && x.data>=ini && x.data<=fim; }), R=resumo(v), lv={}, vid=0, live=0;
+  v.forEach(function(x){ if(x.tipo==='Vídeo') vid+=x.gmv; if(x.tipo==='Live'){ live+=x.gmv; if(x.idCont) lv[x.idCont]=1; } });
+  return {gmv:R.gmv, com:R.com, ped:R.pedidos, ticket:R.ticket, comItem:R.comItem, vid:vid, live:live, nLives:Object.keys(lv).length};
+}
+function renderResumo(){
+  var box=document.getElementById('resumoConteudo'); if(!box) return;
+  if(!S.todas || !S.todas.length || !S.dataMax){ box.innerHTML='<div class="apostas-vazio">Importe a planilha pra ver o resumo da semana.</div>'; return; }
+  var W=rsSemana();
+  if(!W){ box.innerHTML='<div class="apostas-vazio">Ainda não tem uma semana inteira (de segunda a domingo) na planilha. O resumo aparece quando tiver.</div>'; return; }
+  var A=rsNumeros(W.ini, W.dom), B=W.aIni? rsNumeros(W.aIni, W.aFim) : null;
+  var h='<p class="desc rs-per">Semana de <b>'+dm(W.ini)+' a '+dm(W.dom)+'</b> (segunda a domingo)'+
+    (B? ' · comparada com <b>'+dm(W.aIni)+' a '+dm(W.aFim)+'</b>.' : ' · <span class="rs-aviso">sem comparação: a planilha não cobre a semana anterior inteira.</span>')+
+    ' É sempre a última semana inteira que está na planilha: importe a planilha na segunda pra ver a semana que passou.</p>';
+  // 1. números
+  function lin(rot, a, b, f, sub){ return '<tr><td>'+rot+'</td><td><b>'+f(a)+'</b>'+(sub?'<small>'+sub[0]+'</small>':'')+'</td>'+(B?'<td>'+f(b)+(sub?'<small>'+sub[1]+'</small>':'')+'</td><td>'+vdDelta(a,b)+'</td>':'')+'</tr>'; }
+  var nl=function(n){ return n+' '+plural(n,'live','lives'); };
+  h+='<h4 class="vd-h4">1. A semana em números</h4><div class="vd-tab-w"><table class="vd-tab rs-tab"><thead><tr><th></th><th>'+dm(W.ini)+' a '+dm(W.dom)+'</th>'+(B?'<th>'+dm(W.aIni)+' a '+dm(W.aFim)+'</th><th></th>':'')+'</tr></thead><tbody>'+
+    lin('GMV', A.gmv, B&&B.gmv, reais)+lin('Comissão', A.com, B&&B.com, reais)+lin('Pedidos', A.ped, B&&B.ped, inteiro)+
+    lin('Ticket médio', A.ticket, B&&B.ticket, reais)+lin('Comissão por item', A.comItem, B&&B.comItem, reais)+
+    lin('Vídeos (GMV)', A.vid, B&&B.vid, reais)+lin('Lives (GMV)', A.live, B&&B.live, reais, [nl(A.nLives), B?nl(B.nLives):''])+
+    '</tbody></table></div>';
+  // 2. foco da semana que vem  ·  3. o que funcionou
+  var r=vdAnalise(7, W.dom), it=vdItensAcoes(r), foco=it.filter(function(a){ return a.k==='lives'||a.k==='parados'; });
+  var g=vsGeral(vsAnalisados());
+  if(g.frase) foco.push({k:'gancho', t:'Teste outro gancho', c:escapar(g.frase)+' Nos próximos vídeos, mude o começo (a primeira frase e a primeira imagem). <a href="#" onclick="event.preventDefault();irPara(\'videos\')">Ver os vídeos analisados ›</a>'});
+  foco=foco.slice(0,3);
+  h+='<h4 class="vd-h4">2. Foco da semana que vem <small>até 3, nesta ordem</small></h4><div class="vd-acoes" id="rsFoco">';
+  if(!foco.length) h+='<div class="vd-acao nada"><div class="vd-ac"><div class="vd-at">Nada urgente nessa semana</div>Lives no ritmo, nenhum campeão parado e nada a mudar no gancho. Siga o plano.</div></div>';
+  foco.forEach(function(a,i){ h+=vdAcaoHTML(a,i); });
+  h+='</div>';
+  var bom=it.filter(function(a){ return a.k==='moldes'||a.k==='pegou'; });
+  h+='<h4 class="vd-h4">3. O que funcionou <small>replique</small></h4><div class="vd-acoes" id="rsBom">';
+  if(!bom.length) h+='<div class="vd-acao"><div class="vd-ac">Nenhum vídeo se destacou nessa semana (vendendo quase todo dia ou vídeo novo entre os 10 primeiros).</div></div>';
+  bom.forEach(function(a,i){ h+=vdAcaoHTML(a,i); });
+  box.innerHTML=h+'</div>';
 }
 function setVdN(n){ _vdN=n; _vdTodosP=false; _vdTodosV=false; renderVideos(); }
 function vdVerTodos(q){ if(q==='p') _vdTodosP=true; else _vdTodosV=true; renderVideos(); }
@@ -3471,6 +3539,7 @@ function render(){
   renderLives();
   renderVideos();
   renderFunil();
+  renderResumo();
   renderAmostras();
   renderPlanejar();
 
@@ -5140,7 +5209,7 @@ var _impAberto=false;
 function alternarDetImport(){ _impAberto=!_impAberto; renderImportBox(); }
 /* (conv. 15) telas do Dia a dia não usam o período (conferido: Planejar, Amostras, Funil) → sem os botões de período;
    no Planejar a faixa de amostras vira linha curta no celular e some no computador (a lista O que gravar já mostra) */
-var TELAS_SEM_PERIODO=['mod-planejar','mod-amostras','mod-funil','mod-videos'];   // (conv. 18, pendência 28) Vídeos tem a chave própria 7·15·30
+var TELAS_SEM_PERIODO=['mod-planejar','mod-amostras','mod-funil','mod-videos','mod-resumo'];   // (conv. 19) Resumo: sempre a última semana fechada   // (conv. 18, pendência 28) Vídeos tem a chave própria 7·15·30
 function ajustarTopo(){
   var m=document.querySelector('.modulo.on'), id=m?m.id:'';
   document.body.classList.toggle('sem-periodo', TELAS_SEM_PERIODO.indexOf(id)>=0);
