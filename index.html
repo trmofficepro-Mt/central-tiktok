@@ -2119,7 +2119,8 @@ function semVideoNovo(N, hoje){
   hoje=soDia(hoje); var ini=maisDias(hoje,-(N-1)), C=vdCampeoes30(soDia(S.dataMax)), vida=vdVida(), ult={}, fonte={};
   Object.keys(vida).forEach(function(id){ var w=vida[id]; if(!C.set[w.prod]) return; if(!ult[w.prod] || w.pri>ult[w.prod]){ ult[w.prod]=w.pri; fonte[w.prod]='planilha'; } });
   Object.values(S.plano||{}).forEach(function(x){ var d=x.dados||{}; if(x.excluido || d.tipo==='live' || d.status!=='postado' || !d.data) return;
-    var ch=chaveDoProd((d.produtos||[])[0]||null); if(!ch || !C.set[ch]) return;
+    var p0=(d.produtos||[])[0]; if(!p0) return;   // (conv. 19) vaga só com a ideia (sem produto) quebrava aqui: não é vídeo de nenhum campeão
+    var ch=chaveDoProd(p0); if(!ch || !C.set[ch]) return;
     var dt=deIso(d.data); if(!ult[ch] || dt>ult[ch]){ ult[ch]=dt; fonte[ch]='postei'; } });
   return Object.keys(C.set).map(function(ch){ var u=ult[ch]||null;
     return {chave:ch, com30:C.m[ch]||0, ult:u, fonte:u?fonte[ch]:null, dias: u ? Math.max(0, Math.round((hoje-soDia(u))/86400000)) : null, parado: !u || soDia(u)<ini}; })
@@ -2260,7 +2261,53 @@ function renderResumo(){
   h+='<h4 class="vd-h4">3. O que funcionou <small>replique</small></h4><div class="vd-acoes" id="rsBom">';
   if(!bom.length) h+='<div class="vd-acao"><div class="vd-ac">Nenhum vídeo se destacou nessa semana (vendendo quase todo dia ou vídeo novo entre os 10 primeiros).</div></div>';
   bom.forEach(function(a,i){ h+=vdAcaoHTML(a,i); });
-  box.innerHTML=h+'</div>';
+  h+='</div>';
+  h+='<h4 class="vd-h4">4. Funil da semana <small>números do app do TikTok (Funil)</small></h4>'+rsFunilHTML(W);
+  h+='<h4 class="vd-h4">5. Planejar da semana <small>o que foi postado do que estava planejado</small></h4>'+rsPlanejarHTML(W);
+  box.innerHTML=h;
+}
+/* (conv. 19, entrega 2) Funil da semana: dias do "Dia a dia" registrados na semana e na anterior; compara só com 5 de 7
+   nas DUAS (o mínimo da média de 7 dias do F2), pela mesma comparação do F2. Fonte: fonte_semana.funil_semana */
+function rsFunil(W){
+  var I=isoD(W.ini), F=isoD(W.dom), aI=W.aIni?isoD(W.aIni):null, aF=W.aFim?isoD(W.aFim):null, da=[], db=[];
+  fnRegistros('dia').forEach(function(x){ var k=x.d.de; if(k>=I && k<=F) da.push(x.d); else if(aI && k>=aI && k<=aF) db.push(x.d); });
+  var r={nA:da.length, nB:aI?db.length:null, min:FL_MINIMO[7]};
+  if(aI && da.length>=r.min && db.length>=r.min){
+    var at={ini:I, fim:F, m:flMetricas(flSoma(da), da.length)}, bs={ini:aI, fim:aF, m:flMetricas(flSoma(db), db.length)}, c=flComparar(at, bs);
+    r.L={atual:at, base:bs, st:c.st, onde:c.onde, live:c.live};
+  }
+  return r;
+}
+function rsFunilHTML(W){
+  var f=rsFunil(W), h='<div class="nv-card fl-card rs-funil" id="rsFunil">';
+  h+='<p class="fl-comp">Dias registrados no Funil: <b>'+f.nA+' de 7</b> nessa semana'+(f.nB!=null?' · <b>'+f.nB+' de 7</b> na semana anterior':'')+'.</p>';
+  if(f.L){
+    h+=flCorpoHTML(f.L,'rsFl');
+    h+='<p class="fn-nota" style="margin-top:6px">Média dos dias registrados de cada semana. "Igual" = menos de 15% de diferença. Conversão só conclui com 20 itens ou mais.</p>';
+  } else {
+    h+='<p class="fl-comp">Pra comparar a semana, precisa de <b>'+f.min+' dos 7 dias</b> registrados nas duas semanas. Registre o dia de ontem todo dia no <a href="#" onclick="event.preventDefault();irPara(\'funil\')">Funil ›</a> (Ler do print).</p>';
+  }
+  return h+'</div>';
+}
+/* (conv. 19, entrega 2) Planejar da semana: vagas de vídeo da semana (não apagadas). Planejados = postado + gravado + pendente;
+   descartado fica de fora (mostrado à parte). Lives agendadas na semana: quantas foram feitas. Fonte: fonte_semana.planejar_semana */
+function rsPlanejar(W){
+  var I=isoD(W.ini), F=isoD(W.dom), c={postado:0, gravado:0, planejado:0, cancelado:0}, lv={n:0, feitas:0};
+  Object.values(S.plano||{}).forEach(function(x){ var d=x.dados||{}; if(x.excluido || !d.data || d.data<I || d.data>F) return;
+    if(d.tipo==='live'){ if(d.status!=='cancelado'){ lv.n++; if(d.status==='postado') lv.feitas++; } return; }
+    var s=d.status||'planejado'; c[s]=(c[s]||0)+1; });
+  return {postados:c.postado, gravados:c.gravado, pendentes:c.planejado, descartados:c.cancelado, planejados:c.postado+c.gravado+c.planejado, lives:lv};
+}
+function rsPlanejarHTML(W){
+  var p=rsPlanejar(W), h='<div class="nv-card rs-plan" id="rsPlanejar">';
+  if(!p.planejados) h+='<p class="fl-comp"><b>Nenhum roteiro planejado</b> pra essa semana no Planejar'+(p.descartados?' ('+p.descartados+' '+plural(p.descartados,'descartado','descartados')+')':'')+'. Planejando a semana no Planejar, aqui aparece quanto do plano virou vídeo postado.</p>';
+  else {
+    h+='<p class="fl-comp"><b>'+p.postados+' de '+p.planejados+' '+plural(p.planejados,'roteiro postado','roteiros postados')+'</b> ('+Math.round(p.postados/p.planejados*100)+'%)'+
+      (p.gravados?' · '+p.gravados+' '+plural(p.gravados,'gravado','gravados')+' sem postar':'')+(p.pendentes?' · '+p.pendentes+' '+plural(p.pendentes,'pendente','pendentes')+' (não gravados)':'')+
+      (p.descartados?' · '+p.descartados+' '+plural(p.descartados,'descartado','descartados'):'')+'.</p>';
+  }
+  if(p.lives.n) h+='<p class="fl-comp">Lives: <b>'+p.lives.feitas+' de '+p.lives.n+'</b> '+plural(p.lives.n,'agendada foi feita','agendadas foram feitas')+'.</p>';
+  return h+'</div>';
 }
 function setVdN(n){ _vdN=n; _vdTodosP=false; _vdTodosV=false; renderVideos(); }
 function vdVerTodos(q){ if(q==='p') _vdTodosP=true; else _vdTodosV=true; renderVideos(); }
@@ -2528,6 +2575,10 @@ function fnLeitura(N){
     var enc=fnRegistros('per').map(function(x){ return x.d; }).filter(function(r){ return r.ate>=atual.prim && r.ate>=isoMais(atual.prim,-14); })[0] || null;
     return {modo:'sem_base', atual:atual, N:N, registrados:a.ks.length, temHoje:temHoje, resumoEncosta:enc};
   }
+  var c=flComparar(atual, base);
+  return {modo:'compara', atual:atual, base:base, st:c.st, onde:c.onde, live:c.live, N:N, temHoje:temHoje};
+}
+function flComparar(atual, base){   // (conv. 19) separado do fnLeitura: o Resumo da semana usa a MESMA comparação (fonte_f2.comparar)
   var A=atual.m, B=base.m, st={};
   ['impDia','ctr','conv','ticket','gmvDia'].forEach(function(k){
     if(A[k]==null || !B[k]){ st[k]={delta:null, status:'sem'}; return; }
@@ -2540,7 +2591,7 @@ function fnLeitura(N){
   if(onde==='nada' && st.gmvDia.status==='caiu' && st.ticket.status==='caiu') onde='ticket';
   var la=flLiveFracao(atual.ini, atual.fim), lb=flLiveFracao(base.ini, base.fim);
   var live=((la!=null && la>=0.2) || (lb!=null && lb>=0.2)) ? {atual:la, base:lb} : null;
-  return {modo:'compara', atual:atual, base:base, st:st, onde:onde, live:live, N:N, temHoje:temHoje};
+  return {st:st, onde:onde, live:live};
 }
 function flPct(dl){ return Math.round(Math.abs(dl))+'%'; }
 function flVerbo(nome, s){ return nome+' '+(s.status==='igual'?'igual':(s.status==='caiu'?'caiu ':'subiu ')+flPct(s.delta)); }
@@ -2587,14 +2638,18 @@ function flCardHTML(){
     : '<b>'+(L.atual.tipo==='dia'?'Dia '+dm(deIso(L.atual.ini)):'Últimos '+N+' dias ('+flQuando(L.atual)+', '+L.atual.n+' registrados)')+'</b> × média por dia do <b>Resumo de '+dm(deIso(L.base.ini))+' a '+dm(deIso(L.base.fim))+'</b>.'+
       (L.atual.tipo==='dia' ? ' A média de '+N+' dias começa com '+FL_MINIMO[N]+' dias registrados.' : '');
   h+=aviso+'<p class="fl-comp">'+comp+'</p>';
-  h+='<div class="fl-onde fl-'+L.onde+'" id="flOnde">'+flOndeTexto(L)+'</div>';
-  h+='<ul class="fl-frases" id="flFrases">'+flFrases(L).map(function(x){ return '<li class="fl-'+x.st+'" data-k="'+x.k+'">'+x.t+'</li>'; }).join('')+'</ul>';
-  if(L.live){
-    var p=function(v){ return v==null?'sem planilha':Math.round(v*100)+'%'; };
-    h+='<p class="fl-live" id="flLive">⚠ Teve live: '+p(L.live.atual)+' das vendas da planilha no período de agora ('+p(L.live.base)+' antes). Dia com live costuma ter conversão diferente — compare com cuidado.</p>';
-  }
+  h+=flCorpoHTML(L,'fl');
   h+='<p class="fn-nota" style="margin-top:6px">Compara só com os números da própria Mari. "Igual" = menos de 15% de diferença. Conversão só conclui com 20 itens ou mais.</p>';
   return h+'</div>';
+}
+function flCorpoHTML(L, pre){   // (conv. 19) onde agir + frases + aviso de live — o cartão do Funil (pre 'fl') e o Resumo da semana (pre 'rsFl')
+  var h='<div class="fl-onde fl-'+L.onde+'" id="'+pre+'Onde">'+flOndeTexto(L)+'</div>';
+  h+='<ul class="fl-frases" id="'+pre+'Frases">'+flFrases(L).map(function(x){ return '<li class="fl-'+x.st+'" data-k="'+x.k+'">'+x.t+'</li>'; }).join('')+'</ul>';
+  if(L.live){
+    var p=function(v){ return v==null?'sem planilha':Math.round(v*100)+'%'; };
+    h+='<p class="fl-live" id="'+pre+'Live">⚠ Teve live: '+p(L.live.atual)+' das vendas da planilha no período de agora ('+p(L.live.base)+' antes). Dia com live costuma ter conversão diferente — compare com cuidado.</p>';
+  }
+  return h;
 }
 function setFlN(n){ _fl.N=n; var c=document.getElementById('flCard'); if(c) c.outerHTML=flCardHTML(); renderFunilAtalho(); }
 /* ===================== LER DO PRINT (conv. 17) =====================
