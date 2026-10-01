@@ -2684,7 +2684,9 @@ var LP_ROTULOS=[   // campo, palavras do rótulo, palavra seguinte que NÃO pode
   ['cli',['cliques','no','produto']], ['com',['comissoes','estimadas']], ['views',['visualizacoes'],'do'],
   ['gmv_c',['gmv','da','comissao']], ['itens_c',['itens','vendidos','com','comissao']]
 ];
-var LP_JUNTA={gmv:['gmv','gmv_c'], itens:['itens','itens_c'], imp:['imp'], cli:['cli'], com:['com'], views:['views']};
+/* (conv. 21, pendência 38) cada campo vem de UM rótulo só: GMV e itens SÓ da Visão geral. "GMV da comissão" e "Itens vendidos
+   com comissão" (Comissões) são outros números num período (setembro: 712 × 693) — não entram. Conferência só no mesmo rótulo. */
+var LP_JUNTA={gmv:['gmv'], itens:['itens'], imp:['imp'], cli:['cli'], com:['com'], views:['views']};
 var LP_MESES={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
 function lpNorm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/^[.,:;!|]+|[.,:;!|]+$/g,''); }
 
@@ -2779,9 +2781,14 @@ function lpJuntar(leituras){
   leituras.forEach(function(L){ var n=L.campos.imp||L.campos.cli ? 'Visão geral' : (L.campos.com ? 'Comissões' : 'Dados'); if(r.nomes.indexOf(n)<0) r.nomes.push(n); });
   Object.keys(LP_JUNTA).forEach(function(k){
     var vals=[];
-    leituras.forEach(function(L){ LP_JUNTA[k].forEach(function(kk){ if(L.campos[kk]) vals.push(L.campos[kk]); }); });
+    leituras.forEach(function(L){
+      var daComissoes=!!(L.campos.com||L.campos.gmv_c||L.campos.itens_c);   // print da Comissões: "GMV atribuído"/"Itens… atribuídos" ali só pode ser de um PRODUTO da lista (nunca o total)
+      if(daComissoes && (k==='gmv'||k==='itens')) return;
+      LP_JUNTA[k].forEach(function(kk){ if(L.campos[kk]) vals.push(L.campos[kk]); });
+    });
     if(!vals.length){
-      if(k==='imp'||k==='cli') r.marcas[k]={cls:'lp-falta', msg:'Não veio no print — está na Visão geral.'};
+      var temVG=leituras.some(function(L){ return !(L.campos.com||L.campos.gmv_c||L.campos.itens_c) && (L.campos.imp||L.campos.cli||L.campos.gmv||L.campos.itens); });
+      if(k==='imp'||k==='cli'||((k==='gmv'||k==='itens') && !temVG)) r.marcas[k]={cls:'lp-falta', msg:'Não veio no print — está na Visão geral.'};
       else if(k==='gmv'||k==='itens') r.marcas[k]={cls:'lp-falta', msg:'Não achei no print — digite.'};
       return;
     }
