@@ -1613,8 +1613,8 @@ function irPara(mod){
   });
   if(typeof ajustarTopo==='function') ajustarTopo();
   if(mod==='planejar' && typeof renderPlanejar==='function') renderPlanejar();
-  if(mod==='funil' && typeof renderFunil==='function') renderFunil();
-  if(mod==='resumo' && typeof renderResumo==='function') renderResumo();   // (conv. 19) Postei e análises de vídeo mudam em outras telas   // A planejar usa a lista de marcados (O que gravar), que pode ter mudado em outra tela
+  if(mod==='funil' && typeof renderFunil==='function') renderFunil();   // A planejar usa a lista de marcados (O que gravar), que pode ter mudado em outra tela
+  if(mod==='resumo' && typeof renderResumo==='function') renderResumo();   // (conv. 19) Postei e análises de vídeo mudam em outras telas
   if(typeof redesenharVisiveis==='function') redesenharVisiveis();
   try{ window.scrollTo({top:0, behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); }
 }
@@ -5264,7 +5264,7 @@ var _impAberto=false;
 function alternarDetImport(){ _impAberto=!_impAberto; renderImportBox(); }
 /* (conv. 15) telas do Dia a dia não usam o período (conferido: Planejar, Amostras, Funil) → sem os botões de período;
    no Planejar a faixa de amostras vira linha curta no celular e some no computador (a lista O que gravar já mostra) */
-var TELAS_SEM_PERIODO=['mod-planejar','mod-amostras','mod-funil','mod-videos','mod-resumo'];   // (conv. 19) Resumo: sempre a última semana fechada   // (conv. 18, pendência 28) Vídeos tem a chave própria 7·15·30
+var TELAS_SEM_PERIODO=['mod-planejar','mod-amostras','mod-funil','mod-videos','mod-resumo'];   // (conv. 18, pendência 28) Vídeos tem a chave própria 7·15·30 · (conv. 19) Resumo: sempre a última semana fechada
 function ajustarTopo(){
   var m=document.querySelector('.modulo.on'), id=m?m.id:'';
   document.body.classList.toggle('sem-periodo', TELAS_SEM_PERIODO.indexOf(id)>=0);
