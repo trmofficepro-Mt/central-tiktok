@@ -442,6 +442,8 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .per-info{margin-top:10px;font-size:12.5px;color:var(--tinta2);line-height:1.45}
 .per-info b{color:var(--tinta)}
 .per-info .aviso{color:#b45309}
+.imp-meio{color:#b45309;font-weight:700}
+.vd-meio,.meta-meio{color:#b45309;font-weight:600}   /* (conv. 19) último dia da planilha pela metade */
 .delta{display:inline-block;font-size:11.5px;font-weight:800;margin-top:6px;padding:2px 7px;border-radius:6px}
 .delta.up{color:#15803d;background:#dcfce7}
 .delta.down{color:#b91c1c;background:#fee2e2}
@@ -1550,6 +1552,22 @@ function aplicarPeriodo(per){
   renderPerInfo();
   render();
 }
+/* (conv. 19) último dia da planilha pela metade: a planilha foi importada NO MESMO DIA do último pedido (o dia ainda não tinha
+   acabado). Esse dia entra nas contas por dia e no ritmo como se fosse inteiro e puxa tudo pra baixo — até a próxima importação,
+   que traz o dia completo. Só avisa quando tem certeza (dia da importação = último dia da planilha). */
+function diaIncompleto(){
+  if(!S.dataMax) return null;
+  var u=lsLer('ct_ultima_importacao',null); if(!u || !u.quando || !u.ate) return null;
+  var ult=isoD(S.dataMax), q=new Date(u.quando);
+  if(isNaN(q.getTime()) || u.ate!==ult || isoD(q)!==ult) return null;
+  var hora='';
+  (S.todas||[]).forEach(function(x){ if(x.dataHora && x.dataHora.slice(0,10)===ult && x.dataHora.slice(11,16)>hora) hora=x.dataHora.slice(11,16); });
+  return {iso:ult, dia:dm(S.dataMax), hora:hora};
+}
+function textoDiaIncompleto(){
+  var di=diaIncompleto(); if(!di) return '';
+  return 'O dia '+di.dia+' veio só'+(di.hora?' até '+di.hora:' pela metade')+' (a planilha foi importada no mesmo dia). As contas por dia e o ritmo ficam puxados pra baixo até você importar a próxima planilha. Na próxima, exporte até ontem.';
+}
 /* aviso de planilha velha: o "hoje" do sistema é o último dia da planilha; avisa quando o celular já está em outro mês ou passou de 7 dias */
 function avisoPlanilhaVelha(){
   if(!S.dataMax) return '';
@@ -1572,6 +1590,8 @@ function renderPerInfo(){
   if(_perPendente) info='<span class="aviso"><b style="color:inherit">Escolha as datas e toque em Aplicar</b></span> · por enquanto mostrando '+info;
   var velha=avisoPlanilhaVelha();
   if(velha) info+='<br><span class="aviso">⚠ '+escapar(velha)+'</span>';
+  var meio=textoDiaIncompleto();
+  if(meio && isoD(per.fim)===diaIncompleto().iso) info+='<br><span class="aviso">⚠ '+escapar(meio)+'</span>';
   el.innerHTML=info;
 }
 
@@ -2765,7 +2785,7 @@ function renderVideos(){
   if(!S.todas || !S.todas.length || !S.dataMax){ box.innerHTML='<div class="apostas-vazio">Importe a planilha pra ver a análise dos vídeos.</div>'; return; }
   var r=vdAnalise(_vdN), N=_vdN;
   var h='<div class="vd-top"><div class="janelas" id="vdJanela" style="margin:0">'+[7,15,30].map(function(n){ return '<button type="button" data-n="'+n+'" class="'+(n===N?'on':'')+'" onclick="setVdN('+n+')">'+n+' dias</button>'; }).join('')+'</div>'+
-    '<p class="desc vd-per"><b>'+dm(r.ini)+' a '+dm(r.hoje)+'</b> (até o último dia da planilha) · comparado com <b>'+dm(r.aIni)+' a '+dm(r.aFim)+'</b>. Esta tela usa sempre os últimos dias da planilha (escolha 7, 15 ou 30 dias aqui).</p></div>';
+    '<p class="desc vd-per"><b>'+dm(r.ini)+' a '+dm(r.hoje)+'</b> (até o último dia da planilha) · comparado com <b>'+dm(r.aIni)+' a '+dm(r.aFim)+'</b>. Esta tela usa sempre os últimos dias da planilha (escolha 7, 15 ou 30 dias aqui).</p>'+(textoDiaIncompleto()?'<p class="desc vd-meio">⚠ '+escapar(textoDiaIncompleto())+'</p>':'')+'</div>';
   // ---- 1. diagnóstico
   h+='<h4 class="vd-h4">1. Diagnóstico</h4><div class="cards vd-cards">'+
     '<div class="card"><div class="rot">GMV</div><div class="val">'+reais(r.gmv)+'</div><div class="sub">antes: '+reais(r.gmvA)+'</div>'+vdDelta(r.gmv,r.gmvA)+'</div>'+
@@ -4213,6 +4233,8 @@ function leituraMeta(P, meta){
       }
     } else t+=' Defina uma meta pra ver se está no caminho.';
   }
+  var di=diaIncompleto();   // (conv. 19) o ritmo dos últimos 7 dias inclui o dia pela metade
+  if(di && !M.fechado && isoD(M.hoje)===di.iso) t+='<br><span class="meta-meio">⚠ O ritmo inclui o dia '+di.dia+', que veio só'+(di.hora?' até '+di.hora:' pela metade')+': está puxado pra baixo até a próxima planilha.</span>';
   el.innerHTML=t;
 }
 function desenharMeta(){
@@ -5115,7 +5137,9 @@ function renderImportBox(){
   el.innerHTML=escapar(t)+(aviso?'<span class="imp-aviso">'+escapar(aviso)+'</span>':'');
   var aberto=_impAberto || !!aviso || !!DB.erro;
   box.classList.toggle('fechado', !aberto);
-  document.getElementById('arqNome').innerHTML = inteiro(S.todas.length)+' vendas'+(S.dataMax?' · até '+dm(S.dataMax):'')+
+  var di=diaIncompleto();
+  if(di) el.innerHTML+='<span class="imp-aviso">⚠ '+escapar(textoDiaIncompleto())+'</span>';
+  document.getElementById('arqNome').innerHTML = inteiro(S.todas.length)+' vendas'+(S.dataMax?' · até '+dm(S.dataMax):'')+(di?' <span class="imp-meio">(só até '+escapar(di.hora||'metade do dia')+')</span>':'')+
     '<span class="imp-seta">'+(aberto?'▴':'<span class="imp-det">detalhes </span>▾')+'</span>';
 }
 /* (conv. 15) linha fina: detalhes abertos depois de importar (nesta visita), com aviso/erro, ou tocando no nome */
