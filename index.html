@@ -1409,7 +1409,18 @@ var _importando=false;
 function fimImportacao(){ _importando=false; renderImportBox(); }
 /* erro de importação: fica escrito na tela (em vermelho), não depende de janela do navegador —
    algumas telas (ex.: a pré-visualização do app do Claude no iPhone) bloqueiam alert() em silêncio */
-function erroNaTela(txt){ var e=new Error(txt); e.tela=txt; return e; }   // (conv. 16) erro que já vem com o texto pra tela
+function erroNaTela(txt){ txt=txtNuvem(txt); var e=new Error(txt); e.tela=txt; return e; }   // (conv. 16) erro que já vem com o texto pra tela
+/* (conv. 20, pendência 34b) entrada na nuvem vencida (o banco recusou com 401 e não deu pra renovar): não é falta de internet.
+   As mensagens de "Sem conexão" viram "Sua entrada na nuvem venceu…" num lugar só — todo erro que vai pra tela passa aqui. */
+var TXT_ENTRE='toque em "Entrar de novo" (no topo)';
+function txtNuvem(t){
+  if(typeof t!=='string' || typeof DB==='undefined' || !DB.vencida || t.indexOf('Sem conexão com a nuvem')<0) return t;
+  var n=t.replace('Sem conexão com a nuvem', 'Sua entrada na nuvem venceu')
+         .replace('Confira a internet e', 'Toque em "Entrar de novo" (no topo) e')
+         .replace('confira a internet e', TXT_ENTRE+' e')
+         .replace('tente de novo quando tiver internet', TXT_ENTRE+' e tente de novo');
+  return n.indexOf('"Entrar de novo"')>=0 ? n : n.replace(/\.?\s*$/, '. Toque em "Entrar de novo" (no topo).');
+}
 function erroImport(txt){
   fimImportacao();
   var el=document.getElementById(S.temDados?'arqInfo':'importVazioInfo');
@@ -2427,7 +2438,7 @@ function fnPrevia(){
                : (d.imp!=null&&d.cli!=null&&d.itens!=null&&d.gmv!=null) ? fnTxtTaxas(d) : 'Preencha os 4 números obrigatórios pra ver CTR, conversão e ticket.';
   var c=document.getElementById('fnConf'); if(c){ c.classList.remove('on'); } _fn.conf=null;
 }
-function fnErro(msg){ var e=document.getElementById('fnErro'); if(!e) return; e.innerHTML=msg; e.classList.toggle('on', !!msg); }
+function fnErro(msg){ var e=document.getElementById('fnErro'); if(!e) return; e.innerHTML=txtNuvem(msg); e.classList.toggle('on', !!msg); }
 async function salvarFunil(substituir){
   var r=fnLerForm(); fnErro('');
   if(r.erros.length){ fnErro(r.erros.map(escapar).join('<br>')); return false; }
@@ -3305,7 +3316,7 @@ function vsLerForm(){
   }).filter(function(x){ return x && x.t; }).slice(0,10);
   return {d:d, erros:erros};
 }
-function vsErro(msg){ var e=document.getElementById('vsErro'); if(!e) return; e.innerHTML=msg; e.classList.toggle('on', !!msg); }
+function vsErro(msg){ var e=document.getElementById('vsErro'); if(!e) return; e.innerHTML=txtNuvem(msg); e.classList.toggle('on', !!msg); }
 async function vsSalvar(substituir){
   if(_vs.salvando) return false;
   var r=vsLerForm(); vsErro('');
@@ -4952,12 +4963,13 @@ var DB={
     Object.keys(opt.headers||{}).forEach(function(k){ h[k]=opt.headers[k]; });
     var r=await fetch(this.cfg.url+caminho,{method:opt.method||'GET',headers:h,body:opt.body});
     if(r.status===401 && this.sess && !jaTentou){ if(await this.renovar()) return this.req(caminho,opt,true); }
+    if(r.status===401 && this.sess && !this.vencida){ this.vencida=true; if(typeof renderStatusNuvem==='function') renderStatusNuvem(); }   // (conv. 20, pendência 34b) entrada vencida e não renovou: não é falta de internet
     return r;
   },
   guardarSessao: function(j){
     this.sess={access_token:j.access_token, refresh_token:j.refresh_token, expira:Date.now()+(j.expires_in||3600)*1000,
                email:(j.user&&j.user.email)||(this.sess&&this.sess.email)||''};
-    lsGravar('ct_nuvem_sessao',this.sess);
+    this.vencida=false; lsGravar('ct_nuvem_sessao',this.sess);
   },
   renovar: async function(){
     if(!this.sess || !this.sess.refresh_token) return false;
@@ -5025,7 +5037,7 @@ var DB={
   carregar: async function(t){
     if(this.modo==='nuvem'){
       try{ await this.puxar(t); this.erro=null; this.ultimaSync=new Date(); }
-      catch(e){ this.erro='Sem conexão com a nuvem — mostrando a última cópia deste aparelho.'; }
+      catch(e){ this.erro= this.vencida ? 'Sua entrada na nuvem venceu — mostrando a última cópia deste aparelho. Digite a senha de novo aqui embaixo.' : 'Sem conexão com a nuvem — mostrando a última cópia deste aparelho.'; }
     }
     var rows=await this.todosLocal(t);
     return rows.filter(function(r){ return !r.excluido; });
@@ -5049,7 +5061,7 @@ var DB={
     return enviados;
   },
   sair: async function(){
-    this.sess=null; lsGravar('ct_nuvem_sessao',null); this.sync={}; lsGravar('ct_nuvem_sync',null);
+    this.sess=null; this.vencida=false; lsGravar('ct_nuvem_sessao',null); this.sync={}; lsGravar('ct_nuvem_sync',null);
     this.modo='local'; await this.limparLocal();
   }
 };
@@ -5175,7 +5187,7 @@ async function importarLinhas(linhas, nomeArq){
   });
   try{
     if(envio.length){ mostrarStatusImport((DB.modo==='nuvem'?'Salvando na nuvem ':'Salvando ')+inteiro(envio.length)+' linhas…'); await DB.salvar('vendas', envio); }
-  }catch(e){ await carregarTudo(); throw erroNaTela('Sem conexão com a nuvem: a planilha não foi salva ('+(e&&e.message||e)+'). Nada foi perdido — confira a internet e importe de novo.'); }
+  }catch(e){ await carregarTudo(); throw erroNaTela('Sem conexão com a nuvem: a planilha não foi salva. Nada foi perdido — confira a internet e importe de novo.'); }
   var info={arquivo:nomeArq, linhas:Object.keys(noArq).length, novos:novos, mudou:mudou, iguais:iguais, velhas:velhas, quando:new Date().toISOString(),
             de:regs.de, ate:regs.ate, semData:regs.semData||0, semProduto:regs.semProduto||0};
   lsGravar('ct_ultima_importacao', info);
@@ -5313,9 +5325,9 @@ function migrarMetasAntigas(){
 function renderStatusNuvem(){
   var b=document.getElementById('btnNuvem'); if(!b) return;
   var on=DB.modo==='nuvem';
-  b.className='btn-nuvem'+(on?(DB.erro?' aviso':' on'):'');
+  b.className='btn-nuvem'+(on?((DB.erro||DB.vencida)?' aviso':' on'):'');
   b.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>'+
-    (on?(DB.erro?'Sem conexão':'Nuvem'):(DB.cfg?'Entrar':'Só neste aparelho'));
+    (on?(DB.vencida?'Entrar de novo':(DB.erro?'Sem conexão':'Nuvem')):(DB.cfg?'Entrar':'Só neste aparelho'));
   var r=document.getElementById('rodapeTxt');
   if(r) r.textContent = on ? 'Central TikTok Shop · salvo na nuvem, sincronizado entre aparelhos' : 'Central TikTok Shop · os dados ficam só neste aparelho';
 }
@@ -5329,10 +5341,11 @@ function renderNuvem(){
      '<h2>Nuvem e conta</h2><div class="loja">'+(DB.modo==='nuvem'?'Os dados ficam no Supabase e aparecem em todos os aparelhos.':'Hoje os dados ficam só neste aparelho.')+'</div></div><div class="ficha-corpo">';
   if(DB.modo==='nuvem'){
     var s=DB.ultimaSync;
-    h+='<div class="nv-card ok"><b>Conectado como '+escapar(DB.sess.email||'')+'</b>'+
+    h+='<div class="nv-card ok"><b>'+(DB.vencida?'Entrada vencida · ':'Conectado como ')+escapar(DB.sess.email||'')+'</b>'+
        '<p>Projeto: '+escapar(DB.cfg.url.replace(/^https?:\/\//,''))+'<br>'+(s?'Última sincronização: '+dm(s)+' às '+String(s.getHours()).padStart(2,'0')+':'+String(s.getMinutes()).padStart(2,'0'):'Ainda não sincronizou nesta abertura.')+'</p>'+
        (DB.erro?'<p class="nv-aviso">'+DB.erro+'</p>':'')+
-       '<div class="nv-botoes"><button class="btn mini" onclick="sincronizarAgora()">Sincronizar agora</button><button class="btn ghost mini" onclick="sairNuvem()">Sair deste aparelho</button></div></div>';
+       (DB.vencida?'<label>Senha<input id="nvSenhaDeNovo" type="password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')entrarDeNovo()"></label>':'')+
+       '<div class="nv-botoes">'+(DB.vencida?'<button class="btn mini" id="nvEntrarDeNovo" onclick="entrarDeNovo()">Entrar de novo</button>':'<button class="btn mini" onclick="sincronizarAgora()">Sincronizar agora</button>')+'<button class="btn ghost mini" onclick="sairNuvem()">Sair deste aparelho</button></div></div>';
     if(DB.cadastroAberto) h+=avisoCadastro();
   }else if(DB.cfg){
     h+='<div class="nv-card"><b>Entrar</b><p>'+(usandoNuvemPadrao()?'Entre com o e-mail e a senha da conta da Central.':'Projeto: '+escapar(DB.cfg.url.replace(/^https?:\/\//,''))+' · <a href="#" onclick="event.preventDefault();DB.cfg=null;lsGravar(\'ct_nuvem_cfg\',null);renderNuvem()">trocar projeto</a>')+'</p>'+
@@ -5403,8 +5416,18 @@ async function entrarNuvem(){
   try{
     var n=await DB.conectar(function(t){ msgNuvem(t); });
     renderNuvem(); msgNuvem(n? 'Pronto! '+inteiro(n)+' registros deste aparelho foram pra nuvem.' : 'Pronto! Conectado.','ok');
-  }catch(e){ msgNuvem('Entrou, mas falhou ao sincronizar: '+e.message,'erro'); }
+  }catch(e){ msgNuvem('Entrou, mas não consegui sincronizar agora. Confira a internet e toque em "Sincronizar agora".','erro'); }
   await carregarTudo();
+}
+/* (conv. 20, pendência 34b) entrada vencida: só a senha de novo, com o mesmo e-mail — nada deste aparelho é apagado */
+async function entrarDeNovo(){
+  var s=(document.getElementById('nvSenhaDeNovo')||{}).value||'';
+  if(!s){ msgNuvem('Digite a senha.','erro'); return; }
+  msgNuvem('Entrando…');
+  var r=await DB.entrar(DB.sess.email, s);
+  if(!r.ok){ msgNuvem(r.msg,'erro'); return; }
+  await carregarTudo(); renderNuvem(); renderStatusNuvem();
+  msgNuvem(DB.erro? DB.erro : 'Pronto! Entrou de novo e está tudo em dia.', DB.erro?'erro':'ok');
 }
 async function sincronizarAgora(){ msgNuvem('Sincronizando…'); await carregarTudo(); renderNuvem(); msgNuvem(DB.erro?DB.erro:'Tudo em dia.', DB.erro?'erro':'ok'); }
 function sairNuvem(){
@@ -5413,7 +5436,17 @@ function sairNuvem(){
 }
 async function sairNuvemJa(){
   await DB.sair(); S.temDados=false; S.todas=[]; S.vendas=[]; S.metas={}; S.periodo=null; S.amostras={}; S.garimpo={}; S.plano={};
+  apagarRascunhosDoAparelho();
+  if(_videoAberto) fecharVideo(); irPara('vendas');   // (conv. 20) sai do Funil/vídeo aberto: ao entrar de novo eles se redesenham sem o rascunho apagado
   renderNuvem(); renderImportBox(); renderStatusNuvem();
+}
+/* (conv. 20, pendência 34c) Sair deste aparelho: some também o que era só deste aparelho — rascunhos do Funil e da Análise do vídeo,
+   a "última importação" (a linha da planilha e a regra dos dias completos usam ela) e o digitado sem salvar na Meta e no link do vídeo */
+function apagarRascunhosDoAparelho(){
+  lsGravar('ct_funil_rasc', null); lsGravar('ct_vs_rasc', null); lsGravar('ct_ultima_importacao', null);
+  _metaRasc={}; _vdLinkRasc={v:'', erro:''};
+  _fn.tipo='dia'; _fn.edit=null; _fn.conf=null; lpLimpar();
+  _vs.marcas={}; _vs.pre=null; _vs.msg=''; _vs.cls=''; _vs.edit=false; _vs.editSalvo=false; _vs.conf=false; _vs.ccf=true; _vs.conferi=false;
 }
 /* quando volta pro sistema (trocou de app no celular), puxa o que mudou */
 var _ultimaVolta=0;
@@ -6536,7 +6569,7 @@ var _avT=null;
 function aviso(txt, rotulo, acao){
   var el=document.getElementById('avisoRapido');
   if(!el){ el=document.createElement('div'); el.id='avisoRapido'; el.setAttribute('role','status'); document.body.appendChild(el); }
-  el.textContent=txt; el.classList.toggle('acao', !!acao);
+  el.textContent=txtNuvem(txt); el.classList.toggle('acao', !!acao);
   if(acao){
     var b=document.createElement('button'); b.type='button'; b.textContent=rotulo||'Desfazer';
     b.onclick=function(){ if(b.disabled) return; b.disabled=true; clearTimeout(_avT); el.classList.remove('on'); acao(); };
@@ -6576,10 +6609,10 @@ async function salvarJunto(planos, amostras){
 function erroTela(txt){
   var el=document.getElementById('erroSalvar');
   if(!el){ el=document.createElement('div'); el.id='erroSalvar'; el.setAttribute('role','alert'); document.body.appendChild(el); }
-  el.innerHTML='<span>'+txt+'</span><button type="button" aria-label="Fechar" onclick="limparErroTela()">✕</button>'; el.classList.add('on');
+  el.innerHTML='<span>'+txtNuvem(txt)+'</span><button type="button" aria-label="Fechar" onclick="limparErroTela()">✕</button>'; el.classList.add('on');
 }
 function limparErroTela(){ var el=document.getElementById('erroSalvar'); if(el) el.classList.remove('on'); }
-function erroJanela(id, txt){ var el=document.getElementById(id); if(el){ el.innerHTML=txt; return; } erroTela(txt); }
+function erroJanela(id, txt){ var el=document.getElementById(id); if(el){ el.innerHTML=txtNuvem(txt); return; } erroTela(txt); }
 /* amostra acompanha o roteiro (inclusive quando a Mari desfaz): devolve as amostras que mudam — salvas JUNTO com a vaga */
 function mudancasAmostra(id, d, antes, st){
   if(antes===st) return [];
@@ -6634,12 +6667,16 @@ function cabPainel(t,sub){
   return '<div class="ficha-cab"><div class="barra"><button class="voltar" onclick="fecharForm()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Voltar</button></div>'+
          '<h2>'+t+'</h2><div class="loja">'+sub+'</div></div><div class="ficha-corpo"><div class="nv-card frm">';
 }
+/* (conv. 20, pendência 34a) roteiro PENDENTE só vai pra hoje ou pra frente — a mesma regra no Agendar, no Mover e na janela do roteiro.
+   Gravado/postado pode ser corrigido pra trás. `antes` = o dia que o roteiro já tinha: sem trocar o dia, o atrasado salva normal (ex.: mexer só no gancho). */
+var MSG_DIA_PASSOU='⚠ Esse dia já passou. Escolha hoje ou um dia pra frente.';
+function diaPassouPendente(nd, status, antes){ return !!nd && nd<hojeISO() && (status||'planejado')==='planejado' && nd!==antes; }
 function abrirMover(id){
   var x=S.plano[id]; if(!x) return; var d=x.dados, inf=infoProd((d.produtos||[])[0]);
   _mv={id:id};
   var h=cabPainel(d.data?'Mover pra outra data':'Agendar roteiro', escapar(nomeCurto(inf.nome))+(d.ideia?' — '+escapar(d.ideia):'')+(d.data?' · hoje está em '+dmIso(d.data):' · está sem data'));
   var feitoJa=d.status==='gravado'||d.status==='postado';
-  h+='<label>Nova data<input type="date" id="mvData" value="'+(feitoJa? (d.data||hojeISO()) : (d.data && d.data>=hojeISO()? d.data : hojeISO()))+'"'+(feitoJa?' max="'+hojeISO()+'"':'')+'></label>'+
+  h+='<label>Nova data<input type="date" id="mvData" value="'+(feitoJa? (d.data||hojeISO()) : (d.data && d.data>=hojeISO()? d.data : hojeISO()))+'"'+(feitoJa?' max="'+hojeISO()+'"':' min="'+hojeISO()+'"')+'></label>'+
      (feitoJa?'<p class="mv-jatem">Já foi '+(d.status==='gravado'?'gravado':'postado')+': dá pra corrigir pra um dia que já passou, não pra frente.</p>':chipsDatas());
   h+='<div class="nv-botoes"><button class="btn" id="mvSalvar" onclick="confirmarMover(false)">Salvar data</button>'+
      (d.tipo!=='live' && d.status==='planejado'?'<button class="btn ghost mini" onclick="confirmarMover(true)">Sem data (vai pra "Esperando data")</button>':'')+'</div><div class="rq-erro" id="mvErro" role="alert"></div></div></div>';
@@ -6647,8 +6684,10 @@ function abrirMover(id){
 }
 async function confirmarMover(semData){
   if(!_mv) return; var x=S.plano[_mv.id]; if(!x) return;
+  var me=document.getElementById('mvErro'); if(me) me.innerHTML='';
   var nd= semData ? '' : (document.getElementById('mvData').value||'');
   if(!semData && !nd){ aviso('⚠ Escolha a data.'); return; }
+  if(diaPassouPendente(nd, x.dados.status, null)){ erroJanela('mvErro', MSG_DIA_PASSOU); return; }
   if(nd && nd>hojeISO() && (x.dados.status==='gravado'||x.dados.status==='postado')){ aviso('⚠ Esse roteiro já foi '+(x.dados.status==='gravado'?'gravado':'postado')+'. A data dele não pode ser no futuro.'); return; }
   var novo=Object.assign({}, x.dados, {data:nd});
   var r=await salvarJunto([{id:x.id, dados:novo}], []);
@@ -6696,7 +6735,7 @@ async function confirmarAgendar(semData){
   var err=document.getElementById('rqErro'), bt=document.getElementById('rqSalvar'); err.innerHTML='';
   var nd= semData ? '' : ((document.getElementById('mvData')||{}).value||'');
   if(!semData && !nd){ err.innerHTML='⚠ Escolha a data.'; return; }
-  if(nd && nd<hojeISO()){ err.innerHTML='⚠ Esse dia já passou. Escolha hoje ou um dia pra frente.'; return; }
+  if(diaPassouPendente(nd, 'planejado', null)){ err.innerHTML=MSG_DIA_PASSOU; return; }
   var bq=document.querySelector('#mvQtd button.on'), q= bq ? (+bq.getAttribute('data-q')||1) : 1;
   var cx=document.getElementById('rqUsar'), usar=!!(_ag.molde && cx && cx.checked), vid=_ag.molde;
   var g= usar ? String((document.getElementById('rqGancho')||{}).value||'').trim() : '', lista=[];
@@ -6706,7 +6745,7 @@ async function confirmarAgendar(semData){
   _agSalvando=false;
   if(ok===null){ bt.disabled=false; bt.textContent='Agendar'; return; }
   if(!ok){ bt.disabled=false; bt.textContent='Agendar';
-    err.innerHTML='✕ Sem conexão com a nuvem: nenhum roteiro foi agendado. Confira a internet e toque em Agendar de novo.'; return; }
+    erroJanela('rqErro', '✕ Sem conexão com a nuvem: nenhum roteiro foi agendado. Confira a internet e toque em Agendar de novo.'); return; }
   var doVid=_ag.origem==='videos', nm=String(_ag.prod.nome||''), nome= nm.length>30 ? nm.slice(0,30).trim()+'…' : nm;
   fecharForm(); _ag=null; _mv=null;
   if(nd && !doVid){ _planSemana=segundaDe(nd); _planDia=nd; _planVista='dia'; }
@@ -6969,12 +7008,13 @@ function setTipoPlano(t){   // redesenha o formulário: vídeo = roteiro com gan
 function trocaSeVideo(){ if(_fp && _fp.d.tipo!=='live' && (_fp.d.produtos||[]).length) _fp.d.produtos=[]; }
 function limparBuscaPlano(){ var bb=document.getElementById('fpBusca'); if(bb && _fp && _fp.d.tipo!=='live' && (_fp.d.produtos||[]).length) bb.placeholder='Trocar produto: buscar outro ou digitar um novo'; document.getElementById('fpBusca').value=''; document.getElementById('fpSug').innerHTML=''; renderProdsPlano(); }
 async function salvarFormPlano(){
-  var d=_fp.d;
+  var d=_fp.d, fe=document.getElementById('fpErro'); if(fe) fe.innerHTML='';
   var pend=(document.getElementById('fpBusca').value||'').trim();
   if(pend.length>=2 && !(d.produtos||[]).length){ if(produtosParecidos(pend,1).length){ avisoJaExiste(pend); return; } addProdLivre(); }
   if(!(d.produtos||[]).length && !(d.ideia||'').trim()){ aviso('⚠ Coloque pelo menos um produto ou a ideia do conteúdo.'); return; }
   var semData=!!(document.getElementById('fpSemData')||{}).checked && d.tipo!=='live' && d.status==='planejado';
   if(semData) d.data=''; else if(!d.data){ aviso('⚠ Escolha o dia.'); return; }
+  if(diaPassouPendente(d.data, d.status, _fp.id && S.plano[_fp.id] ? S.plano[_fp.id].dados.data : null)){ erroJanela('fpErro', MSG_DIA_PASSOU); return; }
   if((d.status==='gravado'||d.status==='postado') && (!d.data || d.data>hojeISO())) d.data=hojeISO();
   if(!d.criadoEm) d.criadoEm=new Date().toISOString();
   limparRoteiro(d);
@@ -7004,7 +7044,7 @@ function semDataPlano(on){
   if(on){ _fp._dataAntes=_fp.d.data; } else { _fp.d.data=_fp._dataAntes||el.value||hojeISO(); el.value=_fp.d.data; }
 }
 function duplicarPlano(){
-  var d=JSON.parse(JSON.stringify(_fp.d)); delete d.criadoEm; delete d.video; delete d.videoLink; d.status='planejado'; d.data= d.data ? isoMais(d.data,1) : hojeISO();
+  var d=JSON.parse(JSON.stringify(_fp.d)); delete d.criadoEm; delete d.video; delete d.videoLink; d.status='planejado'; d.data= d.data ? isoMais(d.data,1) : hojeISO(); if(d.data<hojeISO()) d.data=hojeISO();
   fecharForm(); abrirFormPlano(null,d);
 }
 </script>
