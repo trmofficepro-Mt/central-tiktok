@@ -3575,7 +3575,7 @@ function renderCardsTopo(){
     card('','Pedidos', inteiro(R.pedidos), inteiro(R.itens)+' itens'+dl('pedidos')) +
     card('','Ticket médio', reais(R.ticket), 'por pedido'+dl('ticket')) +
     card('','Comissão média', reais(R.comMedia), 'por pedido válido'+dl('comMedia')+'<div class="st-item-l"><b class="st-item">'+reais(R.comItem)+'</b> por item vendido</div>') +
-    card(R.perdida>0?'perda':'','Comissão perdida', reais(R.perdida), inteiro(R.pedInel)+' '+plural(R.pedInel,'pedido inelegível','pedidos inelegíveis')+' ('+pct0(R.pedidos? R.pedInel/R.pedidos*100:0)+')');
+    card(R.perdida>0?'perda':'','Comissão perdida', reais(R.perdida), inteiro(R.pedInel)+' '+plural(R.pedInel,'pedido inelegível','pedidos inelegíveis')+' ('+pct0(R.pedidos? R.pedInel/R.pedidos*100:0)+')'+linhaMediaPerda(R));
 }
 
 /* ---------- render ---------- */
@@ -3663,6 +3663,13 @@ function barraStatus(R){
   var p=function(v){ return v/R.gmv*100; }, it=[['liq','Liquidado',R.gmvLiq],['pen','Pendente',R.gmvPend],['ine','Inelegível',R.gmvInel]];
   return '<div class="st-barra" title="Liquidado · Pendente · Inelegível">'+it.map(function(i){ return '<i class="'+i[0]+'" style="width:'+p(i[2]).toFixed(2)+'%"></i>'; }).join('')+'</div>'+
     '<div class="st-leg">'+it.map(function(i){ return '<span><i class="'+i[0]+'"></i>'+i[1]+' <b>'+reais(i[2])+'</b> ('+pct0(p(i[2]))+')</span>'; }).join('')+'</div>';
+}
+/* (conv. 21) % da comissão perdida em inelegível na planilha INTEIRA (todos os canais) — a "média da conta" (aula: comparar com a média, alertar só se fugir muito) */
+var PERDA_ALERTA_PONTOS=8, PERDA_ALERTA_MIN_PED=20;
+function mediaPerdaConta(){ var c=0, p=0; (S.todas||[]).forEach(function(x){ c+=x.com; p+=x.comPerdida; }); return (c+p)>0 ? p/(c+p)*100 : null; }
+function linhaMediaPerda(R){
+  var m=mediaPerdaConta(), tot=R.com+R.perdida; if(m==null || !(tot>0)) return '';
+  return '<div class="st-item-l"><b class="st-item">'+pct1(R.perdida/tot*100)+'</b> da comissão · média da conta '+pct1(m)+'</div>';
 }
 function card(cls,rot,val,sub){
   return '<div class="card '+cls+'"><div class="rot">'+rot+'</div><div class="val">'+val+'</div><div class="sub">'+sub+'</div></div>';
@@ -4022,8 +4029,9 @@ function leituraProduto(p,vsPeriodo,canais,listaC){
   var evid='Total: '+inteiro(p.itens)+' '+plural(p.itens,'item','itens')+' e '+reais(p.com)+' de comissão. '+
     (cp? CANAIS.rot[cp]+' trouxe '+pctCp.toFixed(0)+'% da comissão. ':'')+
     (listaC.length? listaC.length+' '+plural(listaC.length,'conteúdo vendeu','conteúdos venderam')+(dependente?', mas o melhor sozinho fez '+pctTop.toFixed(0)+'% dos itens':'')+'.' : 'Nenhum vídeo ou live vendeu ele.');
-  if(p.comPerdida>0 && p.comPerdida/(p.com+p.comPerdida)>=0.2){
-    evid+=' Atenção: '+(p.comPerdida/(p.com+p.comPerdida)*100).toFixed(0)+'% da comissão desse produto foi perdida em pedidos inelegíveis.';
+  var pctPerda = p.comPerdida>0 ? p.comPerdida/(p.com+p.comPerdida)*100 : 0, mediaP=mediaPerdaConta();
+  if(pctPerda>0 && mediaP!=null && pctPerda>=mediaP+PERDA_ALERTA_PONTOS && p.pedidos>=PERDA_ALERTA_MIN_PED){   // (conv. 21) antes: ≥ 20% — acendia em quase todo produto (média da conta ~25%)
+    evid+=' Atenção: '+pctPerda.toFixed(0)+'% da comissão desse produto foi perdida em pedidos inelegíveis — bem acima da média da conta ('+pct1(mediaP)+').';
   }
 
   // próximo passo — o mais útil pra situação
