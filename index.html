@@ -2707,7 +2707,7 @@ function lpInterpretarPrint(words, W){
     return null;
   }
   var yDados=yTitulo(['dados','principais']), yProd=yTitulo(['desempenho','dos','seus']), yCont=yTitulo(['desempenho','do','conteudo']);
-  var campos={};
+  var campos={}, semNum={};   // semNum: onde achou o rótulo mas não o número embaixo (vai pra 2ª leitura, só daquele pedaço — conv. 22)
   LP_ROTULOS.forEach(function(r){
     var k=r[0], lab=r[1], proib=r[2];
     for(var i=0;i+lab.length<=ws.length;i++){
@@ -2720,15 +2720,17 @@ function lpInterpretarPrint(words, W){
       var a=ws[i], b=ws[i+lab.length-1], h=a.y1-a.y0, fundo=Math.max(a.y1, b.y1);   // rótulo pode quebrar em 2 linhas: procura embaixo da última palavra
       var cx0=Math.min(a.x0, b.x0)-3*h, cx1=Math.max(b.x1+3*h, a.x0+W*0.40);
       var abaixo=ws.filter(function(w){ return w.y0>fundo && w.y0<fundo+4*h && w.x0>=cx0 && w.x0<cx1 && /\d/.test(w.t); });
-      if(!abaixo.length) continue;   // sem número embaixo (ex.: a faixa cinza "…cliques no produto referem-se…"): procura o próximo rótulo igual
+      var reg=[Math.max(0,Math.round(cx0)), Math.round(fundo), Math.round(cx1), Math.round(fundo+5*h)];
+      if(!abaixo.length){ (semNum[k]=semNum[k]||[]).push(reg); continue; }   // sem número embaixo (ex.: a faixa cinza "…cliques no produto referem-se…"): procura o próximo rótulo igual
       var y=Math.min.apply(null, abaixo.map(function(w){ return w.y0; }));
       var linha=ws.filter(function(w){ return Math.abs(w.y0-y)<h && w.x0>=cx0 && w.x0<cx1; }).sort(function(p,q){ return p.x0-q.x0; });
       var txt=linha.map(function(w){ return w.t; }).join(' ');
       var m=txt.match(/(R\$\s*)?\d[\d.,]*\s*[KM]?/i);   // (conv. 21) M = milhão: sem ele, "1.1M" virava "1.1"
-      if(!m) continue;
+      if(!m){ (semNum[k]=semNum[k]||[]).push(reg); continue; }
       campos[k]={txt:m[0].trim(), conf:Math.min.apply(null, linha.map(function(w){ return w.c; }))};
       break;
     }
+    if(campos[k]) delete semNum[k];
   });
   // filtro: o botão escolhido é branco no preto e o leitor NÃO lê ele (prints de 28/09) — "Ontem" some da linha dos filtros
   var filtro='', pers=ws.filter(function(w){ return w.n==='personalizar'; })[0];
@@ -2763,7 +2765,7 @@ function lpInterpretarPrint(words, W){
   else if(barra && tipo==='dia' && filtro==='hoje' && lidas[0]!==barra) suspeita='o print foi tirado em '+lpDataBR(barra);
   var lidaTxt=lidas.map(function(x){ var p=x.split('-'); return p[2]+'/'+p[1]+(real(x)?'':'/'+p[0]); }).join(' a ');
   var datas = (tipo && !suspeita && lidas.length) ? (tipo==='per' ? lidas.slice(0,2) : [lidas[0]]) : [];
-  return {campos:campos, datas:datas, filtro:filtro, tipo:tipo, suspeita:suspeita, lidaTxt:lidaTxt, barra:barra, temData:lidas.length>0};
+  return {campos:campos, semNum:semNum, datas:datas, filtro:filtro, tipo:tipo, suspeita:suspeita, lidaTxt:lidaTxt, barra:barra, temData:lidas.length>0};
 }
 function lpSuspeito(c){   // leitura em que o leitor não tem certeza
   var s=String(c.txt||'').replace(/r\$/i,'').trim();
@@ -2797,8 +2799,9 @@ function lpJuntar(leituras){
     });
     if(!vals.length){
       var temVG=leituras.some(function(L){ return !(L.campos.com||L.campos.gmv_c||L.campos.itens_c) && (L.campos.imp||L.campos.cli||L.campos.gmv||L.campos.itens); });
-      if(k==='imp'||k==='cli'||((k==='gmv'||k==='itens') && !temVG)) r.marcas[k]={cls:'lp-falta', msg:'Não veio no print — está na Visão geral.'};
-      else if(k==='gmv'||k==='itens') r.marcas[k]={cls:'lp-falta', msg:'Não achei no print — digite.'};
+      // (conv. 22) "Não veio" só quando a Visão geral NÃO veio; com ela, o campo vazio é "não achei" (11/10: impressões no print, dizia "não veio")
+      if((k==='imp'||k==='cli'||k==='gmv'||k==='itens') && !temVG) r.marcas[k]={cls:'lp-falta', msg:'Não veio no print — está na Visão geral.'};
+      else if(k==='imp'||k==='cli'||k==='gmv'||k==='itens') r.marcas[k]={cls:'lp-falta', msg:'Não achei no print — digite.'};
       return;
     }
     for(var i=0;i<vals.length;i++){
@@ -2857,7 +2860,29 @@ async function lpLerImagem(arq){   // → palavras com posição e largura da im
   (r.data.blocks||[]).forEach(function(b){ b.paragraphs.forEach(function(p){ p.lines.forEach(function(l){ l.words.forEach(function(x){
     words.push({t:x.text, c:x.confidence, x0:x.bbox.x0, y0:x.bbox.y0, x1:x.bbox.x1, y1:x.bbox.y1});
   }); }); }); });
-  return {words:words, W:c.width};
+  return {words:words, W:c.width, c:c};
+}
+/* (conv. 22) 2ª LEITURA: o rótulo foi achado mas o número embaixo não (print de 11/10: "26.7K" lido como "PIAS" — a faixa de aviso nova
+   atrapalha a divisão do print inteiro). Recorta só aquele pedaço e lê de novo. Só vale se a 1ª linha do recorte for UM NÚMERO e nada
+   mais (a faixa "…cliques no produto referem-se…" dá texto e é descartada); a confiança passa pelo mesmo lpSuspeito do lpJuntar. */
+var LP_SO_NUMERO=/^(R\$\s*)?\d[\d.,]*\s*[KM]?$/i;
+function lpLinhaNumero(t){ var l=String(t||'').split('\n').map(function(x){ return x.trim(); }).filter(function(x){ return x; })[0]||''; return LP_SO_NUMERO.test(l) ? l : null; }
+async function lpSegundaLeitura(o, L){
+  if(!o || !o.c || !L || !L.semNum) return;
+  var w=await lpLeitor();
+  for(var k in L.semNum){
+    if(L.campos[k]) continue;
+    for(var i=0;i<L.semNum[k].length;i++){
+      var g=L.semNum[k][i], x0=g[0], y0=g[1], x1=Math.min(o.c.width,g[2]), y1=Math.min(o.c.height,g[3]);
+      if(!(x1-x0>10 && y1-y0>10)) continue;
+      var k2=document.createElement('canvas'); k2.width=x1-x0; k2.height=y1-y0;
+      k2.getContext('2d').drawImage(o.c, x0, y0, x1-x0, y1-y0, 0, 0, x1-x0, y1-y0);
+      var r=await w.recognize(k2, {}, {blocks:true, text:true}), lin=null;
+      (r.data.blocks||[]).forEach(function(b){ b.paragraphs.forEach(function(p){ p.lines.forEach(function(l){ if(!lin && String(l.text||'').trim()) lin=l; }); }); });
+      var txt=lin ? lpLinhaNumero(lin.text) : null;
+      if(txt){ L.campos[k]={txt:txt, conf:Math.round(lin.confidence), seg:true}; break; }
+    }
+  }
 }
 function lpMsg(txt, cls){ _lp.msg=txt; _lp.cls=cls||''; var el=document.getElementById('lpMsg'); if(el){ el.innerHTML=txt; el.className='lp-msg '+(txt?'on ':'')+(cls||''); } }
 async function lpArquivos(lista){
@@ -2875,7 +2900,9 @@ async function lpArquivos(lista){
         if(String(e&&e.message)==='imagem'){ lpMsg('Não consegui abrir essa imagem. Tire o print de novo e tente outra vez.', 'erro'); return; }
         lpMsg('⚠ Não consegui carregar o leitor de print (precisa de internet na 1ª vez). Nada foi preenchido — digite os números normalmente no formulário.', 'erro'); return;
       }
-      leituras.push(lpInterpretarPrint(o.words, o.W));
+      var L1=lpInterpretarPrint(o.words, o.W);
+      try{ await lpSegundaLeitura(o, L1); }catch(e){}   // a 2ª leitura nunca derruba a 1ª: se falhar, fica como estava (campo vazio)
+      leituras.push(L1);
     }
   } finally { _lp.lendo=false; }
   lpPreencher(lpJuntar(leituras));
