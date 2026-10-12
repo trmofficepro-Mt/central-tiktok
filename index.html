@@ -214,12 +214,20 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .card .rot{font-size:12px;color:var(--tinta2);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
 .card .val{font-size:27px;font-weight:800;margin:6px 0 2px;letter-spacing:-.5px}
 .card .sub{font-size:12px;color:var(--tinta3)}
-.mc-card{margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
-.mc-card .mc-esq{flex:1 1 260px;min-width:0}
-.mc-card .val{font-size:clamp(20px,5vw,27px)}
-.mc-barra{height:10px;border-radius:6px;background:var(--bg2);overflow:hidden;margin:8px 0 6px}
+.mc-card{margin-top:16px}
+.mc-card .rot{margin-bottom:2px}
+.mc-row{display:grid;grid-template-columns:minmax(150px,230px) minmax(0,1fr) auto;align-items:center;gap:6px 18px;padding:10px 0}
+.mc-row+.mc-row{border-top:1px solid var(--bg2)}
+.mc-cab{display:flex;flex-direction:column;min-width:0}
+.mc-nome{font-size:12px;font-weight:700;color:var(--tinta2);text-transform:uppercase;letter-spacing:.04em}
+.mc-row .val{font-size:clamp(19px,4.6vw,24px)}
+.mc-meio{min-width:0}
+.mc-dica{font-size:12.5px;color:var(--tinta2)}
+.mc-card .sub{margin-top:4px}
+.mc-barra{height:10px;border-radius:6px;background:var(--bg2);overflow:hidden;margin:2px 0 6px}
 .mc-barra i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--rosa),var(--uva))}
-.mc-card.batida .mc-barra i{background:var(--verde)}
+.mc-row.batida .mc-barra i{background:var(--verde)}
+@media (max-width:640px){ .mc-row{grid-template-columns:minmax(0,1fr) auto} .mc-meio{grid-column:1/-1;grid-row:2} }
 .mc-linha{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 14px;font-size:12.5px;color:var(--tinta2)}
 .mc-linha b{color:var(--tinta)}
 .mc-ok{color:var(--verde);font-weight:800}
@@ -4283,7 +4291,7 @@ function renderRitmo(){
 }
 
 /* ---------- 3. PROJEÇÃO DE META (Painel) ---------- */
-var _metaMet='gmv';
+var _metaMet='com';   // (conv. 21) o bloco Meta abre na comissão — o dinheiro que entra no bolso
 var _metaRasc={};   // (conv. 19) o que foi digitado na meta, por mês e métrica: a sincronização redesenha o Painel e o campo voltava vazio (erro 42)
 
 function renderMeta(){
@@ -4310,37 +4318,36 @@ function renderMeta(){
   box.innerHTML=h;
   document.getElementById('metaTitulo').textContent='Meta de '+M.nome;
   leituraMeta(P, meta);
-  renderCartaoMeta(P, meta);
+  renderCartaoMeta();
   if(visivel(box)) desenharMeta();
 }
-/* Cartão "Meta do mês" no topo do Painel (padrão Owra P02) — usa a MESMA conta do bloco Meta (projecaoMes + metaAtual) */
-function renderCartaoMeta(P, meta){
-  var el=document.getElementById('metaCard'); if(!el) return;
-  var M=P.M, nomeMet=_metaMet==='gmv'?'GMV':'comissão';
-  var h='<div class="mc-esq"><div class="rot">Meta de '+M.nome+' · '+nomeMet+'</div>';
-  el.classList.remove('batida');
+/* Cartão "Meta do mês" no topo do Painel (padrão Owra P02) — usa a MESMA conta do bloco Meta (projecaoMes + meta salva).
+   (conv. 21, pedido do Thiago) as DUAS metas, uma embaixo da outra: Comissão em cima (o dinheiro que entra no bolso), GMV embaixo. */
+function metaDe(met){ var M=mesRef(), id=met+'_'+M.ini.getFullYear()+'-'+String(M.ini.getMonth()+1).padStart(2,'0'), m=S.metas&&S.metas[id]; return m&&m.valor>0 ? m.valor : 0; }
+function linhaCartaoMeta(met){
+  var P=projecaoMes(S.todas, met), M=P.M, meta=metaDe(met), nomeMet=met==='gmv'?'GMV':'comissão', nome=met==='gmv'?'GMV':'Comissão';
   if(!meta){
-    h+='<div class="val">Sem meta</div><div class="sub">Defina uma meta pra ver quanto falta e quanto precisa vender por dia. Conta todas as vendas (vídeos, lives e o resto).</div></div>'+
-       '<button class="btn mini" onclick="editarMeta()">Definir meta</button>';
-  } else {
-    var pct=P.ate/meta*100, pctT=pct.toFixed(0)+'%';
-    h+='<div class="val">'+reais(meta)+'</div>'+
-       '<div class="mc-barra" role="progressbar" aria-valuenow="'+Math.round(pct)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+Math.min(100,pct).toFixed(1)+'%"></i></div><div class="mc-linha">';
-    if(P.ate>=meta){
-      el.classList.add('batida');
-      h+='<span><b class="mc-ok">'+(M.fechado?'Meta batida':'Meta batida!')+'</b> · '+pctT+' · '+reais(P.ate)+' em '+nomeMet+'</span>';
-    } else if(M.fechado){
-      h+='<span>Ficou em <b>'+pctT+'</b> · faltaram <b>'+reais(meta-P.ate)+'</b></span>';
-    } else {
-      h+='<span><b>'+pctT+'</b> · faltam <b>'+reais(meta-P.ate)+'</b></span>'+
-         '<span><b>'+reais((meta-P.ate)/Math.max(P.faltam,1))+'/dia</b> '+nosDiasFaltam(P.faltam)+'</span>';
-    }
-    h+='</div><div class="sub" style="margin-top:4px">Conta todas as vendas (vídeos, lives e o resto), igual ao bloco Meta lá embaixo.</div></div>'+
-       '<button class="btn ghost mini" onclick="editarMeta()">Editar</button>';
+    return '<div class="mc-row mc-sem" data-met="'+met+'"><div class="mc-cab"><span class="mc-nome">'+nome+'</span><b class="val">Sem meta</b></div>'+
+      '<div class="mc-meio"><span class="mc-dica">Defina pra ver quanto falta e quanto precisa por dia.</span></div>'+
+      '<button class="btn mini" onclick="editarMeta(\''+met+'\')">Definir meta</button></div>';
   }
-  el.innerHTML=h;
+  var pct=P.ate/meta*100, pctT=pct.toFixed(0)+'%', batida=P.ate>=meta, h;
+  if(batida) h='<span><b class="mc-ok">'+(M.fechado?'Meta batida':'Meta batida!')+'</b> · '+pctT+' · '+reais(P.ate)+' em '+nomeMet+'</span>';
+  else if(M.fechado) h='<span>Ficou em <b>'+pctT+'</b> · faltaram <b>'+reais(meta-P.ate)+'</b></span>';
+  else h='<span><b>'+pctT+'</b> · faltam <b>'+reais(meta-P.ate)+'</b></span>'+
+         '<span><b>'+reais((meta-P.ate)/Math.max(P.faltam,1))+'/dia</b> '+nosDiasFaltam(P.faltam)+'</span>';
+  return '<div class="mc-row'+(batida?' batida':'')+'" data-met="'+met+'"><div class="mc-cab"><span class="mc-nome">'+nome+'</span><b class="val">'+reais(meta)+'</b></div>'+
+    '<div class="mc-meio"><div class="mc-barra" role="progressbar" aria-label="Meta de '+nomeMet+'" aria-valuenow="'+Math.round(pct)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+Math.min(100,pct).toFixed(1)+'%"></i></div>'+
+    '<div class="mc-linha">'+h+'</div></div>'+
+    '<button class="btn ghost mini" onclick="editarMeta(\''+met+'\')">Editar</button></div>';
 }
-function editarMeta(){
+function renderCartaoMeta(){
+  var el=document.getElementById('metaCard'); if(!el || !S.todas) return;
+  el.innerHTML='<div class="rot">Meta de '+mesRef().nome+'</div>'+linhaCartaoMeta('com')+linhaCartaoMeta('gmv')+
+    '<div class="sub">Conta todas as vendas (vídeos, lives e o resto), igual ao bloco Meta lá embaixo. Comissão sem os pedidos inelegíveis (esses não pagam).</div>';
+}
+function editarMeta(met){
+  if(met && met!==_metaMet){ _metaMet=met; renderMeta(); }   // abre o bloco Meta na aba da linha clicada
   var box=document.getElementById('metaBox'), inp=document.getElementById('metaInput');
   if(box) box.scrollIntoView({block:'center', behavior:'smooth'});
   if(inp){ try{ inp.focus({preventScroll:true}); inp.select(); }catch(e){ inp.focus(); } }
