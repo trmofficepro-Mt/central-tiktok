@@ -2667,7 +2667,10 @@ function flCorpoHTML(L, pre){   // (conv. 19) onde agir + frases + aviso de live
   h+='<ul class="fl-frases" id="'+pre+'Frases">'+flFrases(L).map(function(x){ return '<li class="fl-'+x.st+'" data-k="'+x.k+'">'+x.t+'</li>'; }).join('')+'</ul>';
   if(L.live){
     var p=function(v){ return v==null?'sem planilha':Math.round(v*100)+'%'; };
-    h+='<p class="fl-live" id="'+pre+'Live">⚠ Teve live: '+p(L.live.atual)+' das vendas da planilha no período de agora ('+p(L.live.base)+' antes). Dia com live costuma ter conversão diferente — compare com cuidado.</p>';
+    var tl= L.live.atual==null ? 'Teve live no período de antes ('+p(L.live.base)+' das vendas da planilha). A planilha do período de agora ainda não chegou'
+          : L.live.base==null ? 'Teve live: '+p(L.live.atual)+' das vendas da planilha no período de agora (a planilha não tem o período de antes)'
+          : 'Teve live: '+p(L.live.atual)+' das vendas da planilha no período de agora ('+p(L.live.base)+' antes)';   // (conv. 22) antes: "sem planilha das vendas da planilha"
+    h+='<p class="fl-live" id="'+pre+'Live">⚠ '+tl+'. Dia com live costuma ter conversão diferente — compare com cuidado.</p>';
   }
   return h;
 }
@@ -2707,6 +2710,7 @@ function lpInterpretarPrint(words, W){
     return null;
   }
   var yDados=yTitulo(['dados','principais']), yProd=yTitulo(['desempenho','dos','seus']), yCont=yTitulo(['desempenho','do','conteudo']);
+  if(yDados==null){ var yPr=ws.filter(function(w){ return w.n==='principais'; })[0]; if(yPr) yDados=yPr.y0; }   // (conv. 22) print riscado em cima de "Dados" (14/10: "DETGE principais")
   var campos={}, semNum={};   // semNum: onde achou o rótulo mas não o número embaixo (vai pra 2ª leitura, só daquele pedaço — conv. 22)
   LP_ROTULOS.forEach(function(r){
     var k=r[0], lab=r[1], proib=r[2];
@@ -2733,11 +2737,12 @@ function lpInterpretarPrint(words, W){
     if(campos[k]) delete semNum[k];
   });
   // filtro: o botão escolhido é branco no preto e o leitor NÃO lê ele (prints de 28/09) — "Ontem" some da linha dos filtros
-  var filtro='', pers=ws.filter(function(w){ return w.n==='personalizar'; })[0];
+  // (conv. 22) a linha é achada por QUALQUER botão lido (Personalizar escolhido some igual ao Ontem); 7D escolhido = filtro '7d'
+  var filtro='', BOT=['hoje','ontem','7d','personalizar'], pers=ws.filter(function(w){ return BOT.indexOf(w.n)>=0; })[0];
   if(pers){
     var hh=pers.y1-pers.y0, chips=ws.filter(function(w){ return Math.abs(w.y0-pers.y0)<hh; }).map(function(w){ return w.n; });
-    var temHoje=chips.indexOf('hoje')>=0, temOntem=chips.indexOf('ontem')>=0;
-    if(temHoje && !temOntem) filtro='ontem'; else if(!temHoje && temOntem) filtro='hoje';
+    var temHoje=chips.indexOf('hoje')>=0, temOntem=chips.indexOf('ontem')>=0, tem7=chips.indexOf('7d')>=0;
+    if(temHoje && !temOntem) filtro='ontem'; else if(!temHoje && temOntem) filtro='hoje'; else if(temHoje && temOntem && !tem7) filtro='7d';
   }
   // datas: "27 de set. de 2026" ou "20 de set. de 2026 - 26 de set. de 2026" (a linha embaixo dos filtros)
   var texto=ws.map(function(w){ return w.t; }).join(' '), lidas=[], re=/(\d{1,2}) de ([A-Za-zçÇ]{3})[A-Za-zçÇ]*[.,]? de (\d{4})/g, m2;
@@ -2746,7 +2751,7 @@ function lpInterpretarPrint(words, W){
     lidas.push(m2[3]+'-'+String(mes).padStart(2,'0')+'-'+String(+m2[1]).padStart(2,'0'));
   }
   var faixa=/\d{4}\s*[-–—]\s*\d/.test(texto);          // tem "2026 - 26": é período
-  var tipo = lidas.length===2 ? 'per' : (lidas.length===1 ? (faixa ? 'per' : (filtro ? 'dia' : '')) : '');
+  var tipo = lidas.length===2 ? 'per' : (lidas.length===1 ? (faixa ? 'per' : (filtro==='7d' ? '' : 'dia')) : '');   // (conv. 22) antes exigia ver o filtro: o Personalizar de um dia (14/10) não preenchia
   // barra de cima do celular: "Segunda-feira, 28 de setembro" = o dia em que o print foi tirado (confere o dia da semana)
   var barra=null, nt=lpNorm(texto).replace(/[^a-z0-9 ,-]/g,' '), mb=nt.match(/(domingo|segunda|terca|quarta|quinta|sexta|sabado)(?:-feira)?,? +(\d{1,2}) de ([a-z]{3})/);
   if(mb && LP_MESES[mb[3]]){
@@ -2818,7 +2823,7 @@ function lpJuntar(leituras){
   else r.marcas.data={cls:'lp-lido lp-data', msg:'lido do print — confira'+(r.tipo==='dia'?' o dia':' as datas')};
   var filtros=leituras.map(function(L){ return L.filtro; });
   if(r.semData){}
-  else if(r.tipo==='dia' && filtros.indexOf('hoje')>=0) r.avisos.push('O print é do filtro Hoje: o dia ainda não fechou. O certo é o filtro Ontem.');
+  else if(r.tipo==='dia' && (filtros.indexOf('hoje')>=0 || r.de===hojeISO())) r.avisos.push('O print é do filtro Hoje: o dia ainda não fechou. O certo é o filtro Ontem.');
   else if(r.tipo==='dia' && filtros.indexOf('ontem')>=0 && r.de!==fnOntem()) r.avisos.push('A data do print não é ontem ('+lpDataBR(r.de)+'; ontem foi '+lpDataBR(fnOntem())+') — confira.');
   return r;
 }
