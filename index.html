@@ -1476,6 +1476,14 @@ function importar(input){
 }
 
 /* acha o nome real de uma coluna por pedaços do texto */
+/* coluna com o nome EXATO (sem maiúsculas/espaços nas pontas) — pra não confundir "Comissão padrão" com "Comissão padrão estimada" */
+function colExata(cols, nome){
+  for(var i=0;i<cols.length;i++){ if(String(cols[i]).trim().toLowerCase()===nome) return cols[i]; }
+  return null;
+}
+/* (decisão 102) participação na receita do TikTok = 1% da comissão estimada, arredondada no centavo, negativa.
+   A planilha traz o valor; o banco só guarda quando ele foge desta conta (107 de 7.816 vendas em 19/10). */
+function participacaoFixa(cp, ca, b){ return -Math.floor(((+cp||0)+(+ca||0)+(+b||0))*0.01*100+0.5)/100; }
 function achaCol(cols, pedacos){
   for(var i=0;i<cols.length;i++){
     var c=cols[i].toLowerCase();
@@ -1580,6 +1588,8 @@ function aplicarPeriodo(per){
   var dentro=function(ini,fim){ return function(x){ return x.data && x.data>=ini && x.data<=fim; }; };
   S.vendas = per.ini ? S.todas.filter(dentro(per.ini,per.fim)) : S.todas.slice();
   S.vendasAnt = per.aIni ? S.todas.filter(dentro(per.aIni,per.aFim)) : null;
+  S.foraPer = per.ini ? (S.fora||[]).filter(dentro(per.ini,per.fim)) : (S.fora||[]).slice();
+  S.foraAnt = per.aIni ? (S.fora||[]).filter(dentro(per.aIni,per.aFim)) : null;
   renderPerInfo();
   render();
 }
@@ -2246,7 +2256,8 @@ function rsSemana(){
   return {ini:ini, dom:dom, aIni:comp?aIni:null, aFim:comp?aFim:null};
 }
 function rsNumeros(ini, fim){
-  var v=S.todas.filter(function(x){ return x.data && x.data>=ini && x.data<=fim; }), R=resumo(v), lv={}, vid=0, live=0;
+  var dentro=function(x){ return x.data && x.data>=ini && x.data<=fim; };
+  var v=S.todas.filter(dentro), R=resumo(v,(S.fora||[]).filter(dentro)), lv={}, vid=0, live=0;
   v.forEach(function(x){ if(x.tipo==='Vídeo') vid+=x.gmv; if(x.tipo==='Live'){ live+=x.gmv; if(x.idCont) lv[x.idCont]=1; } });
   return {gmv:R.gmv, com:R.com, ped:R.pedidos, ticket:R.ticket, comItem:R.comItem, vid:vid, live:live, nLives:Object.keys(lv).length};
 }
@@ -3592,7 +3603,7 @@ var _canalPainel='tudo', CANAL_PAINEL={tudo:null, video:'Vídeo', live:'Live'};
 function setCanalPainel(c){ _canalPainel=c; renderCardsTopo(); }
 function renderCardsTopo(){
   var t=CANAL_PAINEL[_canalPainel], f=function(x){ return !t || x.tipo===t; };
-  var R=resumo(S.vendas.filter(f)), A=S.vendasAnt? resumo(S.vendasAnt.filter(f)) : null;
+  var R=resumo(S.vendas.filter(f),(S.foraPer||[]).filter(f)), A=S.vendasAnt? resumo(S.vendasAnt.filter(f),(S.foraAnt||[]).filter(f)) : null;
   var sel=document.getElementById('pnCanal');
   if(sel){ [].forEach.call(sel.querySelectorAll('button'),function(b){ b.classList.toggle('on', b.getAttribute('data-c')===_canalPainel); }); }
   var nota=document.getElementById('pnCanalNota');
@@ -3607,14 +3618,14 @@ function renderCardsTopo(){
     card('','Pedidos', inteiro(R.pedidos), inteiro(R.itens)+' itens'+dl('pedidos')) +
     card('','Ticket médio', reais(R.ticket), 'por pedido'+dl('ticket')) +
     card('','Comissão média', reais(R.comMedia), 'por pedido válido'+dl('comMedia')+'<div class="st-item-l"><b class="st-item">'+reais(R.comItem)+'</b> por item vendido</div>') +
-    card(R.perdida>0?'perda':'','Comissão perdida', reais(R.perdida), inteiro(R.pedInel)+' '+plural(R.pedInel,'pedido inelegível','pedidos inelegíveis')+' ('+pct0(R.pedidos? R.pedInel/R.pedidos*100:0)+')'+linhaMediaPerda(R));
+    card(R.perdida>0?'perda':'','Comissão perdida', reais(R.perdida), inteiro(R.pedInel)+' '+plural(R.pedInel,'pedido inelegível','pedidos inelegíveis')+' ('+pct0(R.pedBrutos? R.pedInel/R.pedBrutos*100:0)+')'+linhaMediaPerda(R));
 }
 
 /* ---------- render ---------- */
 function render(){
 
   var v=S.vendas;
-  var R=resumo(v), A=S.vendasAnt? resumo(S.vendasAnt) : null;
+  var R=resumo(v,S.foraPer), A=S.vendasAnt? resumo(S.vendasAnt,S.foraAnt) : null;
   var gmv=R.gmv, porTipo={};
   v.forEach(function(x){
     if(!porTipo[x.tipo]) porTipo[x.tipo]={gmv:0,com:0,ped:0,_p:{}};
@@ -3665,8 +3676,10 @@ function render(){
 }
 
 /* totais de um conjunto de vendas (pedido = ID do pedido, não linha) */
-function resumo(v){
-  var r={gmv:0,gmvVal:0,com:0,perdida:0,itens:0,pedidos:0,pedInel:0,pedVal:0,gmvLiq:0,gmvPend:0,gmvInel:0,itensVal:0}, ped={}, pedV={}, pedI={}, prod={}, loja={};
+function resumo(v, fora){
+  var r={gmv:0,gmvVal:0,com:0,perdida:0,itens:0,pedidos:0,pedInel:0,pedVal:0,gmvLiq:0,gmvPend:0,gmvInel:0,itensVal:0,gmvBruto:0,pedBrutos:0}, ped={}, pedV={}, pedI={}, pedB={}, prod={}, loja={};
+  // (decisão 102) os que o painel não conta (S.fora do mesmo filtro): só entram na barra de status e na Comissão perdida
+  (fora||[]).forEach(function(x){ r.perdida+=x.comPerdida; r.gmvInel+=x.gmvBruto; pedI[x.idPed]=1; pedB[x.idPed]=1; });
   v.forEach(function(x){
     r.gmv+=x.gmv; r.gmvVal+=x.gmvVal; r.com+=x.com; r.perdida+=x.comPerdida; r.itens+=x.itens;
     // status (padrão Owra): inelegível | liquidado | pendente (inclui aguardando pagamento)
@@ -3674,7 +3687,9 @@ function resumo(v){
     ped[x.idPed]=1; if(x.inelegivel) pedI[x.idPed]=1; else pedV[x.idPed]=1;
     prod[x.chave]=1; loja[x.loja]=1;
   });
-  r.pedidos=Object.keys(ped).length; r.pedInel=Object.keys(pedI).length; r.pedVal=Object.keys(pedV).length;
+  Object.keys(ped).forEach(function(k){ pedB[k]=1; });
+  r.pedidos=Object.keys(ped).length; r.pedInel=Object.keys(pedI).length; r.pedVal=Object.keys(pedV).length; r.pedBrutos=Object.keys(pedB).length;
+  r.gmvBruto=r.gmvLiq+r.gmvPend+r.gmvInel;
   r.ticket=r.pedidos? r.gmv/r.pedidos : 0;
   r.comMedia=r.pedVal? r.com/r.pedVal : 0;
   r.comItem=r.itensVal? r.com/r.itensVal : 0;
@@ -3689,16 +3704,16 @@ function delta(atual,ant){
   var seta= cls==='up'?'▲ ':(cls==='down'?'▼ ':'');
   return '<br><span class="delta '+cls+'" title="comparado com o período anterior">'+seta+Math.abs(d).toFixed(0)+'%</span>';
 }
-/* barra Liquidado / Pendente / Inelegível dentro do cartão de GMV (soma = GMV do cartão) */
+/* barra Liquidado / Pendente / Inelegível dentro do cartão de GMV — (decisão 102) sobre o total vendido, com TODOS os inelegíveis */
 function barraStatus(R){
-  if(!(R.gmv>0)) return '';
-  var p=function(v){ return v/R.gmv*100; }, it=[['liq','Liquidado',R.gmvLiq],['pen','Pendente',R.gmvPend],['ine','Inelegível',R.gmvInel]];
+  if(!(R.gmvBruto>0)) return '';
+  var p=function(v){ return v/R.gmvBruto*100; }, it=[['liq','Liquidado',R.gmvLiq],['pen','Pendente',R.gmvPend],['ine','Inelegível',R.gmvInel]];
   return '<div class="st-barra" title="Liquidado · Pendente · Inelegível">'+it.map(function(i){ return '<i class="'+i[0]+'" style="width:'+p(i[2]).toFixed(2)+'%"></i>'; }).join('')+'</div>'+
     '<div class="st-leg">'+it.map(function(i){ return '<span><i class="'+i[0]+'"></i>'+i[1]+' <b>'+reais(i[2])+'</b> ('+pct0(p(i[2]))+')</span>'; }).join('')+'</div>';
 }
 /* (conv. 21) % da comissão perdida em inelegível na planilha INTEIRA (todos os canais) — a "média da conta" (aula: comparar com a média, alertar só se fugir muito) */
 var PERDA_ALERTA_PONTOS=8, PERDA_ALERTA_MIN_PED=20;
-function mediaPerdaConta(){ var c=0, p=0; (S.todas||[]).forEach(function(x){ c+=x.com; p+=x.comPerdida; }); return (c+p)>0 ? p/(c+p)*100 : null; }
+function mediaPerdaConta(){ var c=0, p=0; (S.todas||[]).concat(S.fora||[]).forEach(function(x){ c+=x.com; p+=x.comPerdida; }); return (c+p)>0 ? p/(c+p)*100 : null; }
 function linhaMediaPerda(R){
   var m=mediaPerdaConta(), tot=R.com+R.perdida; if(m==null || !(tot>0)) return '';
   return '<div class="st-item-l"><b class="st-item">'+pct1(R.perdida/tot*100)+'</b> da comissão · média da conta '+pct1(m)+'</div>';
@@ -3739,6 +3754,8 @@ function montarProdutos(){
       if(!p.ultima || x.data>p.ultima) p.ultima=x.data;
     }
   });
+  // (decisão 102) comissão perdida dos inelegíveis que o painel não conta (só soma em produto que vendeu no período)
+  (S.foraPer||[]).forEach(function(x){ if(m[x.chave]) m[x.chave].comPerdida+=x.comPerdida; });
   // nomes e IDs que o produto já teve (planilha inteira) + primeira venda de verdade
   var hist={};
   S.todas.forEach(function(x){
@@ -4507,6 +4524,8 @@ function sinaisProduto(chave, M){
   var hoje=M.hoje, ini7=maisDias(hoje,-6), iniA=maisDias(hoje,-13);
   var r={g7:0,gA:0,it7:0,itA:0,live7:0,liveA:0,gMes:0,cMes:0,itMes:0,diasMes:0,ini7:ini7,iniA:iniA};
   var diasV={}, diasM={};
+  // (decisão 102) estoque: pedido inelegível que o painel não conta também prova que tinha estoque naquele dia
+  (S.fora||[]).forEach(function(x){ if(x.chave===chave && x.data && x.data<=hoje) diasV[diaChave(x.data)]=1; });
   S.todas.forEach(function(x){
     if(x.chave!==chave || !x.data || x.data>hoje) return;
     if(x.itens>0 || x.gmv>0) diasV[diaChave(x.data)]=1;
@@ -4828,7 +4847,7 @@ function ultimaGravacao(ch, amostraId, idxC, idProd){
   return melhor ? {data:melhor, dias:diasEntre(melhor,hoje), fonte:fonte} : null;
 }
 function diasComVendaPorChave(){
-  var m={}; (S.todas||[]).forEach(function(x){ if(x.data && (x.itens>0||x.gmv>0)) (m[x.chave]=m[x.chave]||{})[diaChave(x.data)]=1; });
+  var m={}; (S.todas||[]).concat(S.fora||[]).forEach(function(x){ if(x.data && (x.itens>0||x.gmv>0)) (m[x.chave]=m[x.chave]||{})[diaChave(x.data)]=1; });   // (decisão 102) com os inelegíveis de fora: provam estoque
   return m;
 }
 function listaParaGravar(){
@@ -5153,7 +5172,11 @@ function linhasParaRegistros(linhas, nomeArq){
     reemb:   achaCol(cols,['itens reembolsados']),
     idPed:   achaCol(cols,['id do pedido']),
     idSku:   achaCol(cols,['id do sku']),
-    receb:   achaCol(cols,['valor total final recebido'])
+    receb:   achaCol(cols,['valor total final recebido']),
+    // (decisão 102/103) comissão REAL (nome exato, não a estimada): inelegível com "0,00" o painel do TikTok conta; em branco, não
+    comPadReal: colExata(cols,'comissão padrão') || colExata(cols,'comissao padrao'),
+    comAdsReal: colExata(cols,'comissão de anúncios da loja') || colExata(cols,'comissao de anuncios da loja'),
+    partic:  achaCol(cols,['estimativa da participa'])
   };
   // sem estas colunas o sistema não sabe quem é quem (e duplicaria vendas): não importa nada
   var falta=[['idPed','ID do pedido'],['idSku','ID do SKU'],['produto','Nome do produto'],['gmv','GMV'],['data','Data do pedido'],
@@ -5165,6 +5188,7 @@ function linhasParaRegistros(linhas, nomeArq){
   }
   var txt=function(c,l){ return c? String(l[c]==null?'':l[c]).trim() : ''; };
   var num=function(c,l){ return c? numBR(l[c]) : 0; };
+  var temZero=function(c,l){ return !!c && txt(c,l)!=='' && numBR(l[c])===0; };
   var vistos={}, regs=[], semProduto=0, semData=0, de=null, ate=null;
   linhas.forEach(function(l){
     var produto=txt(C.produto,l); if(!produto){ semProduto++; return; }
@@ -5177,6 +5201,11 @@ function linhasParaRegistros(linhas, nomeArq){
       tipo: txt(C.tipo,l)||'—', id_conteudo:txt(C.idCont,l), status:txt(C.status,l)||'—',
       arquivo: nomeArq||'', excluido:false
     };
+    // (decisão 102/103) inelegível com comissão real "0,00" (e não em branco) = o painel conta no GMV e nos itens
+    r.com_real_zero = /ineleg/i.test(r.status) && (temZero(C.comPadReal,l) || temZero(C.comAdsReal,l));
+    // participação na receita (1%): guarda só quando foge da conta fixa (em branco = conta fixa)
+    var pt = (C.partic && txt(C.partic,l)!=='') ? numBR(l[C.partic]) : null, ptF=participacaoFixa(r.com_padrao, r.com_anuncio, r.bonus);
+    r.particip = (pt!=null && Math.abs(pt-ptF)>0.0001) ? pt : null;
     if(!r.data_pedido) semData++;
     else { var dd=r.data_pedido.slice(0,10); if(!de||dd<de) de=dd; if(!ate||dd>ate) ate=dd; }
     // chave: pedido|SKU. Linha sem um dos dois (raro): chave reserva que não usa o nome (a loja renomeia produto)
@@ -5193,6 +5222,9 @@ function linhasParaRegistros(linhas, nomeArq){
 function vendaMudou(a,b){
   var campos=['id_pedido','id_sku','id_produto','produto','loja','itens','reembolsados','gmv','com_padrao','com_anuncio','bonus','recebido','data_pedido','tipo','id_conteudo','status'];
   for(var i=0;i<campos.length;i++){ var c=campos[i]; if(String(a[c]==null?'':a[c])!==String(b[c]==null?'':b[c])) return true; }
+  // (decisão 102) marcação e participação: venda antiga sem os campos = false / em branco
+  if(!!a.com_real_zero!==!!b.com_real_zero) return true;
+  if(String(a.particip==null?'':+a.particip)!==String(b.particip==null?'':+b.particip)) return true;
   return !!a.excluido;
 }
 /* ---------- registros do banco -> vendas que o sistema calcula ---------- */
@@ -5204,15 +5236,21 @@ function registrosParaVendas(regs){
       id:r.id, produto:r.produto, itens:+r.itens||0, gmv:+r.gmv||0, com:com, comAds:comAds,
       data: m? new Date(+m[1],+m[2]-1,+m[3]) : null, dataHora:dh,
       tipo:r.tipo||'—', loja:r.loja||'—', status:r.status||'—',
-      idProd:r.id_produto||'', idCont:r.id_conteudo||'', reemb:+r.reembolsados||0, idPed:r.id_pedido||''
+      idProd:r.id_produto||'', idCont:r.id_conteudo||'', reemb:+r.reembolsados||0, idPed:r.id_pedido||'',
+      comRealZero:!!r.com_real_zero, particip:(r.particip==null||r.particip==='')? participacaoFixa(r.com_padrao,r.com_anuncio,r.bonus) : +r.particip
     };
   });
   vendas.forEach(function(v){
     // comissão: pedido inelegível não paga -> separa o que é real do que foi perdido
     v.inelegivel = /ineleg/i.test(v.status);
+    // (decisão 102/103) igual ao painel do TikTok: inelegível com comissão real em branco NÃO conta (sai das telas, ver S.fora);
+    // inelegível com "0,00" conta no GMV, nos itens e nos pedidos — mas comissão 0 (não paga)
+    v.contaPainel = !v.inelegivel || v.comRealZero;
+    v.gmvBruto = v.gmv;
     v.comEst = v.com;
     v.comPerdida = v.inelegivel ? v.com : 0;
     if(v.inelegivel){ v.com=0; v.comAds=0; }
+    else v.com += v.particip;                     // (decisão 102) comissão = o que entra: menos a participação de 1% do TikTok
     v.gmvVal = v.inelegivel ? 0 : v.gmv;
     v.nomeOriginal = v.produto;
     if(!v.idPed) v.idPed='linha:'+v.id;          // sem coluna de pedido: cada linha conta como um
@@ -5271,12 +5309,13 @@ async function _carregarTudo(){
     var gr=await DB.carregar('gravar');
     S.gravar={};   gr.forEach(function(r){ S.gravar[r.id]=r; });
     renderStatusNuvem();
-    if(!regs.length){ S.temDados=false; S.todas=[]; indexarProdutos(); renderImportBox(); if(document.getElementById('mod-planejar').classList.contains('on')) irPara('vendas'); return; }
+    if(!regs.length){ S.temDados=false; S.todas=[]; S.fora=[]; indexarProdutos(); renderImportBox(); if(document.getElementById('mod-planejar').classList.contains('on')) irPara('vendas'); return; }
     var fora=diaDaPlanilhaIncompleto(regs, lsLer('ct_ultima_importacao',null));   // (conv. 19) só dias completos
     S.diaFora=fora;
     if(fora) regs=regs.filter(function(r){ return !(r.data_pedido && String(r.data_pedido).slice(0,10)===fora); });
     var vendas=registrosParaVendas(regs);
-    S.todas=vendas; S.temDados=true;
+    // (decisão 102/103) as vendas que o painel do TikTok não conta ficam à parte (S.fora): só a barra de status e a Comissão perdida usam
+    S.todas=vendas.filter(function(x){ return x.contaPainel; }); S.fora=vendas.filter(function(x){ return !x.contaPainel; }); S.temDados=true;
     indexarProdutos();
     var lim=limitesDatas(vendas); S.dataMin=lim.min; S.dataMax=lim.max;
     // mantém o período que estava escolhido
@@ -5490,7 +5529,7 @@ function sairNuvem(){
   confirmarAqui(b, 'Sair deste aparelho? Os dados continuam na nuvem, mas a cópia deste aparelho será apagada.', 'Sair deste aparelho', sairNuvemJa);
 }
 async function sairNuvemJa(){
-  await DB.sair(); S.temDados=false; S.todas=[]; S.vendas=[]; S.metas={}; S.periodo=null; S.amostras={}; S.garimpo={}; S.plano={};
+  await DB.sair(); S.temDados=false; S.todas=[]; S.fora=[]; S.foraPer=[]; S.foraAnt=null; S.vendas=[]; S.metas={}; S.periodo=null; S.amostras={}; S.garimpo={}; S.plano={};
   apagarRascunhosDoAparelho();
   if(_videoAberto) fecharVideo(); irPara('vendas');   // (conv. 20) sai do Funil/vídeo aberto: ao entrar de novo eles se redesenham sem o rascunho apagado
   renderNuvem(); renderImportBox(); renderStatusNuvem();
