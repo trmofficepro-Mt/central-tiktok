@@ -2883,6 +2883,30 @@ async function lpLerImagem(arq){   // → palavras com posição e largura da im
    mais (a faixa "…cliques no produto referem-se…" dá texto e é descartada); a confiança passa pelo mesmo lpSuspeito do lpJuntar. */
 var LP_SO_NUMERO=/^(R\$\s*)?\d[\d.,]*\s*[KM]?$/i;
 function lpLinhaNumero(t){ var l=String(t||'').split('\n').map(function(x){ return x.trim(); }).filter(function(x){ return x; })[0]||''; return LP_SO_NUMERO.test(l) ? l : null; }
+/* (conv. 23) leitor só de número pra conferir a 2ª leitura: uma linha só, só dígitos, recorte ampliado 2× e com as cores invertidas
+   (número escuro no fundo claro). Nos prints reais: 17/10 dá "11" (o normal deu "1" → não bate → vazio); 11/10 dá "26.7K" (bate). */
+var _lpWorkerNum=null;
+async function lpLeitorNum(){
+  if(_lpWorkerNum) return _lpWorkerNum;
+  var p=lpScript().then(function(){ return Tesseract.createWorker('por', 1, {workerPath:LP_URL.worker, corePath:LP_URL.core, langPath:LP_URL.lang, gzip:true}); })
+    .then(function(w){ return w.setParameters({tessedit_pageseg_mode:'7', tessedit_char_whitelist:'0123456789.,KMR$ '}).then(function(){ return w; }); });
+  try{ _lpWorkerNum=await lpComPrazo(p, 120000); }
+  catch(e){ _lpWorkerNum=null; p.then(function(w){ try{ w.terminate(); }catch(x){} }, function(){}); throw e; }
+  return _lpWorkerNum;
+}
+async function lpLeituraConfere(k2){
+  try{
+    var k=document.createElement('canvas'); k.width=k2.width*2; k.height=k2.height*2;
+    var x=k.getContext('2d'); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high'; x.drawImage(k2,0,0,k.width,k.height);
+    var d=x.getImageData(0,0,k.width,k.height), px=d.data;
+    for(var i=0;i<px.length;i+=4){ px[i]=255-px[i]; px[i+1]=255-px[i+1]; px[i+2]=255-px[i+2]; }
+    x.putImageData(d,0,0);
+    var w=await lpLeitorNum(), r=await w.recognize(k, {}, {blocks:true, text:true}), lin=null;
+    (r.data.blocks||[]).forEach(function(b){ b.paragraphs.forEach(function(p){ p.lines.forEach(function(l){ if(!lin && String(l.text||'').trim()) lin=l; }); }); });
+    return lin ? lpLinhaNumero(lin.text) : null;
+  }catch(e){ return null; }
+}
+function lpMesmoNumero(a, b){ var n=function(s){ return String(s||'').replace(/\s+/g,'').toUpperCase(); }; return !!a && !!b && n(a)===n(b); }
 async function lpSegundaLeitura(o, L){
   if(!o || !o.c || !L || !L.semNum) return;
   var w=await lpLeitor();
@@ -2896,7 +2920,9 @@ async function lpSegundaLeitura(o, L){
       var r=await w.recognize(k2, {}, {blocks:true, text:true}), lin=null;
       (r.data.blocks||[]).forEach(function(b){ b.paragraphs.forEach(function(p){ p.lines.forEach(function(l){ if(!lin && String(l.text||'').trim()) lin=l; }); }); });
       var txt=lin ? lpLinhaNumero(lin.text) : null;
-      if(txt){ L.campos[k]={txt:txt, conf:Math.round(lin.confidence), seg:true}; break; }
+      // (conv. 23, pendência 44) só vale se uma 2ª forma de ler o MESMO recorte der o mesmo número (17/10: "11" lido como "1").
+      // Se não bater (ou o 2º leitor não carregar), o campo fica vazio: "Não achei no print — digite."
+      if(txt && lpMesmoNumero(txt, await lpLeituraConfere(k2))){ L.campos[k]={txt:txt, conf:Math.round(lin.confidence), seg:true}; break; }
     }
   }
 }
