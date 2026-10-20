@@ -241,9 +241,17 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .pn-canal-box{margin-top:16px} .pn-canal{margin-bottom:6px} .pn-canal-nota{margin:0}
 /* ===== lives (B1a) ===== */
 .lojas-atalho{display:none}
+.lateral .abas button.mmais-bt{display:none}
+@media(max-width:899px){ .lateral .abas button.mmais-bt{display:flex} }
+.mmais-lista{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.mmais-it{display:flex;align-items:center;gap:10px;padding:14px 12px;border:1px solid var(--linha);border-radius:var(--raio);background:var(--panel);font-family:inherit;font-size:14px;font-weight:700;color:var(--tinta);cursor:pointer;text-align:left;min-height:52px}
+.mmais-it svg{width:20px;height:20px;flex:none;color:var(--uva)}
 @media(max-width:899px){   /* celular: 8 botões não cabem em 320 px → Lojas fica dentro de Produtos (decisão do Thiago, 27/09) */
   .lateral .abas button[data-mod="lojas"]{display:none}
-  .lateral .abas button[data-mod="videos"]{display:none}   /* Vídeos: primeiro no computador (Thiago, 28/09); celular depois */
+  /* (conv. 23) Mari usa mais no celular: barra = Planejar · Painel · Vídeos · Amostras · Mais (o resto fica na tela Mais) */
+  .lateral .abas button[data-mod="lives"],.lateral .abas button[data-mod="campeoes"],.lateral .abas button[data-mod="produtos"],.lateral .abas button[data-mod="apostas"]{display:none}
+  .lateral .abas button[data-mod="planejar"]{order:1} .lateral .abas button[data-mod="vendas"]{order:2} .lateral .abas button[data-mod="videos"]{order:3}
+  .lateral .abas button[data-mod="amostras"]{order:4} .lateral .abas button[data-mod="mais"]{order:5}
   .lojas-atalho{display:inline-flex;margin:0 0 10px}
 }
 .lv-cards{margin:0 0 12px}
@@ -1134,6 +1142,10 @@ div.apl-t{cursor:default}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M3 9h18M9 21v-6h6v6"/></svg>
         Lojas
       </button>
+      <button data-mod="mais" class="mmais-bt" onclick="irPara('mais')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+        Mais
+      </button>
     </div>
 </aside>
 <div class="principal">
@@ -1338,6 +1350,14 @@ div.apl-t{cursor:default}
         <p class="desc">Quanto você já gerou pra cada loja. Chegue na negociação com o número na mão — e veja quais lojas estão te pagando pouco no anúncio.</p>
         <div id="lojasAlertas"></div>
         <div id="lojasRanking"></div>
+      </div>
+    </div>
+    <!-- (conv. 23) celular: a barra de baixo tem 5 botões; o resto fica aqui -->
+    <div class="modulo" id="mod-mais">
+      <div class="sec" style="margin-top:22px">
+        <h3>Mais</h3>
+        <p class="desc">As outras telas da Central. Toque numa pra abrir.</p>
+        <div id="mmaisLista" class="mmais-lista"></div>
       </div>
     </div>
 
@@ -1633,10 +1653,22 @@ function renderPerInfo(){
 }
 
 /* ---------- navegação entre módulos ---------- */
+/* (conv. 23) tela "Mais" do celular: as telas que não estão na barra de baixo (ícone e nome copiados da lateral — um lugar só) */
+var MAIS_TELAS=['funil','resumo','lives','campeoes','produtos','apostas','lojas'];
+function renderMais(){
+  var el=document.getElementById('mmaisLista'); if(!el) return;
+  el.innerHTML=MAIS_TELAS.map(function(m){
+    var b=document.querySelector('.lateral .abas button[data-mod="'+m+'"]'); if(!b) return '';
+    var svg=b.querySelector('svg'), nome=b.textContent.trim();
+    return '<button type="button" class="mmais-it" data-mais="'+m+'" onclick="irPara(\''+m+'\')">'+(svg?svg.outerHTML:'')+'<span>'+escapar(nome)+'</span></button>';
+  }).join('');
+}
 function irPara(mod){
   document.querySelectorAll('.abas button').forEach(function(b){
-    b.classList.toggle('on', b.getAttribute('data-mod')===mod);
+    var m=b.getAttribute('data-mod');
+    b.classList.toggle('on', m===mod || (m==='mais' && MAIS_TELAS.indexOf(mod)>=0));   // (conv. 23) no celular o "Mais" fica aceso nas telas que estão nele
   });
+  if(mod==='mais') renderMais();
   document.querySelectorAll('.modulo').forEach(function(m){
     m.classList.toggle('on', m.id==='mod-'+mod);
   });
@@ -5396,7 +5428,7 @@ var _impAberto=false;
 function alternarDetImport(){ _impAberto=!_impAberto; renderImportBox(); }
 /* (conv. 15) telas do Dia a dia não usam o período (conferido: Planejar, Amostras, Funil) → sem os botões de período;
    no Planejar a faixa de amostras vira linha curta no celular e some no computador (a lista O que gravar já mostra) */
-var TELAS_SEM_PERIODO=['mod-planejar','mod-amostras','mod-funil','mod-videos','mod-resumo'];   // (conv. 18, pendência 28) Vídeos tem a chave própria 7·15·30 · (conv. 19) Resumo: sempre a última semana fechada
+var TELAS_SEM_PERIODO=['mod-planejar','mod-amostras','mod-funil','mod-videos','mod-resumo','mod-mais'];   // (conv. 23) Mais: só a lista de telas ·   // (conv. 18, pendência 28) Vídeos tem a chave própria 7·15·30 · (conv. 19) Resumo: sempre a última semana fechada
 function ajustarTopo(){
   var m=document.querySelector('.modulo.on'), id=m?m.id:'';
   document.body.classList.toggle('sem-periodo', TELAS_SEM_PERIODO.indexOf(id)>=0);
