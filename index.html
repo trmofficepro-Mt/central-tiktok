@@ -267,6 +267,22 @@ body{margin:0;background:var(--bg);color:var(--tinta);font-family:'Segoe UI',sys
 .vd-tab td small{display:block;color:var(--tinta3);font-size:11.5px}
 .vd-tab td.vd-nome{white-space:normal;min-width:200px;font-weight:700}
 .vd-tab tr:last-child td{border-bottom:none}
+/* (conv. 23) celular: toda tabela .vd-tab vira cartões (1 cartão por linha, rótulo da coluna do lado do valor) — rótulos postos por cartoesCelular() */
+@media(max-width:899px){
+  .vd-tab-w.cel-w{overflow-x:visible}
+  .vd-tab.cel thead{display:none}
+  .vd-tab.cel, .vd-tab.cel tbody, .vd-tab.cel tr{display:block;width:100%}
+  .vd-tab.cel tr{padding:10px 14px;border-bottom:1px solid var(--linha)}
+  .vd-tab.cel tr:last-child{border-bottom:none}
+  .vd-tab.cel td{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:3px 0;border:none;white-space:normal;text-align:right;min-width:0}
+  .vd-tab.cel td::before{content:attr(data-rot);flex:none;max-width:45%;text-align:left;color:var(--tinta3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  .vd-tab.cel td[data-rot=""]{display:block;text-align:left}
+  .vd-tab.cel td[data-rot=""]::before{content:none}
+  .vd-tab.cel td.cel-tit{font-weight:800;font-size:14px;padding-bottom:4px}
+  .vd-tab.cel td .cel-v{min-width:0;overflow-wrap:anywhere}
+  .vd-tab.cel td.vd-nome{min-width:0;display:block;text-align:left;font-size:14px}
+  .vd-tab.cel td.vd-nome::before{display:block;margin-bottom:2px}
+}
 /* ===== F2 leitura do funil (conv. 17) ===== */
 .fl-card{margin-bottom:12px}
 .fl-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
@@ -1653,6 +1669,28 @@ function renderPerInfo(){
 }
 
 /* ---------- navegação entre módulos ---------- */
+/* (conv. 23) celular: põe em cada célula das tabelas .vd-tab o nome da coluna (data-rot) e embrulha o conteúdo (cel-v), pro CSS
+   mostrar cada linha como cartão. Um lugar só pra todas (Vídeos, Resumo, Funil, Vídeos analisados); roda sozinho quando a tela muda. */
+function cartoesCelular(raiz){
+  (raiz||document).querySelectorAll('table.vd-tab:not(.cel)').forEach(function(tb){
+    var ths=[].map.call(tb.querySelectorAll('thead th'),function(th){ return th.textContent.trim(); });
+    tb.querySelectorAll('tbody tr').forEach(function(tr){
+      [].forEach.call(tr.children,function(td,i){
+        if(td.colSpan>1){ td.setAttribute('data-rot',''); return; }
+        td.setAttribute('data-rot', ths[i]||'');
+        if(i===0 && !ths[i]) td.classList.add('cel-tit');
+        if(td.classList.contains('vd-nome') || !ths[i]) return;
+        var s=document.createElement('span'); s.className='cel-v'; while(td.firstChild) s.appendChild(td.firstChild); td.appendChild(s);
+      });
+    });
+    tb.classList.add('cel'); if(tb.parentElement && tb.parentElement.classList.contains('vd-tab-w')) tb.parentElement.classList.add('cel-w');
+  });
+}
+(function(){
+  var pend=false;
+  function vigiar(){ try{ new MutationObserver(function(){ if(pend) return; pend=true; requestAnimationFrame(function(){ pend=false; cartoesCelular(); }); }).observe(document.body,{childList:true,subtree:true}); cartoesCelular(); }catch(e){} }
+  if(document.body) vigiar(); else document.addEventListener('DOMContentLoaded', vigiar);
+})();
 /* (conv. 23) tela "Mais" do celular: as telas que não estão na barra de baixo (ícone e nome copiados da lateral — um lugar só) */
 var MAIS_TELAS=['funil','resumo','lives','campeoes','produtos','apostas','lojas'];
 function renderMais(){
