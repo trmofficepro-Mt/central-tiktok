@@ -6970,7 +6970,7 @@ function diaSugeridoAgendar(){ var h=hojeISO(); return planVista()==='dia' && di
    Faltou produto → avisa e NÃO inventa. Tudo vai pro dia da gravação. Não duplica o que já está agendado no dia. */
 var _mp=null, _mpSalvando=false;
 function qtdProducao(dias){ dias=Math.max(1,dias|0); return {perfeito:2*dias, medio:dias, espera:dias, baixa:Math.max(1,Math.round(dias/2))}; }
-function cfgProducao(){ var c=(S.metas&&S.metas._config&&S.metas._config.producao)||{}; return {porDia:c.porDia||15, dias:c.dias||3}; }
+function cfgProducao(){ var c=(S.metas&&S.metas._config&&S.metas._config.producao)||{}; return {porDia:c.porDia||10, dias:c.dias||3}; }   // (conv. 23) padrão 10 (meta da Mari: no mínimo 10 vídeos por dia)
 function mesDaPlanilha(){ var p=S.periodo; S.periodo=null; try{ return mesRef(); } finally{ S.periodo=p; } }
 function filaProducao(porDia, dias, dia){
   var q=qtdProducao(dias), total=porDia*dias, fila=[], usados={}, amoUsadas={};
@@ -7003,6 +7003,13 @@ function filaProducao(porDia, dias, dia){
     f.alvo=Math.min(f.n, total-soma); soma+=f.alvo;
     f.ja= dia ? vagasDoProdNoDia(f.prod, dia) : 0; f.criar=Math.max(0, f.alvo-f.ja); sai.push(f);
   });
+  // (conv. 23) o total pedido vale pro DIA inteiro: desconta os roteiros que já estão nele (montar de novo não passa do total —
+  // antes, com produtos sobrando, a 2ª vez agendava os que tinham ficado de fora: 32 em vez de 30)
+  if(dia){
+    var jaDia=itensDoDia(dia).filter(function(x){ var d=x.dados; return d.tipo!=='live' && d.status!=='cancelado' && (d.produtos||[])[0]; }).length;
+    var livre=Math.max(0, total-jaDia), cr=sai.reduce(function(s,f){ return s+f.criar; },0);
+    for(var i=sai.length-1; i>=0 && cr>livre; i--){ var tira=Math.min(sai[i].criar, cr-livre); sai[i].criar-=tira; cr-=tira; }
+  }
   return {itens:sai, soma:soma, total:total, falta:Math.max(0,total-soma), criar:sai.reduce(function(s,f){ return s+f.criar; },0)};
 }
 function abrirProducao(){
