@@ -3308,6 +3308,7 @@ function vsR(x,c){ var f=Math.pow(10,c); return Math.floor(Number((x*f).toFixed(
 function vsVirg(n){ return String(vsR(n,1)).replace('.',','); }
 function vsSeg1(n){ return vsR(n,1).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' s'; }   // tempo médio sempre com 1 casa, igual ao app (7,0 s)
 /* junta 1 a 4 prints do MESMO vídeo → {erro} ou {txt, val, marcas, termos, atual, avisos, nomes} */
+var VS_AGENDA_MAX_DIAS=30;   // (conv. 23) até quantos dias depois de criado um vídeo agendado pode sair
 function vsJuntar(leituras, postadoIso, hoje, postadoHM){
   hoje=hoje||hojeISO();
   if(!leituras.length) return {erro:'Nenhuma imagem pra ler.'};
@@ -3324,13 +3325,20 @@ function vsJuntar(leituras, postadoIso, hoje, postadoHM){
   VS_FKEYS.forEach(function(k){ var vs=[], vals={}; leituras.forEach(function(L){ var c=L.campos[k]; if(c && !vsSuspeito(k,c)){ vs.push(c.txt); vals[vsValor(k,c.txt)]=1; } });
     if(Object.keys(vals).length>1) fdif.push(VS_ROT[k]+' '+vs.join(' e ')); });
   if(fdif.length>=2) return {erro:'Esses prints são de vídeos diferentes (Fontes: '+fdif.join('; ')+'). Nada foi preenchido. Mande só os prints de um vídeo.'};
+  var agend=null;   // (conv. 23) vídeo AGENDADO: o número do vídeo guarda a hora em que ela agendou (Mari, 22/10: 05:47) e o "Publicado em", a hora que saiu (06:31)
   if(postadoIso && postadoHM) for(var pq=0;pq<leituras.length;pq++){   // "Publicado em …" do print × número do vídeo aberto (só com leitura segura)
     var pb=leituras[pq].pub;
-    if(pb && pb.conf>=80 && (pb.iso!==postadoIso || pb.hm!==postadoHM)) return {erro:'Esses prints são do vídeo publicado em '+lpDataBR(pb.iso)+' às '+pb.hm+', mas o vídeo aberto foi postado em '+lpDataBR(postadoIso)+' às '+postadoHM+'. Nada foi preenchido. Abra o vídeo certo na lista.'};
+    if(pb && pb.conf>=80 && (pb.iso!==postadoIso || pb.hm!==postadoHM)){
+      var difMin=(new Date(pb.iso+'T'+pb.hm+':00') - new Date(postadoIso+'T'+postadoHM+':00'))/60000;
+      if(difMin>0 && difMin<=VS_AGENDA_MAX_DIAS*1440){ agend={iso:pb.iso, hm:pb.hm, criadoIso:postadoIso, criadoHM:postadoHM}; continue; }   // saiu DEPOIS de criado: agendado
+      return {erro:'Esses prints são do vídeo publicado em '+lpDataBR(pb.iso)+' às '+pb.hm+', mas o vídeo aberto foi postado em '+lpDataBR(postadoIso)+' às '+postadoHM+'. Nada foi preenchido. Abra o vídeo certo na lista.'};
+    }
   }
+  if(agend) postadoIso=agend.iso;   // a idade do vídeo conta da hora que ele SAIU
   var ats=[]; leituras.forEach(function(L){ if(L.atual && ats.indexOf(L.atual.iso)<0) ats.push(L.atual.iso); });
   if(ats.length>1) return {erro:'Os prints são de dias diferentes ('+ats.map(function(x){ return x.slice(8,10)+'/'+x.slice(5,7); }).join(' e ')+'). Nada foi preenchido. Tire todos no mesmo dia.'};
   var r={txt:{}, val:{}, marcas:{}, termos:null, atual:'', avisos:[], nomes:[]};
+  if(agend) r.avisos.push('Vídeo agendado: saiu em '+lpDataBR(agend.iso)+' às '+agend.hm+' (agendado'+(agend.criadoIso!==agend.iso?' em '+lpDataBR(agend.criadoIso):'')+' às '+agend.criadoHM+'). A idade do vídeo conta de quando ele saiu.');
   var NOMES={met:'Métricas',ret:'Retenção',fon:'Fontes',ter:'Termos'};
   leituras.forEach(function(L){ L.secoes.forEach(function(s){ if(r.nomes.indexOf(NOMES[s])<0) r.nomes.push(NOMES[s]); }); });
   VS_CAMPOS.forEach(function(k){
