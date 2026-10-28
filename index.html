@@ -3180,7 +3180,7 @@ function fecharVideo(){ _videoAberto=null; fecharForm(); }
    Medido nos 6 prints da Mari (29/09): o leitor erra sempre igual em 1.93%→1.95%, 9.1%→91%, 9.8 s→98s — quem segura
    são as proteções: formato, confiança, fontes somam 100%, tempo médio = % assistido × duração. Guardado em
    S.metas id vstudio_<nº do vídeo> (sem mexer no SQL). */
-var VS_METRICAS=[['views',['visualizacoes','de','video']],['tmedio',['tempo','medio']],['completo',['ao','video','completo']],['seg',['novos','seguidores']]];
+var VS_METRICAS=[['views',['visualizacoes','de','video']],['tmedio',['tempo','medio']],['completo',['ao','video','compl*']],['seg',['novos','seguidores']]];
 var VS_EXTRAI={views:/\d[\d.,]*(\s*(mil|mi)\b)?/i, tmedio:/\d[\d.,]*(\s*s\b)?/i, completo:/\d[\d.,]*\s*%?/, seg:/\d[\d.,]*/};
 var VS_FONTES=[['pv',['para','voce']],['pesq',['pesquisar']],['perfil',['perfil','pessoal']],['outro',['outro']],['fseg',['seguindo']],['som',['som']]];
 var VS_FKEYS=VS_FONTES.map(function(f){ return f[0]; });
@@ -3211,11 +3211,12 @@ function vsLimpo(t){ return String(t).trim().replace(/^[(\[]+|[.,;:)\]]+$/g,'');
 /* lê as palavras (com posição) de UM print do Studio → {secoes, campos:{k:{txt,conf}}, vistos, termos, atual, temTer} */
 function vsInterpretar(words, W){
   var ws=words.map(function(w){ return {t:w.t, c:w.c, x0:w.x0, y0:w.y0, x1:w.x1, y1:w.y1, n:lpNorm(w.t)}; });
-  function seqEm(i,seq){ if(i+seq.length>ws.length) return false; for(var j=0;j<seq.length;j++) if(ws[i+j].n!==seq[j]) return false; return true; }
+  function seqEm(i,seq){ if(i+seq.length>ws.length) return false; for(var j=0;j<seq.length;j++){ var s=seq[j];   // (conv. 23) 'compl*' = começa com (iPhone corta: "Assistiu ao vídeo compl...")
+      if(s.slice(-1)==='*' ? ws[i+j].n.indexOf(s.slice(0,-1))!==0 : ws[i+j].n!==s) return false; } return true; }
   function ytit(seq){ for(var i=0;i<ws.length;i++) if(seqEm(i,seq)) return ws[i].y0; return null; }
   var yMet=ytit(['metricas','principais']), yRet=ytit(['taxa','de','retencao']), yFon=ytit(['fontes','de','trafego']), yTer=ytit(['termos','pesquisados']), yDes=ytit(['deseja','mais']);
   var secoes=[['met',yMet],['ret',yRet],['fon',yFon],['ter',yTer]].filter(function(s){ return s[1]!=null; }).map(function(s){ return s[0]; });
-  var campos={}, vistos={};
+  var campos={}, vistos={}, semNum={};
   function temNum(w){ return /\d/.test(w.t); }
   if(yMet!=null) VS_METRICAS.forEach(function(r){
     var k=r[0], lab=r[1];
@@ -3226,6 +3227,7 @@ function vsInterpretar(words, W){
       var a=ws[i], b=ws[i+lab.length-1], h=a.y1-a.y0, fundo=Math.max(a.y1,b.y1);
       if(k==='completo' && i>0 && Math.abs(ws[i-1].y0-a.y0)<h && a.x0-ws[i-1].x1<2*h) a=ws[i-1];   // "Assistiu" (o leitor lê "Assistivu"): o número fica embaixo dele
       var cx0=Math.min(a.x0,b.x0)-3*h, cx1=Math.max(b.x1+3*h, a.x0+W*0.40);
+      semNum[k]=[Math.max(0,Math.round(a.x0-1.5*h)), Math.round(fundo), Math.round(cx1), Math.round(fundo+4*h)];   // (conv. 23) recorte pra 2ª leitura, com folga de 1,5 letra antes do rótulo
       var abaixo=ws.filter(function(w){ return w.y0>fundo && w.y0<fundo+4*h && w.x0>=cx0 && w.x0<cx1 && temNum(w); });
       if(!abaixo.length) continue;
       var y=Math.min.apply(null, abaixo.map(function(w){ return w.y0; }));
@@ -3287,7 +3289,44 @@ function vsInterpretar(words, W){
       break;
     }
   }
-  return {secoes:secoes, campos:campos, vistos:Object.keys(vistos).sort(), termos:termos, atual:atual, temTer:yTer!=null, pub:pub};
+  return {semNum:semNum, secoes:secoes, campos:campos, vistos:Object.keys(vistos).sort(), termos:termos, atual:atual, temTer:yTer!=null, pub:pub};
+}
+/* (conv. 23) 2ª leitura das Métricas (prints do iPhone da Mari, 27/10: "3.2 s" lido "3.28"; o "0" de Novos seguidores não lido): recorta embaixo
+   do rótulo e lê de 2 jeitos — o leitor normal (2×) e o de conferência (1 linha, só dígitos .,%smilh:, 2×). Só vale se os 2 derem o MESMO valor. */
+var _vsWorkerConf=null;
+async function vsLeitorConf(){
+  if(_vsWorkerConf) return _vsWorkerConf;
+  var p=lpScript().then(function(){ return Tesseract.createWorker('por', 1, {workerPath:LP_URL.worker, corePath:LP_URL.core, langPath:LP_URL.lang, gzip:true}); })
+    .then(function(w){ return w.setParameters({tessedit_pageseg_mode:'7', tessedit_char_whitelist:'0123456789.,%smilh: '}).then(function(){ return w; }); });
+  try{ _vsWorkerConf=await lpComPrazo(p, 120000); }
+  catch(e){ _vsWorkerConf=null; p.then(function(w){ try{ w.terminate(); }catch(x){} }, function(){}); throw e; }
+  return _vsWorkerConf;
+}
+function vsRecorte(o, g, esc){ var x0=g[0], y0=g[1], x1=Math.min(o.c.width,g[2]), y1=Math.min(o.c.height,g[3]); if(!(x1-x0>10 && y1-y0>10)) return null;
+  var k=document.createElement('canvas'); k.width=Math.round((x1-x0)*esc); k.height=Math.round((y1-y0)*esc); var x=k.getContext('2d'); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high';
+  x.drawImage(o.c, x0, y0, x1-x0, y1-y0, 0, 0, k.width, k.height); return k; }
+async function vsLinha1(w, k){ var r=await w.recognize(k, {}, {blocks:true, text:true}), lin=null;
+  (r.data.blocks||[]).forEach(function(b){ b.paragraphs.forEach(function(p){ p.lines.forEach(function(l){ if(!lin && String(l.text||'').trim()) lin=l; }); }); });
+  return lin ? {t:String(lin.text).split('\n')[0].trim(), c:Math.round(lin.confidence)} : null; }
+function vsDoRecorte(k, t){ t=String(t||'').trim(); if(k==='seg' && /^[oO]$/.test(t)) t='0';   // o zero sozinho vem como a letra O
+  var m=t.match(VS_EXTRAI[k]); if(!m) return null; var v=m[0].trim(); if(k==='tmedio') v=v.replace(/\s*s$/i,' s'); return v; }
+/* as 2 leituras do recorte só valem se tiverem o formato do app E derem o MESMO valor (senão: null = campo vazio) */
+function vsAceita(k, va, vb, conf){
+  if(!va || !vb) return null;
+  var c={txt:va, conf:Math.max(conf||0, LP_CONF_MIN), seg:true};
+  if(vsSuspeito(k,c) || vsSuspeito(k,{txt:vb, conf:LP_CONF_MIN}) || vsValor(k,va)!==vsValor(k,vb)) return null;
+  return c;
+}
+async function vsSegundaLeitura(o, L){
+  if(!o || !o.c || !L || !L.semNum) return;
+  for(var k in L.semNum){
+    if(L.campos[k] && !vsSuspeito(k, L.campos[k])) continue;
+    var k2=vsRecorte(o, L.semNum[k], 2); if(!k2) continue;
+    var a=await vsLinha1(await lpLeitor(), k2), b=await vsLinha1(await vsLeitorConf(), k2);
+    var va=a? vsDoRecorte(k, a.t) : null, vb=b? vsDoRecorte(k, b.t) : null;
+    if(!va || !vb) continue;
+    var c=vsAceita(k, va, vb, a.c); if(c) L.campos[k]=c;
+  }
 }
 function vsSuspeito(k,c){
   var f=VS_FORMATO[k]; if(!f[0].test(String(c.txt).trim())) return f[1];
@@ -3414,7 +3453,9 @@ async function vsArquivos(lista){
         if(String(e&&e.message)==='imagem'){ vsMsg('Não consegui abrir essa imagem. Tire o print de novo e tente outra vez.', 'erro'); return; }
         vsMsg('⚠ Não consegui carregar o leitor de print (precisa de internet na 1ª vez). Nada foi preenchido — digite os números normalmente no formulário.', 'erro'); return;
       }
-      leituras.push(vsInterpretar(o.words, o.W));
+      var LV=vsInterpretar(o.words, o.W);
+      try{ await vsSegundaLeitura(o, LV); }catch(e){}   // (conv. 23) nunca derruba a 1ª leitura
+      leituras.push(LV);
     }
   } finally { _vs.lendo=false; }
   if(_videoAberto!==id){ if(_vs.id===id){ _vs.msg=''; _vs.cls=''; } return; }   // ela fechou/trocou de vídeo enquanto lia: não preenche outro vídeo (e não deixa "Lendo…" preso)
